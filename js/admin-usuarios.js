@@ -6,10 +6,9 @@ if (!user || user.permissoes !== 'completa') {
 
 // Carrega usuários salvos ou cria padrão
 let todosUsuarios = JSON.parse(localStorage.getItem('todosUsuarios')) || {
-    'pastor': { senha: '1234', permissoes: 'completa' },
-    'secretaria': { senha: '1234', permissoes: 'secretaria' },
-    'tesoureiro': { senha: '1234', permissoes: 'financeiro' },
-    'membro': { senha: '1234', permissoes: 'basica' }
+    'pastor': { senha: 'pr1234', permissoes: 'completa' },
+    'secretaria': { senha: 'sc1234', permissoes: 'secretaria' },
+    'membro': { senha: 'mb1234', permissoes: 'basica' }
 };
 
 document.getElementById('nomeAdmin').textContent = user.nome;

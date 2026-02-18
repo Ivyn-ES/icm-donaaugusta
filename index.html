@@ -1,14 +1,21 @@
 <!DOCTYPE html>
-<html lang="pt-Br">
+<html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ivyn</title>
+    <title>Login - ICM Dona Augusta</title>
+    <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-    <b>Teste</b><p></p>
-    <i>Treinando</i>
-    <b>Novo teste</b>
-    <i>Sem entrar na conta</i>
+    <div class="login-container">
+        <h1>Bem-vindo!</h1>
+        <form id="loginForm">
+            <input type="text" id="usuario" placeholder="Seu usuário" required>
+            <input type="password" id="senha" placeholder="Senha" required>
+            <button type="submit">Entrar</button>
+        </form>
+        <p id="mensagem"></p>
+    </div>
+    <script src="js/script.js"></script>
 </body>
 </html>

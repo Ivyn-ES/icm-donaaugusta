@@ -3,25 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard</title>
+    <title>Dashboard Completo</title>
     <link rel="stylesheet" href="../css/style.css">
 </head>
 <body>
     <div class="container">
-        <h1>📊 Dashboard ICM Dona Augusta</h1>
+        <h1>📊 Dashboard Completo ICM</h1>
         <p>Olá, <strong id="nomeUsuario"></strong>!</p>
+        
         <nav>
-            <a href="#pagina1" id="link1">📋 Página 1 (todos veem)</a>
-            <a href="#pagina2" id="link2" style="display:none;">⚙️ Página Admin (só completos)</a>
+            <a href="lista-presenca.html">📋 Presença Geral</a>
+            <a href="relatorios-completo.html">📊 Relatórios Todos Grupos</a>
+            <a href="admin-usuarios.html">👨‍⚖️ Gerenciar Usuários</a>
             <a href="logout.html">🚪 Sair</a>
-            <a href="admin-usuarios.html" id="linkAdmin" style="display:none;">👨‍⚖️ Gerenciar Usuários</a>
-
         </nav>
-        <div id="conteudo">
-            <p>Bem-vindo ao sistema! 🎉</p>
-        </div>
     </div>
     <script src="../js/script.js"></script>
-    <script src="app.js"></script>
+    <script src="dashboard-completo.js"></script>
 </body>
 </html>

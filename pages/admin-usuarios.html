@@ -1,40 +1,18 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gerenciar Usuários</title>
-    <link rel="stylesheet" href="../css/style.css">
-</head>
-<body>
-    <div class="container">
-        <h1>👥 Gerenciar Usuários ICM</h1>
-        <p>Olá, <strong id="nomeAdmin"></strong>! 🔐</p>
-        
-        <!-- Formulário para adicionar usuário -->
-        <h3>➕ Novo Usuário</h3>
-        <form id="novoUsuario">
-            <input type="text" id="novoNome" placeholder="Nome do usuário" required>
-            <input type="password" id="novaSenha" placeholder="Senha" required>
-            <select id="novaPermissao" required>
-                <option value="">Escolha permissão</option>
-                <option value="completa">👨‍⚖️ Completa (Pastor/Admin)</option>
-                <option value="secretaria">📝 Secretaria</option>
-                <option value="financeiro">💰 Financeiro</option>
-                <option value="lideranca">👥 Liderança</option>
-                <option value="basica">🙏 Membro</option>
-            </select>
-            <button type="submit">Adicionar Usuário</button>
-        </form>
+<!-- Lista de usuários (mantém igual) -->
+<h3>📋 Usuários Cadastrados</h3>
+<div id="listaUsuarios"></div>
 
-        <!-- Lista de usuários -->
-        <h3>📋 Usuários Cadastrados</h3>
-        <div id="listaUsuarios"></div>
-        
-        <br><a href="dashboard.html">← Voltar Dashboard</a>
-    </div>
-    <script src="../js/script.js"></script>
-    <script src="app.js"></script>
-    <script src="admin-usuarios.js"></script>
-</body>
-</html>
+<!-- 👇 NOVO: GERENCIADOR DE GRUPOS -->
+<h3>👥 Gerenciar Grupos</h3>
+<button onclick="mostrarFormGrupo()">➕ Novo Grupo</button>
+<div id="formGrupos" style="display:none;">
+    <h4>Novo Grupo</h4>
+    <input type="text" id="nomeGrupo" placeholder="Nome do grupo (ex: Grupo 3 Mulheres)">
+    <input type="text" id="bairroGrupo" placeholder="Bairro/Local">
+    <input type="text" id="membrosNovos" placeholder="Membros (separados por vírgula)">
+    <button onclick="criarNovoGrupo()">Criar Grupo</button>
+    <button onclick="document.getElementById('formGrupos').style.display='none'">Cancelar</button>
+</div>
+
+<h4>Grupos Existentes:</h4>
+<div id="listaGrupos"></div>

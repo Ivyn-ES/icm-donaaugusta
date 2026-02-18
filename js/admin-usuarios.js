@@ -74,3 +74,88 @@ function removerUsuario(nome) {
 
 // Carrega lista ao abrir página
 mostrarLista();
+// 👇 NOVAS FUNÇÕES PARA GRUPOS
+function mostrarFormGrupo() {
+    document.getElementById('formGrupos').style.display = 'block';
+}
+
+function criarNovoGrupo() {
+    const nome = document.getElementById('nomeGrupo').value;
+    const bairro = document.getElementById('bairroGrupo').value;
+    const membrosTexto = document.getElementById('membrosNovos').value;
+    
+    if (!nome) return alert('❌ Digite o nome do grupo!');
+    
+    const numeroGrupo = Object.keys(grupos).length + 1;
+    const membros = membrosTexto.split(',').map(m => m.trim()).filter(m => m);
+    
+    grupos[`grupo${numeroGrupo}`] = {
+        nome: nome,
+        bairro: bairro || 'Não informado',
+        membros: membros,
+        presencas: {}
+    };
+    
+    localStorage.setItem('grupos', JSON.stringify(grupos));
+    localStorage.setItem(`presencasGrupo${numeroGrupo}`, JSON.stringify({}));
+    
+    alert(`✅ "${nome}" criado! Grupo ${numeroGrupo}`);
+    carregarGrupos();
+    document.getElementById('formGrupos').style.display = 'none';
+    document.getElementById('formGrupos').reset();
+}
+
+function carregarGrupos() {
+    const lista = document.getElementById('listaGrupos');
+    lista.innerHTML = '';
+    
+    for (let id in grupos) {
+        const grupo = grupos[id];
+        const div = document.createElement('div');
+        div.style.cssText = 'margin:10px 0;padding:15px;background:#e3f2fd;border-radius:8px;';
+        div.innerHTML = `
+            <strong>${grupo.nome}</strong> (${grupo.bairro})
+            <span style="float:right;">
+                <small>${grupo.membros.length} membros</small>
+                <button onclick="editarGrupo('${id}')" style="background:orange;color:white;border:none;padding:5px 10px;border-radius:4px;margin-left:10px;">Editar</button>
+                <button onclick="removerGrupo('${id}')" style="background:red;color:white;border:none;padding:5px 10px;border-radius:4px;margin-left:5px;">🗑️</button>
+            </span>
+        `;
+        lista.appendChild(div);
+    }
+}
+
+function editarGrupo(id) {
+    const grupo = grupos[id];
+    document.getElementById('nomeGrupo').value = grupo.nome;
+    document.getElementById('bairroGrupo').value = grupo.bairro;
+    document.getElementById('membrosNovos').value = grupo.membros.join(', ');
+    // Aqui você pode adicionar lógica para recriar com novo ID
+}
+
+function removerGrupo(id) {
+    if (confirm(`Remover "${grupos[id].nome}"?`)) {
+        delete grupos[id];
+        localStorage.setItem('grupos', JSON.stringify(grupos));
+        localStorage.removeItem(`presencas${id}`);
+        carregarGrupos();
+    }
+}
+
+// Carrega grupos salvos ou cria padrão
+let grupos = JSON.parse(localStorage.getItem('grupos')) || {
+    grupo1: {
+        nome: 'Grupo 1 - Vera Cruz',
+        bairro: 'Vera Cruz',
+        membros: ['Maria Silva', 'João Santos', 'Ana Costa']
+    },
+    grupo2: {
+        nome: 'Grupo 2 - Jardim América', 
+        bairro: 'Jardim América',
+        membros: ['Pedro Almeida', 'Lucas Souza', 'Carla Lima']
+    }
+};
+
+// Chama ao carregar página
+mostrarLista(); // usuários
+carregarGrupos();  // grupos

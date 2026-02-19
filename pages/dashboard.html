@@ -1,49 +1,18 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard Completo - ICM</title>
-    <link rel="stylesheet" href="../css/style.css">
-</head>
-<body>
-    <div class="container dashboard-card">
-        <h1>📊 Dashboard ICM</h1>
-        <p class="welcome-text">Bem-vindo, <strong id="nomeUsuario"></strong>!</p>
-        
-        <nav class="menu-nav">
-            <a href="lista-presenca.html" class="nav-item">📋 Presença Geral</a>
-            <a href="relatorios-completo.html" class="nav-item">📊 Relatórios Todos Grupos</a>
-            <a href="admin-usuarios.html" class="nav-item">👨‍⚖️ Gerenciar Usuários</a>
-        </nav>
-        
-        <div class="action-footer">
-            <button onclick="mostrarMudarSenha()" class="btn-alt-senha">🔐 Alterar Senha</button>
-            <a href="../index.html" class="btn-sair">🚪 Sair</a>
-        </div>
-
-        <div id="formSenha" class="password-box">
-            <h4>🔐 Alterar Senha</h4>
-            <input type="password" id="novaSenha" placeholder="Nova senha (min. 4 dígitos)">
-            <div class="modal-buttons">
-                <button onclick="confirmarNovaSenha()" class="btn-confirm">Confirmar</button>
-                <button onclick="esconderSenha()" class="btn-cancel">Cancelar</button>
-            </div>
-        </div>
-    </div>
-    
-    <script src="../js/script.js"></script>
+<script src="../js/script.js"></script>
     <script>
-        // Lógica de Autenticação
+        // Verificação de segurança ao carregar a página
         const user = JSON.parse(localStorage.getItem('usuarioLogado'));
+        
         if (!user || !['completa', 'secretaria'].includes(user.permissoes)) {
             window.location.href = '../index.html';
+        } else {
+            document.getElementById('nomeUsuario').textContent = user.nome;
         }
-        document.getElementById('nomeUsuario').textContent = user.nome;
         
         // Funções de Interface
         function mostrarMudarSenha() { 
             document.getElementById('formSenha').style.display = 'block'; 
+            document.getElementById('novaSenha').focus();
         }
         
         function esconderSenha() {
@@ -52,20 +21,21 @@
         }
 
         function confirmarNovaSenha() {
-            const novaSenha = document.getElementById('novaSenha').value;
-            if (novaSenha.length >= 4) {
-                // Tenta chamar a função global do seu script.js
-                if (typeof mudarSenha === 'function') {
-                    mudarSenha(novaSenha); 
+            const campoSenha = document.getElementById('novaSenha');
+            const novaSenhaLimpa = campoSenha.value.trim(); // Proteção contra espaços acidentais
+
+            if (novaSenhaLimpa.length >= 4) {
+                // Chama a função que está no script.js
+                const sucesso = mudarSenha(novaSenhaLimpa); 
+                
+                if (sucesso) {
                     alert('✅ Senha alterada com sucesso!');
                     esconderSenha();
                 } else {
-                    alert('Erro: Função de alteração não encontrada no script.js');
+                    alert('❌ Erro ao atualizar senha. Tente logar novamente.');
                 }
             } else {
-                alert('❌ Mínimo 4 caracteres!');
+                alert('❌ A senha deve ter no mínimo 4 caracteres (sem espaços)!');
             }
         }
     </script>
-</body>
-</html>

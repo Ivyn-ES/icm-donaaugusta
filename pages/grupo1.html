@@ -7,22 +7,24 @@
     <link rel="stylesheet" href="../css/style.css">
 </head>
 <body>
-    <button id="botaoSenha" onclick="mostrarMudarSenha()" title="Mudar Senha">🔐</button>
     <div class="container">
         <h1>👥 Grupo 1 - Vera Cruz</h1>
         <p>Olá, <strong id="nomeUsuario"></strong>!</p>
         <input type="date" id="dataGrupo1" value="2026-02-22">
         <div id="membrosGrupo1"></div>
         <button onclick="salvarGrupo1()">💾 Salvar</button>
-        <h3>📊 Relatório Grupo 1</h3>
+        <h3>📊 Relatório</h3>
         <div id="relatorioGrupo1"></div>
-        <a href="../index.html">🚪 Sair</a>
+        
+        <div style="margin-top:30px;padding:20px;background:#e9ecef;border-radius:10px;">
+            <button onclick="mostrarMudarSenha()" style="background:#007bff;color:white;border:none;padding:12px 24px;border-radius:8px;font-size:16px;">🔐 Alterar Senha</button>
+            <a href="../index.html" style="margin-left:20px;padding:12px 24px;background:#dc3545;color:white;text-decoration:none;border-radius:8px;">🚪 Sair</a>
+        </div>
     </div>
-    <div id="formSenha" style="background:#fff3cd;padding:20px;border-radius:10px;margin:20px;display:none;">
-        <input type="password" id="novaSenha" placeholder="Nova senha">
-        <button onclick="confirmarNovaSenha()">Confirmar</button>
-    </div>
-    <script src="../js/script.js"></script>
-    <script src="grupo1.js"></script>
-</body>
-</html>
+    
+    <div id="formSenha" style="background:#fff3cd;padding:25px;border-radius:15px;margin:20px;max-width:400px;display:none;">
+        <h4>🔐 Alterar Senha</h4>
+        <input type="password" id="novaSenha" placeholder="Nova senha" style="width:100%;padding:15px;margin:10px 0;border-radius:8px;border:2px solid #ddd;">
+        <div>
+            <button onclick="confirmarNovaSenha()" style="background:#28a745;color:white;border:none;padding:12px 24px;border-radius:8px;margin-right:10px;">Confirmar</button>
+            <button onclick="esconderSenha()" style="background:#6c757d;color:white;border

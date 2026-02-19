@@ -3,37 +3,39 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Presença Geral - Secretário</title>
+    <title>Presença Geral - ICM</title>
     <link rel="stylesheet" href="../css/style.css">
 </head>
 <body>
-    <button id="botaoSenha" onclick="mostrarMudarSenha()" title="Mudar Senha">🔐</button>
     <div class="container">
         <h1>📋 Presença Geral - ICM Dona Augusta</h1>
         <p>Olá, <strong id="nomeUsuario"></strong>!</p>
-        
-        <h3>📅 Data do Culto</h3>
+        <h3>📅 Data</h3>
         <input type="date" id="dataCulto" value="2026-02-22">
-        
         <h3>👥 Membros</h3>
         <div id="membrosLista"></div>
-        
         <h3>👤 Visitantes</h3>
         <input type="text" id="novoVisitante" placeholder="Nome do visitante">
-        <button onclick="adicionarVisitante()">➕ Adicionar</button>
+        <button onclick="adicionarVisitante()">➕</button>
         <div id="visitantesLista"></div>
-        
-        <button onclick="salvarTodasPresencas()" style="background:#28a745;color:white;font-size:18px;padding:20px;width:100%;margin:20px 0;">💾 SALVAR TODAS AS PRESENÇAS</button>
-        
-        <h3>📊 Resumo do Dia</h3>
+        <button onclick="salvarTodasPresencas()" style="background:#28a745;color:white;font-size:18px;padding:20px;width:100%;margin:20px 0;">💾 SALVAR</button>
+        <h3>📊 Resumo</h3>
         <div id="resumoDia"></div>
         
-        <a href="dashboard.html">← Dashboard</a> | <a href="../index.html">🚪 Sair</a>
+        <div style="margin-top:30px;padding:20px;background:#e9ecef;border-radius:10px;">
+            <button onclick="mostrarMudarSenha()" style="background:#007bff;color:white;border:none;padding:12px 24px;border-radius:8px;font-size:16px;">🔐 Alterar Senha</button>
+            <a href="dashboard.html" style="margin-left:20px;padding:12px 24px;background:#6c757d;color:white;text-decoration:none;border-radius:8px;">← Dashboard</a>
+            <a href="../index.html" style="margin-left:10px;padding:12px 24px;background:#dc3545;color:white;text-decoration:none;border-radius:8px;">🚪 Sair</a>
+        </div>
     </div>
     
-    <div id="formSenha" style="background:#fff3cd;padding:20px;border-radius:10px;margin:20px;display:none;">
-        <input type="password" id="novaSenha" placeholder="Nova senha">
-        <button onclick="confirmarNovaSenha()">Confirmar</button>
+    <div id="formSenha" style="background:#fff3cd;padding:25px;border-radius:15px;margin:20px;max-width:400px;display:none;">
+        <h4>🔐 Alterar Senha</h4>
+        <input type="password" id="novaSenha" placeholder="Nova senha" style="width:100%;padding:15px;margin:10px 0;border-radius:8px;border:2px solid #ddd;">
+        <div>
+            <button onclick="confirmarNovaSenha()" style="background:#28a745;color:white;border:none;padding:12px 24px;border-radius:8px;margin-right:10px;">Confirmar</button>
+            <button onclick="esconderSenha()" style="background:#6c757d;color:white;border:none;padding:12px 24px;border-radius:8px;">Cancelar</button>
+        </div>
     </div>
     
     <script src="../js/script.js"></script>

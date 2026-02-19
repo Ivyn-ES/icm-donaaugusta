@@ -7,43 +7,47 @@
     <link rel="stylesheet" href="../css/style.css">
 </head>
 <body>
-    <div class="container admin-card">
+    <div class="container">
         <h1>👨‍⚖️ Gerenciar Usuários</h1>
         
-        <div class="add-user-box">
+        <div class="add-user-box" style="margin-bottom: 20px; padding: 15px; border: 1px solid #ccc;">
             <h3>Novo Usuário</h3>
-            <input type="text" id="novoNome" placeholder="Nome de usuário (ex: joao)">
-            <input type="password" id="novaSenhaUser" placeholder="Senha (mín. 4 dígitos)">
+            <input type="text" id="novoNome" placeholder="Usuário (Ex: joao)">
+            <input type="password" id="novaSenhaUser" placeholder="Senha">
             <select id="novaPermissao">
-                <option value="basica">Básica (Membro)</option>
-                <option value="grupo1">Responsável Grupo 1</option>
-                <option value="grupo2">Responsável Grupo 2</option>
+                <option value="basica">Membro</option>
+                <option value="grupo1">Grupo 1</option>
+                <option value="grupo2">Grupo 2</option>
                 <option value="secretaria">Secretaria</option>
-                <option value="completa">Administrador (Pastor)</option>
+                <option value="completa">Administrador</option>
             </select>
-            <button onclick="adicionarNovoUsuario()" class="btn-confirm">Adicionar Usuário</button>
+            <button onclick="adicionarNovoUsuario()">Adicionar</button>
         </div>
 
-        <hr>
+        <ul id="listaUsuarios"></ul>
 
-        <h3>Usuários Cadastrados</h3>
-        <ul id="listaUsuarios" class="user-list">
-            </ul>
-
-        <div class="action-footer">
-            <a href="dashboard.html" class="btn-cancel">⬅ Voltar ao Dashboard</a>
+        <div style="margin-top: 20px;">
+            <a href="dashboard.html">⬅ Voltar</a>
         </div>
     </div>
 
     <script src="../js/script.js"></script>
     <script src="admin-usuarios.js"></script>
+    
     <script>
-        // Proteção de rota imediata
-        const logado = JSON.parse(localStorage.getItem('usuarioLogado'));
-        if (!logado || logado.permissoes !== 'completa') {
-            alert('Acesso negado! Apenas administradores.');
-            window.location.href = 'dashboard.html';
-        }
+        // Verificação de segurança simplificada para evitar tela branca
+        (function() {
+            const data = localStorage.getItem('usuarioLogado');
+            if (!data) {
+                window.location.href = '../index.html';
+                return;
+            }
+            const u = JSON.parse(data);
+            if (u.permissoes !== 'completa') {
+                alert('Acesso restrito');
+                window.location.href = 'dashboard.html';
+            }
+        })();
     </script>
 </body>
 </html>

@@ -1,5 +1,9 @@
+// pages/admin-usuarios.js
+
 document.addEventListener('DOMContentLoaded', () => {
-    renderizarLista();
+    if (typeof renderizarLista === 'function') {
+        renderizarLista();
+    }
 });
 
 function renderizarLista() {
@@ -7,71 +11,42 @@ function renderizarLista() {
     if (!listaUl) return;
 
     listaUl.innerHTML = '';
+    
+    // Usamos window.todosUsuarios que vem do script.js
+    const users = window.todosUsuarios;
 
-    // "todosUsuarios" vem do script.js que foi carregado antes
-    Object.keys(todosUsuarios).forEach(username => {
-        const user = todosUsuarios[username];
-        
+    Object.keys(users).forEach(username => {
         const li = document.createElement('li');
-        li.className = 'user-item';
+        li.style.marginBottom = "10px";
         li.innerHTML = `
-            <div class="user-info">
-                <strong>${username}</strong> 
-                <span>Tipo: ${user.permissoes}</span>
-            </div>
-            <button onclick="removerUsuario('${username}')" class="btn-delete">❌ Excluir</button>
+            <strong>${username}</strong> (${users[username].permissoes})
+            <button onclick="removerUsuario('${username}')" style="margin-left:10px">Remover</button>
         `;
         listaUl.appendChild(li);
     });
 }
 
 function adicionarNovoUsuario() {
-    const nomeInput = document.getElementById('novoNome').value.trim().toLowerCase();
-    const senhaInput = document.getElementById('novaSenhaUser').value.trim();
-    const permInput = document.getElementById('novaPermissao').value;
+    const nome = document.getElementById('novoNome').value.trim().toLowerCase();
+    const senha = document.getElementById('novaSenhaUser').value.trim();
+    const perm = document.getElementById('novaPermissao').value;
 
-    if (nomeInput === "" || senhaInput === "") {
-        alert("Preencha o nome e a senha!");
+    if (!nome || !senha) {
+        alert("Preencha tudo!");
         return;
     }
 
-    if (senhaInput.length < 4) {
-        alert("A senha precisa ter no mínimo 4 caracteres!");
-        return;
-    }
-
-    if (todosUsuarios[nomeInput]) {
-        alert("Este usuário já existe!");
-        return;
-    }
-
-    // Adiciona ao objeto que está na memória
-    todosUsuarios[nomeInput] = {
-        senha: senhaInput,
-        permissoes: permInput
-    };
-
-    // Salva no LocalStorage (usando a função do script.js)
-    atualizarBanco();
-    
-    // Limpa os campos e atualiza a tela
-    document.getElementById('novoNome').value = '';
-    document.getElementById('novaSenhaUser').value = '';
+    window.todosUsuarios[nome] = { senha: senha, permissoes: perm };
+    atualizarBanco(); // Função global do script.js
     renderizarLista();
     
-    alert(`Usuário ${nomeInput} criado com sucesso!`);
+    document.getElementById('novoNome').value = '';
+    document.getElementById('novaSenhaUser').value = '';
 }
 
 function removerUsuario(nome) {
-    // Proteção para não excluir o próprio pastor logado por acidente
-    const logado = JSON.parse(localStorage.getItem('usuarioLogado'));
-    if (nome === logado.nome) {
-        alert("Você não pode excluir seu próprio usuário!");
-        return;
-    }
-
-    if (confirm(`Tem certeza que deseja remover o usuário: ${nome}?`)) {
-        delete todosUsuarios[nome];
+    if (confirm(`Excluir ${nome}?`)) {
+        delete window.todosUsuarios[nome];
         atualizarBanco();
         renderizarLista();
     }

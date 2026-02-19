@@ -11,11 +11,14 @@
         <h1>📊 Dashboard Completo ICM Dona Augusta</h1>
         <p>Olá, <strong id="nomeUsuario"></strong>!</p>
         
-        <nav>
-            <a href="lista-presenca.html">📋 Presença Geral</a>
-            <a href="relatorios-completo.html">📊 Relatórios Todos Grupos</a>
-            <a href="admin-usuarios.html">👨‍⚖️ Gerenciar Usuários e Grupos</a>
-        </nav>
+<nav style="display: flex; justify-content: flex-end;">
+    <a href="lista-presenca.html" style="margin-right: 20px;">📋 Presença Geral</a>
+    <a href="relatorios-completo.html" style="margin-right: 20px;">📊 Relatórios Todos Grupos</a>
+    <a href="admin-usuarios.html" style="margin-right: 20px;">👨‍⚖️ Gerenciar Usuários e Grupos</a>
+    <!-- Adicione um id ao botão Alterar Senha -->
+    <button id="botaoAlterarSenha" style="margin-right: 20px;">🔐 Alterar Senha</button>
+    <a href="../index.html" id="botaoSair" style="margin-left: 20px;padding:12px 24px;background:#dc3545;color:white;text-decoration:none;border-radius:8px;">🚪 Sair</a>
+</nav>
         
         <div style="margin-top:30px;padding:20px;background:#e9ecef;border-radius:10px;">
             <button onclick="mostrarMudarSenha()" style="background:#007bff;color:white;border:none;padding:12px 24px;border-radius:8px;font-size:16px;">🔐 Alterar Senha</button>

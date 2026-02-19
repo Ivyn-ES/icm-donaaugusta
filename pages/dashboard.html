@@ -3,19 +3,27 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard Completo</title>
+    <title>Dashboard Completo - ICM</title>
     <link rel="stylesheet" href="../css/style.css">
 </head>
 <body>
     <div class="container">
-        <h1>📊 Dashboard Completo ICM</h1>
+        <h1>📊 Dashboard Completo ICM Dona Augusta</h1>
         <p>Olá, <strong id="nomeUsuario"></strong>!</p>
+        
+        <div style="background:#fff3cd;padding:15px;border-radius:10px;margin:20px 0;">
+            <button onclick="mostrarMudarSenha()" style="background:#007bff;color:white;border:none;padding:10px;border-radius:5px;">🔐 Mudar Minha Senha</button>
+            <div id="formSenha" style="display:none;margin-top:15px;">
+                <input type="password" id="novaSenha" placeholder="Nova senha">
+                <button onclick="confirmarNovaSenha()">Confirmar</button>
+            </div>
+        </div>
         
         <nav>
             <a href="lista-presenca.html">📋 Presença Geral</a>
             <a href="relatorios-completo.html">📊 Relatórios Todos Grupos</a>
-            <a href="admin-usuarios.html">👨‍⚖️ Gerenciar Usuários</a>
-            <a href="logout.html">🚪 Sair</a>
+            <a href="admin-usuarios.html">👨‍⚖️ Gerenciar Usuários e Grupos</a>
+            <a href="../index.html">🚪 Sair</a>
         </nav>
     </div>
     <script src="../js/script.js"></script>

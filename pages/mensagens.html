@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mensagens - ICM Dona Augusta</title>
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>📢 Mensagens ICM Dona Augusta</h1>
+        <p>Olá, <strong id="nomeUsuario"></strong>!</p>
+        
+        <div style="background:#f0f8ff;padding:15px;border-radius:10px;margin:20px 0;">
+            <button onclick="mostrarMudarSenha()" style="background:#007bff;color:white;border:none;padding:10px;border-radius:5px;">🔐 Mudar Minha Senha</button>
+            <div id="formSenhaMembro" style="display:none;margin-top:15px;">
+                <input type="password" id="novaSenhaMembro" placeholder="Nova senha">
+                <button onclick="confirmarNovaSenhaMembro()">Confirmar</button>
+            </div>
+        </div>
+        
+        <div id="mensagensLista"></div>
+        <a href="../index.html">🚪 Sair</a>
+    </div>
+    <script src="../js/script.js"></script>
+    <script src="mensagens.js"></script>
+</body>
+</html>

@@ -1,8 +1,10 @@
+// USUÁRIOS COM SENHAS ATUALIZADAS
 const todosUsuarios = JSON.parse(localStorage.getItem('todosUsuarios')) || {
-    'pastor': { senha: '1234', permissoes: 'completa' },
-    'secretario': { senha: '1234', permissoes: 'secretaria' },
-    'resp-grupo1': { senha: '1234', permissoes: 'grupo1' },
-    'resp-grupo2': { senha: '1234', permissoes: 'grupo2' }
+    'pastor': { senha: 'pr1234', permissoes: 'completa' },
+    'secretario': { senha: 'sc1234', permissoes: 'secretaria' },
+    'resp-grupo1': { senha: 'g1234', permissoes: 'grupo1' },
+    'resp-grupo2': { senha: 'g2345', permissoes: 'grupo2' },
+    'membro': { senha: 'm1234', permissoes: 'basica' }
 };
 
 document.getElementById('loginForm').addEventListener('submit', function(e) {
@@ -17,16 +19,28 @@ document.getElementById('loginForm').addEventListener('submit', function(e) {
             permissoes: todosUsuarios[usuario].permissoes
         }));
         
-        // 🔄 REDIRECIONAMENTO AUTOMÁTICO:
-        if (usuario === 'pastor' || usuario === 'secretario') {
-            window.location.href = 'pages/dashboard.html'; // TUDO
+        // REDIRECIONAMENTO AUTOMÁTICO
+        if (['pastor', 'secretario'].includes(usuario)) {
+            window.location.href = 'pages/dashboard.html';
         } else if (usuario === 'resp-grupo1') {
-            window.location.href = 'pages/grupo1.html';    // Só Grupo 1
+            window.location.href = 'pages/grupo1.html';
         } else if (usuario === 'resp-grupo2') {
-            window.location.href = 'pages/grupo2.html';    // Só Grupo 2
+            window.location.href = 'pages/grupo2.html';
+        } else {
+            window.location.href = 'pages/mensagens.html';
         }
     } else {
         mensagem.textContent = '❌ Usuário ou senha errados!';
         mensagem.style.color = 'red';
     }
 });
+
+// Função global para MUDAR SENHA
+function mudarSenha(novaSenha) {
+    const user = JSON.parse(localStorage.getItem('usuarioLogado'));
+    if (user) {
+        todosUsuarios[user.nome].senha = novaSenha;
+        localStorage.setItem('todosUsuarios', JSON.stringify(todosUsuarios));
+        alert('✅ Senha alterada com sucesso!');
+    }
+}

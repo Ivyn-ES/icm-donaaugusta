@@ -107,3 +107,56 @@ h1 { color: #2d3436; margin-bottom: 0.5rem; font-size: 1.6rem; }
 
 .btn-confirm { background: #28a745; color: white; border: none; padding: 10px; border-radius: 5px; flex: 1; cursor: pointer; }
 .btn-cancel { background: #6c757d; color: white; border: none; padding: 10px; border-radius: 5px; flex: 1; cursor: pointer; }
+
+/* --- ESTILOS EXCLUSIVOS DO LOGIN --- */
+.login-header {
+    margin-bottom: 25px;
+}
+
+.login-header p {
+    color: #636e72;
+    font-size: 0.9rem;
+    margin-top: 5px;
+}
+
+.login-form {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.btn-login {
+    background: #667eea;
+    color: white;
+    border: none;
+    padding: 15px;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background 0.3s, transform 0.2s;
+    margin-top: 10px;
+}
+
+.btn-login:hover {
+    background: #5a67d8;
+    transform: translateY(-2px);
+}
+
+.btn-login:active {
+    transform: translateY(0);
+}
+
+.error-msg {
+    margin-top: 15px;
+    font-size: 14px;
+    color: #dc3545;
+    min-height: 20px; /* Evita que o layout "pule" quando a mensagem aparece */
+}
+
+.version-tag {
+    margin-top: 25px;
+    padding-top: 15px;
+    border-top: 1px solid #eee;
+    color: #b2bec3;
+}

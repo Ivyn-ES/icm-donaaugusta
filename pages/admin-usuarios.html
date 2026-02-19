@@ -3,58 +3,47 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin - ICM Dona Augusta</title>
+    <title>Gerenciar Usuários - ICM</title>
     <link rel="stylesheet" href="../css/style.css">
 </head>
 <body>
-    <button id="botaoSenha" onclick="mostrarMudarSenha()" title="Mudar Senha">🔐</button>
-    <div class="container">
-        <h1>👨‍⚖️ Administração ICM Dona Augusta</h1>
-        <p>Olá, <strong id="nomeAdmin"></strong>!</p>
+    <div class="container admin-card">
+        <h1>👨‍⚖️ Gerenciar Usuários</h1>
         
-        <!-- NOVO USUÁRIO -->
-        <h3>➕ Novo Usuário</h3>
-        <form id="novoUsuario">
-            <input type="text" id="novoNome" placeholder="Nome do usuário" required>
-            <input type="password" id="novaSenha" placeholder="Senha" required>
-            <select id="novaPermissao" required>
-                <option value="">Escolha permissão</option>
-                <option value="completa">👨‍⚖️ Completa (Pastor)</option>
-                <option value="secretaria">👩‍💼 Secretária</option>
-                <option value="grupo1">👥 Grupo 1</option>
-                <option value="grupo2">👥 Grupo 2</option>
-                <option value="basica">🙏 Membro</option>
+        <div class="add-user-box">
+            <h3>Novo Usuário</h3>
+            <input type="text" id="novoNome" placeholder="Nome de usuário (ex: joao)">
+            <input type="password" id="novaSenhaUser" placeholder="Senha (mín. 4 dígitos)">
+            <select id="novaPermissao">
+                <option value="basica">Básica (Membro)</option>
+                <option value="grupo1">Responsável Grupo 1</option>
+                <option value="grupo2">Responsável Grupo 2</option>
+                <option value="secretaria">Secretaria</option>
+                <option value="completa">Administrador (Pastor)</option>
             </select>
-            <button type="submit">Adicionar</button>
-        </form>
-
-        <!-- USUÁRIOS -->
-        <h3>📋 Usuários Cadastrados</h3>
-        <div id="listaUsuarios"></div>
-
-        <!-- GRUPOS -->
-        <h3>👥 Gerenciar Grupos</h3>
-        <button onclick="mostrarFormGrupo()">➕ Novo Grupo</button>
-        <div id="formGrupos" style="display:none; background:#f0f8ff; padding:20px; border-radius:10px; margin:15px 0;">
-            <h4>Novo Grupo</h4>
-            <input type="text" id="nomeGrupo" placeholder="Nome (ex: Grupo 3 Mulheres)">
-            <input type="text" id="bairroGrupo" placeholder="Bairro/Local">
-            <input type="text" id="membrosNovos" placeholder="Membros (João, Maria, Pedro)">
-            <button onclick="criarNovoGrupo()">Criar Grupo</button>
-            <button onclick="cancelarNovoGrupo()">Cancelar</button>
+            <button onclick="adicionarNovoUsuario()" class="btn-confirm">Adicionar Usuário</button>
         </div>
-        <h4>Grupos Existentes:</h4>
-        <div id="listaGrupos"></div>
 
-        <a href="dashboard.html">← Dashboard</a> | <a href="../index.html">🚪 Sair</a>
+        <hr>
+
+        <h3>Usuários Cadastrados</h3>
+        <ul id="listaUsuarios" class="user-list">
+            </ul>
+
+        <div class="action-footer">
+            <a href="dashboard.html" class="btn-cancel">⬅ Voltar ao Dashboard</a>
+        </div>
     </div>
-    
-    <div id="formSenha" style="background:#fff3cd;padding:20px;border-radius:10px;margin:20px;display:none;">
-        <input type="password" id="novaSenhaAdmin" placeholder="Nova senha">
-        <button onclick="confirmarNovaSenhaAdmin()">Confirmar</button>
-    </div>
-    
+
     <script src="../js/script.js"></script>
     <script src="admin-usuarios.js"></script>
+    <script>
+        // Proteção de rota imediata
+        const logado = JSON.parse(localStorage.getItem('usuarioLogado'));
+        if (!logado || logado.permissoes !== 'completa') {
+            alert('Acesso negado! Apenas administradores.');
+            window.location.href = 'dashboard.html';
+        }
+    </script>
 </body>
 </html>

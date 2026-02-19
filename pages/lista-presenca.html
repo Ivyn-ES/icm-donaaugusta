@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Presença Geral - Secretário</title>
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+    <button id="botaoSenha" onclick="mostrarMudarSenha()" title="Mudar Senha">🔐</button>
+    <div class="container">
+        <h1>📋 Presença Geral - ICM Dona Augusta</h1>
+        <p>Olá, <strong id="nomeUsuario"></strong>!</p>
+        
+        <h3>📅 Data do Culto</h3>
+        <input type="date" id="dataCulto" value="2026-02-22">
+        
+        <h3>👥 Membros</h3>
+        <div id="membrosLista"></div>
+        
+        <h3>👤 Visitantes</h3>
+        <input type="text" id="novoVisitante" placeholder="Nome do visitante">
+        <button onclick="adicionarVisitante()">➕ Adicionar</button>
+        <div id="visitantesLista"></div>
+        
+        <button onclick="salvarTodasPresencas()" style="background:#28a745;color:white;font-size:18px;padding:20px;width:100%;margin:20px 0;">💾 SALVAR TODAS AS PRESENÇAS</button>
+        
+        <h3>📊 Resumo do Dia</h3>
+        <div id="resumoDia"></div>
+        
+        <a href="dashboard.html">← Dashboard</a> | <a href="../index.html">🚪 Sair</a>
+    </div>
+    
+    <div id="formSenha" style="background:#fff3cd;padding:20px;border-radius:10px;margin:20px;display:none;">
+        <input type="password" id="novaSenha" placeholder="Nova senha">
+        <button onclick="confirmarNovaSenha()">Confirmar</button>
+    </div>
+    
+    <script src="../js/script.js"></script>
+    <script src="lista-presenca.js"></script>
+</body>
+</html>

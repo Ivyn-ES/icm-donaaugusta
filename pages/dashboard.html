@@ -7,17 +7,10 @@
     <link rel="stylesheet" href="../css/style.css">
 </head>
 <body>
+    <button id="botaoSenha" onclick="mostrarMudarSenha()" title="Mudar Senha">🔐</button>
     <div class="container">
         <h1>📊 Dashboard Completo ICM Dona Augusta</h1>
         <p>Olá, <strong id="nomeUsuario"></strong>!</p>
-        
-        <div style="background:#fff3cd;padding:15px;border-radius:10px;margin:20px 0;">
-            <button onclick="mostrarMudarSenha()" style="background:#007bff;color:white;border:none;padding:10px;border-radius:5px;">🔐 Mudar Minha Senha</button>
-            <div id="formSenha" style="display:none;margin-top:15px;">
-                <input type="password" id="novaSenha" placeholder="Nova senha">
-                <button onclick="confirmarNovaSenha()">Confirmar</button>
-            </div>
-        </div>
         
         <nav>
             <a href="lista-presenca.html">📋 Presença Geral</a>
@@ -25,6 +18,10 @@
             <a href="admin-usuarios.html">👨‍⚖️ Gerenciar Usuários e Grupos</a>
             <a href="../index.html">🚪 Sair</a>
         </nav>
+    </div>
+    <div id="formSenha" style="background:#fff3cd;padding:20px;border-radius:10px;margin:20px;display:none;">
+        <input type="password" id="novaSenha" placeholder="Nova senha">
+        <button onclick="confirmarNovaSenha()">Confirmar</button>
     </div>
     <script src="../js/script.js"></script>
     <script src="dashboard-completo.js"></script>

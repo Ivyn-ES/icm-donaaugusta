@@ -12,8 +12,7 @@ body {
     padding: 2rem;
     border-radius: 15px;
     box-shadow: 0 15px 35px rgba(0,0,0,0.3);
-    width: 90%;
-    max-width: 450px;
+    width: 90%; max-width: 450px;
     text-align: center;
 }
 h1 { color: #333; margin-bottom: 1.5rem; font-size: 1.8rem; }
@@ -30,9 +29,22 @@ button {
 }
 button:hover { background: #5a67d8; }
 nav a {
-    display: block; margin: 10px 0; padding: 12px;
+    display: block; margin: 10px 0; padding: 15px;
     background: #f8f9fa; text-decoration: none;
     color: #333; border-radius: 8px; transition: background 0.3s;
 }
 nav a:hover { background: #e9ecef; }
 #mensagem { margin-top: 1rem; font-weight: bold; }
+
+/* 👇 BOTÃO FLUTUANTE SENHA */
+#botaoSenha {
+    position: fixed; top: 20px; right: 20px;
+    background: #007bff; color: white; border: none;
+    padding: 12px 20px; border-radius: 25px; cursor: pointer;
+    z-index: 1000; font-size: 14px; box-shadow: 0 4px 12px rgba(0,123,255,0.4);
+}
+#botaoSenha:hover { background: #0056b3; transform: scale(1.05); }
+#formSenha {
+    background: #fff3cd; padding: 20px; border-radius: 10px; margin: 20px 0;
+    display: none;
+}

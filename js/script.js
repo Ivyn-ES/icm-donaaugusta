@@ -1,4 +1,3 @@
-// USUÁRIOS COM SENHAS ATUALIZADAS
 const todosUsuarios = JSON.parse(localStorage.getItem('todosUsuarios')) || {
     'pastor': { senha: 'pr1234', permissoes: 'completa' },
     'secretario': { senha: 'sc1234', permissoes: 'secretaria' },
@@ -19,7 +18,6 @@ document.getElementById('loginForm').addEventListener('submit', function(e) {
             permissoes: todosUsuarios[usuario].permissoes
         }));
         
-        // REDIRECIONAMENTO AUTOMÁTICO
         if (['pastor', 'secretario'].includes(usuario)) {
             window.location.href = 'pages/dashboard.html';
         } else if (usuario === 'resp-grupo1') {
@@ -35,12 +33,13 @@ document.getElementById('loginForm').addEventListener('submit', function(e) {
     }
 });
 
-// Função global para MUDAR SENHA
 function mudarSenha(novaSenha) {
     const user = JSON.parse(localStorage.getItem('usuarioLogado'));
-    if (user) {
+    if (user && novaSenha.length >= 4) {
         todosUsuarios[user.nome].senha = novaSenha;
         localStorage.setItem('todosUsuarios', JSON.stringify(todosUsuarios));
         alert('✅ Senha alterada com sucesso!');
+        return true;
     }
+    return false;
 }

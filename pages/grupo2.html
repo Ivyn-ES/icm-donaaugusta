@@ -7,20 +7,20 @@
     <link rel="stylesheet" href="../css/style.css">
 </head>
 <body>
+    <button id="botaoSenha" onclick="mostrarMudarSenha()" title="Mudar Senha">🔐</button>
     <div class="container">
         <h1>👥 Grupo 2 - Jardim América</h1>
         <p>Olá, <strong id="nomeUsuario"></strong>!</p>
-        
-        <h3>📋 Lançar Presença - Grupo 2</h3>
         <input type="date" id="dataGrupo2" value="2026-02-22">
-        
         <div id="membrosGrupo2"></div>
         <button onclick="salvarGrupo2()">💾 Salvar</button>
-        
         <h3>📊 Relatório Grupo 2</h3>
         <div id="relatorioGrupo2"></div>
-        
-        <a href="logout.html">🚪 Sair</a>
+        <a href="../index.html">🚪 Sair</a>
+    </div>
+    <div id="formSenha" style="background:#fff3cd;padding:20px;border-radius:10px;margin:20px;display:none;">
+        <input type="password" id="novaSenha" placeholder="Nova senha">
+        <button onclick="confirmarNovaSenha()">Confirmar</button>
     </div>
     <script src="../js/script.js"></script>
     <script src="grupo2.js"></script>

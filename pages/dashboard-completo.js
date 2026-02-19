@@ -11,8 +11,7 @@ function mostrarMudarSenha() {
 
 function confirmarNovaSenha() {
     const novaSenha = document.getElementById('novaSenha').value;
-    if (novaSenha.length >= 4) {
-        mudarSenha(novaSenha);
+    if (mudarSenha(novaSenha)) {
         document.getElementById('formSenha').style.display = 'none';
         document.getElementById('novaSenha').value = '';
     } else {

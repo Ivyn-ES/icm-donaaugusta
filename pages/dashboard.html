@@ -25,7 +25,7 @@
     
     <div id="formSenha" style="background:#fff3cd;padding:25px;border-radius:15px;margin:20px;max-width:400px;display:none;">
         <h4>🔐 Alterar Senha</h4>
-        <input type="password" id="novaSenha" placeholder="Digite sua nova senha" style="width:100%;padding:35px;margin:10px 0;border-radius:8px;border:2px solid #ddd;">
+        <input type="password" id="novaSenha" placeholder="Digite sua nova senha" style="width:100%;padding:15px;margin:10px 0;border-radius:8px;border:2px solid #ddd;">
         <div>
             <button onclick="confirmarNovaSenha()" style="background:#28a745;color:white;border:none;padding:12px 24px;border-radius:8px;margin-right:10px;">Confirmar</button>
             <button onclick="esconderSenha()" style="background:#6c757d;color:white;border:none;padding:12px 24px;border-radius:8px;">Cancelar</button>
@@ -39,4 +39,22 @@
         document.getElementById('nomeUsuario').textContent = user.nome;
         
         function mostrarMudarSenha() { document.getElementById('formSenha').style.display = 'block'; }
-        function confi
+        function confirmarNovaSenha() {
+            const novaSenha = document.getElementById('novaSenha').value;
+            if (novaSenha.length >= 4) {
+                if (window.parent.mudarSenha) {
+                    if (window.parent.mudarSenha(novaSenha)) {
+                        document.getElementById('formSenha').style.display = 'none';
+                        document.getElementById('novaSenha').value = '';
+                        alert('✅ Senha alterada!');
+                    }
+                }
+            } else alert('❌ Mínimo 4 caracteres!');
+        }
+        function esconderSenha() {
+            document.getElementById('formSenha').style.display = 'none';
+            document.getElementById('novaSenha').value = '';
+        }
+    </script>
+</body>
+</html>

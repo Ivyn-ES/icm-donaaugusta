@@ -1,52 +1,109 @@
+/* Reset e Base */
 * { margin: 0; padding: 0; box-sizing: border-box; }
+
 body {
-    font-family: Arial, sans-serif;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     min-height: 100vh;
     display: flex;
     justify-content: center;
     align-items: center;
+    padding: 20px;
 }
-.login-container, .container {
+
+/* Container Principal */
+.container {
     background: white;
-    padding: 2rem;
-    border-radius: 15px;
-    box-shadow: 0 15px 35px rgba(0,0,0,0.3);
-    width: 90%; max-width: 450px;
+    padding: 2.5rem;
+    border-radius: 20px;
+    box-shadow: 0 15px 35px rgba(0,0,0,0.2);
+    width: 100%;
+    max-width: 500px;
     text-align: center;
 }
-h1 { color: #333; margin-bottom: 1.5rem; font-size: 1.8rem; }
-input {
-    width: 100%; padding: 15px; margin: 10px 0;
-    border: 2px solid #ddd; border-radius: 8px;
-    font-size: 16px; transition: border 0.3s;
-}
-input:focus { border-color: #667eea; outline: none; }
-button {
-    width: 100%; padding: 15px; background: #667eea;
-    color: white; border: none; border-radius: 8px;
-    font-size: 16px; cursor: pointer; transition: background 0.3s;
-}
-button:hover { background: #5a67d8; }
-nav a {
-    display: block; margin: 10px 0; padding: 15px;
-    background: #f8f9fa; text-decoration: none;
-    color: #333; border-radius: 8px; transition: background 0.3s;
-}
-nav a:hover { background: #e9ecef; }
-#mensagem { margin-top: 1rem; font-weight: bold; }
 
-/* 👇 BOTÃO FLUTUANTE SENHA */
-#botaoSenha {
-    position: fixed; top: 10px; right: 20px;
-    background: #007bff; color: white; border: none;
-    padding: 12px 20px; border-radius: 25px; cursor: pointer;
-    z-index: 1000; font-size: 14px; box-shadow: 0 4px 12px rgba(0,123,255,0.4);
-}
-#botaoSenha:hover { background: #0056b3; transform: scale(1.05); }
-#formSenha {
-    background: #fff3cd; padding: 20px; border-radius: 10px; margin: 20px 0;
-    display: none;
+h1 { color: #2d3436; margin-bottom: 0.5rem; font-size: 1.6rem; }
+.welcome-text { color: #636e72; margin-bottom: 2rem; }
+
+/* Menu de Navegação */
+.menu-nav { display: flex; flex-direction: column; gap: 12px; }
+
+.nav-item {
+    display: block;
+    padding: 15px;
+    background: #f1f2f6;
+    text-decoration: none;
+    color: #2d3436;
+    border-radius: 12px;
+    font-weight: 500;
+    transition: all 0.3s ease;
 }
 
+.nav-item:hover {
+    background: #dfe4ea;
+    transform: translateY(-2px);
+}
 
+/* --- ÁREA DOS BOTÕES (Onde estava o erro) --- */
+.action-footer {
+    margin-top: 30px;
+    padding-top: 20px;
+    border-top: 1px solid #eee;
+    display: flex; /* Alinha lado a lado */
+    gap: 15px;    /* Espaço entre eles */
+}
+
+/* Botão Alterar Senha */
+.btn-alt-senha {
+    flex: 2; /* Fica um pouco maior que o sair */
+    background: #007bff;
+    color: white;
+    border: none;
+    padding: 12px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: 0.3s;
+}
+
+/* Botão Sair */
+.btn-sair {
+    flex: 1; /* Fica menor */
+    background: #dc3545;
+    color: white;
+    text-decoration: none;
+    padding: 12px;
+    border-radius: 10px;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: 0.3s;
+}
+
+.btn-alt-senha:hover, .btn-sair:hover { opacity: 0.85; }
+
+/* Formulário de Senha */
+.password-box {
+    margin-top: 20px;
+    background: #fff9e6;
+    padding: 20px;
+    border-radius: 15px;
+    display: none; /* Escondido por padrão */
+    border: 1px solid #ffeaa7;
+}
+
+.password-box h4 { margin-bottom: 10px; color: #856404; }
+
+.password-box input {
+    width: 100%;
+    padding: 12px;
+    margin-bottom: 15px;
+    border: 2px solid #ddd;
+    border-radius: 8px;
+}
+
+.modal-buttons { display: flex; gap: 10px; }
+
+.btn-confirm { background: #28a745; color: white; border: none; padding: 10px; border-radius: 5px; flex: 1; cursor: pointer; }
+.btn-cancel { background: #6c757d; color: white; border: none; padding: 10px; border-radius: 5px; flex: 1; cursor: pointer; }

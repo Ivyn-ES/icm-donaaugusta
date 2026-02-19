@@ -1,41 +1,53 @@
 <script src="../js/script.js"></script>
-    <script>
-        // Verificação de segurança ao carregar a página
-        const user = JSON.parse(localStorage.getItem('usuarioLogado'));
-        
+<script>
+    // Usamos um bloco try/catch para a página não ficar branca se o localStorage estiver vazio
+    try {
+        const userData = localStorage.getItem('usuarioLogado');
+        const user = userData ? JSON.parse(userData) : null;
+
+        // Verifica se o usuário existe e tem permissão
         if (!user || !['completa', 'secretaria'].includes(user.permissoes)) {
+            console.warn("Acesso negado ou usuário não encontrado.");
             window.location.href = '../index.html';
         } else {
-            document.getElementById('nomeUsuario').textContent = user.nome;
+            // Só tenta escrever no HTML se o elemento existir
+            const nomeElemento = document.getElementById('nomeUsuario');
+            if (nomeElemento) {
+                nomeElemento.textContent = user.nome;
+            }
         }
-        
-        // Funções de Interface
-        function mostrarMudarSenha() { 
-            document.getElementById('formSenha').style.display = 'block'; 
-            document.getElementById('novaSenha').focus();
-        }
-        
-        function esconderSenha() {
-            document.getElementById('formSenha').style.display = 'none';
-            document.getElementById('novaSenha').value = '';
-        }
+    } catch (e) {
+        console.error("Erro ao carregar dados do usuário:", e);
+        window.location.href = '../index.html';
+    }
 
-        function confirmarNovaSenha() {
-            const campoSenha = document.getElementById('novaSenha');
-            const novaSenhaLimpa = campoSenha.value.trim(); // Proteção contra espaços acidentais
+    // Funções de Interface permanecem iguais
+    function mostrarMudarSenha() { 
+        const form = document.getElementById('formSenha');
+        if(form) form.style.display = 'block'; 
+    }
+    
+    function esconderSenha() {
+        document.getElementById('formSenha').style.display = 'none';
+        document.getElementById('novaSenha').value = '';
+    }
 
-            if (novaSenhaLimpa.length >= 4) {
-                // Chama a função que está no script.js
-                const sucesso = mudarSenha(novaSenhaLimpa); 
-                
-                if (sucesso) {
+    function confirmarNovaSenha() {
+        const novaSenha = document.getElementById('novaSenha').value.trim();
+        if (novaSenha.length >= 4) {
+            // Verifica se a função existe antes de chamar
+            if (typeof mudarSenha === 'function') {
+                if (mudarSenha(novaSenha)) {
                     alert('✅ Senha alterada com sucesso!');
                     esconderSenha();
                 } else {
-                    alert('❌ Erro ao atualizar senha. Tente logar novamente.');
+                    alert('❌ Erro ao salvar senha.');
                 }
             } else {
-                alert('❌ A senha deve ter no mínimo 4 caracteres (sem espaços)!');
+                alert('Erro crítico: Função mudarSenha não carregada.');
             }
+        } else {
+            alert('❌ Mínimo 4 caracteres!');
         }
-    </script>
+    }
+</script>

@@ -1,53 +1,66 @@
-<script src="../js/script.js"></script>
-<script>
-    // Usamos um bloco try/catch para a página não ficar branca se o localStorage estiver vazio
-    try {
-        const userData = localStorage.getItem('usuarioLogado');
-        const user = userData ? JSON.parse(userData) : null;
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - ICM</title>
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>📊 Dashboard ICM</h1>
+        <p>Bem-vindo, <strong id="nomeUsuario">...</strong>!</p>
+        
+        <nav class="menu-nav">
+            <a href="lista-presenca.html" class="nav-item">📋 Presença</a>
+            <a href="admin-usuarios.html" class="nav-item">👨‍⚖️ Usuários</a>
+        </nav>
+        
+        <button onclick="mostrarMudarSenha()">🔐 Alterar Senha</button>
+        <a href="../index.html">🚪 Sair</a>
 
-        // Verifica se o usuário existe e tem permissão
-        if (!user || !['completa', 'secretaria'].includes(user.permissoes)) {
-            console.warn("Acesso negado ou usuário não encontrado.");
-            window.location.href = '../index.html';
-        } else {
-            // Só tenta escrever no HTML se o elemento existir
-            const nomeElemento = document.getElementById('nomeUsuario');
-            if (nomeElemento) {
-                nomeElemento.textContent = user.nome;
-            }
-        }
-    } catch (e) {
-        console.error("Erro ao carregar dados do usuário:", e);
-        window.location.href = '../index.html';
-    }
+        <div id="formSenha" style="display:none; margin-top:20px;">
+            <input type="password" id="novaSenha" placeholder="Nova senha">
+            <button onclick="confirmarNovaSenha()">Salvar</button>
+        </div>
+    </div>
 
-    // Funções de Interface permanecem iguais
-    function mostrarMudarSenha() { 
-        const form = document.getElementById('formSenha');
-        if(form) form.style.display = 'block'; 
-    }
+    <script src="../js/script.js"></script>
     
-    function esconderSenha() {
-        document.getElementById('formSenha').style.display = 'none';
-        document.getElementById('novaSenha').value = '';
-    }
+    <script>
+        // Verificação robusta
+        window.onload = function() {
+            try {
+                const data = localStorage.getItem('usuarioLogado');
+                if (!data) {
+                    window.location.href = '../index.html';
+                    return;
+                }
+                const user = JSON.parse(data);
+                document.getElementById('nomeUsuario').textContent = user.nome;
+            } catch (e) {
+                console.error("Erro no LocalStorage:", e);
+                window.location.href = '../index.html';
+            }
+        };
 
-    function confirmarNovaSenha() {
-        const novaSenha = document.getElementById('novaSenha').value.trim();
-        if (novaSenha.length >= 4) {
-            // Verifica se a função existe antes de chamar
-            if (typeof mudarSenha === 'function') {
-                if (mudarSenha(novaSenha)) {
-                    alert('✅ Senha alterada com sucesso!');
-                    esconderSenha();
+        function mostrarMudarSenha() { document.getElementById('formSenha').style.display = 'block'; }
+
+        function confirmarNovaSenha() {
+            const nova = document.getElementById('novaSenha').value.trim();
+            if (nova.length >= 4) {
+                // Verificamos se a função mudarSenha existe (veio do script.js)
+                if (typeof mudarSenha === 'function') {
+                    mudarSenha(nova);
+                    alert('Senha alterada!');
+                    document.getElementById('formSenha').style.display = 'none';
                 } else {
-                    alert('❌ Erro ao salvar senha.');
+                    alert('Erro: Arquivo script.js não carregou corretamente.');
                 }
             } else {
-                alert('Erro crítico: Função mudarSenha não carregada.');
+                alert('Mínimo 4 caracteres.');
             }
-        } else {
-            alert('❌ Mínimo 4 caracteres!');
         }
-    }
-</script>
+    </script>
+</body>
+</html>

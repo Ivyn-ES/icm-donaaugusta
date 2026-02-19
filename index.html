@@ -9,14 +9,15 @@
 <body>
     <div class="container login-card">
         <div class="login-header">
-            <span style="font-size: 50px;">🏠</span>
+            <span style="font-size: 50px;">📖</span>
             <h1>ICM Dona Augusta</h1>
-            <p>Acesse o painel administrativo</p>
+            <p>Painel Administrativo</p>
         </div>
 
         <form id="loginForm" class="login-form">
             <div class="input-group">
-                <input type="text" id="usuario" placeholder="Usuário" required>
+                <input type="text" id="usuario" placeholder="Usuário" required 
+                       autocapitalize="none" spellcheck="false" autocomplete="username">
             </div>
             <div class="input-group">
                 <input type="password" id="senha" placeholder="Senha" required>
@@ -28,7 +29,7 @@
         <p id="mensagem" class="error-msg"></p>
 
         <div class="version-tag">
-            <small>Sistema v1.0 — <strong>Teste 4</strong></small>
+            <small>Sistema v1.1 — <strong>Teste 4</strong></small>
         </div>
     </div>
 

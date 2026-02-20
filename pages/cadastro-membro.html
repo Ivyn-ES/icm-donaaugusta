@@ -3,18 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cadastro de Membros - ICM</title>
+    <title>Cadastro - ICM Dona Augusta</title>
     <link rel="stylesheet" href="../css/style.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
     <div class="container">
-        <h1>📝 Cadastro de Membro/Visitante</h1>
+        <h1>📝 Cadastro de Membros</h1>
         
         <form id="formCadastro">
             <div class="campo">
                 <label>Nome Completo:</label>
-                <input type="text" id="nome_completo" required placeholder="Digite o nome completo">
+                <input type="text" id="nome_completo" required>
             </div>
 
             <div class="linha-dupla">
@@ -58,7 +58,7 @@
                 <div class="campo">
                     <label>Aniversário:</label>
                     <div style="display: flex; gap: 5px;">
-                        <input type="number" id="niver_dia" placeholder="Dia" min="1" max="31" style="width: 60px;">
+                        <input type="number" id="niver_dia" placeholder="Dia" min="1" max="31">
                         <select id="niver_mes">
                             <option value="Janeiro">Jan</option>
                             <option value="Fevereiro">Fev</option>
@@ -77,41 +77,38 @@
                 </div>
             </div>
 
-            <button type="submit" class="btn-salvar">Salvar no Banco de Dados</button>
-            <a href="dashboard.html" class="btn-voltar">Voltar</a>
+            <button type="submit" class="btn-salvar">Salvar no Supabase</button>
+            <a href="dashboard.html" class="btn-voltar">⬅ Voltar ao Painel</a>
         </form>
     </div>
 
     <script src="../js/script.js"></script>
     <script>
+        // Proteção: Só entra se estiver logado
+        verificarAcesso();
+
         const form = document.getElementById('formCadastro');
-        
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
-            
             const btn = e.target.querySelector('button');
             btn.disabled = true;
-            btn.innerText = 'Salvando...';
+            btn.innerText = 'Processando...';
 
             const dados = {
-                nome: document.getElementById('nome_completo').value.trim(),
+                nome: document.getElementById('nome_completo').value,
                 situacao: document.getElementById('situacao').value,
                 categoria: document.getElementById('categoria').value,
                 sexo: document.getElementById('sexo').value,
                 grupo: document.getElementById('grupo').value,
-                dia: document.getElementById('niver_dia').value,
+                dia: document.getElementById('niver_dia').value || 0,
                 mes: document.getElementById('niver_mes').value
             };
 
-            // Chama a função que está no seu script.js
-            const sucesso = await cadastrarMembro(dados);
-            
-            if (sucesso) {
-                form.reset();
-            }
-            
+            const ok = await cadastrarMembro(dados);
+            if (ok) form.reset();
+
             btn.disabled = false;
-            btn.innerText = 'Salvar no Banco de Dados';
+            btn.innerText = 'Salvar no Supabase';
         });
     </script>
 </body>

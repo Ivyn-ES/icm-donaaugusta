@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lista de Membros - ICM</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <div class="container-lista">
+        <header style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <button onclick="window.location.href='dashboard.html'" class="btn-voltar">⬅ Voltar</button>
+            <h1>Membros Cadastrados</h1>
+            <button onclick="window.location.href='cadastro-membro.html'" class="btn-novo">+ Novo</button>
+        </header>
+
+        <div class="filtros-lista">
+            <input type="text" id="buscaMembro" placeholder="Pesquisar por nome..." onkeyup="filtrarLista()">
+        </div>
+
+        <div class="tabela-responsiva">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Nome</th>
+                        <th>Cargo</th>
+                        <th>Status</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody id="corpoTabelaMembros">
+                    <tr>
+                        <td colspan="4" style="text-align:center;">Carregando membros...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script src="../js/script.js"></script>
+    <script>
+        // Ao carregar a página:
+        window.onload = async () => {
+            await verificarAcesso(); // Garante que está logado
+            await renderizarListaMembros(); // Função que deve estar no seu script.js
+        };
+
+        // Função de filtro rápido (estilo Access/Excel)
+        function filtrarLista() {
+            const termo = document.getElementById('buscaMembro').value.toLowerCase();
+            const linhas = document.querySelectorAll('#corpoTabelaMembros tr');
+            
+            linhas.forEach(linha => {
+                const nome = linha.cells[0].textContent.toLowerCase();
+                linha.style.display = nome.includes(termo) ? '' : 'none';
+            });
+        }
+    </script>
+</body>
+</html>

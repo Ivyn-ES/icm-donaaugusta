@@ -1,10 +1,9 @@
 // ==========================================
-// 1. CONEXÃO E CHAVES (Configurações de rede)
+// 1. CONEXÃO E CHAVES
 // ==========================================
 const SUPABASE_URL = 'https://pxjczmjhzopfxwlmpjfv.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB4amN6bWpoem9wZnh3bG1wamZ2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE1MjUzMjYsImV4cCI6MjA4NzEwMTMyNn0.OfekQPuYUwsZu5X9_lPDGBbVTZYBvAQ5KdiFx3TFOCY';
 
-// Verificação de segurança: Só inicializa o Supabase se a biblioteca estiver carregada
 let _supabase;
 if (typeof supabase !== 'undefined') {
     _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -14,7 +13,23 @@ if (typeof supabase !== 'undefined') {
 // 2. FUNÇÕES DE BANCO DE DADOS (CRUD)
 // ==========================================
 
-// CREATE: Envia um novo membro para a nuvem
+// BUSCAR: Lista membros (usada na lista e na chamada)
+async function buscarMembrosBanco() {
+    try {
+        const { data, error } = await _supabase
+            .from('membros')
+            .select('*')
+            .order('nome_completo', { ascending: true });
+
+        if (error) throw error;
+        return data || [];
+    } catch (error) {
+        console.error('Erro ao buscar:', error.message);
+        return [];
+    }
+}
+
+// CADASTRAR: Novo membro
 async function cadastrarMembro(dadosMembro) {
     try {
         const { data, error } = await _supabase
@@ -38,86 +53,14 @@ async function cadastrarMembro(dadosMembro) {
     }
 }
 
-// READ: Busca a lista de membros no banco
-async function buscarMembrosBanco() {
-    try {
-        const { data, error } = await _supabase
-            .from('membros')
-            .select('*')
-            .order('nome_completo', { ascending: true });
-
-        if (error) throw error;
-        return data;
-    } catch (error) {
-        console.error('Erro ao buscar:', error.message);
-        return [];
-    }
-}
-
-// ==========================================
-// 3. SISTEMA DE LOGIN E SEGURANÇA
-// ==========================================
-
-// Verifica se o usuário está logado
-function verificarAcesso() {
-    const usuario = JSON.parse(localStorage.getItem('usuarioLogado'));
-    if (!usuario) {
-        // Se não houver usuário, volta para a raiz (index.html)
-        window.location.href = '../index.html';
-    }
-    return usuario;
-}
-
-// Lógica do Formulário de Login (index.html)
-const loginForm = document.getElementById('loginForm');
-if (loginForm) {
-    loginForm.addEventListener('submit', function(e) {
-        e.preventDefault();
-        
-        const userIn = document.getElementById('usuario').value.trim().toLowerCase();
-        const passIn = document.getElementById('senha').value.trim();
-
-        // Tabela de usuários locais (temporária)
-        const usuariosPadrao = {
-            'pastor': { senha: '123', nivel: 'admin' },
-            'secretaria': { senha: '123', nivel: 'admin' },
-            'grupo1': { senha: '123', nivel: 'responsavel', grupo: '01' }
-        };
-
-        if (usuariosPadrao[userIn] && usuariosPadrao[userIn].senha === passIn) {
-            // Salva a sessão no navegador
-            localStorage.setItem('usuarioLogado', JSON.stringify({
-                nome: userIn,
-                nivel: usuariosPadrao[userIn].nivel
-            }));
-            
-            // Redireciona para o dashboard que está dentro da pasta pages/
-            window.location.href = 'pages/dashboard.html';
-        } else {
-            alert('❌ Login falhou! Verifique usuário e senha.');
-        }
-    });
-}
-
-// ==========================================
-// 4. FUNÇÕES DE EDIÇÃO E EXCLUSÃO
-// ==========================================
-
-// DELETE: Remove um membro pelo ID
-// SUBSTITUA a antiga excluirMembro por esta:
+// EXCLUIR: Remove permanentemente
 async function excluirMembro(id) {
     if (confirm("Deseja realmente EXCLUIR este registro? Use isso apenas para erros de cadastro.")) {
-        const motivo = confirm("Atenção: Isso apagará todo o histórico deste membro. Tem certeza absoluta?");
-        
-        if (motivo) {
+        if (confirm("Atenção: Isso apagará todo o histórico deste membro. Tem certeza absoluta?")) {
             try {
-                const { error } = await _supabase
-                    .from('membros')
-                    .delete()
-                    .eq('id', id);
-
+                const { error } = await _supabase.from('membros').delete().eq('id', id);
                 if (error) throw error;
-                alert("Registro apagado permanentemente.");
+                alert("Registro apagado.");
                 location.reload();
             } catch (error) {
                 alert("Erro ao excluir: " + error.message);
@@ -126,7 +69,7 @@ async function excluirMembro(id) {
     }
 }
 
-// UPDATE: Função simples para desativar membro (mudar status)
+// ALTERNAR STATUS: Ativar/Inativar (A "Auditoria" que conversamos)
 async function alternarStatusMembro(id, statusAtual) {
     const novoStatus = statusAtual === 'Ativo' ? 'Inativo' : 'Ativo';
     try {
@@ -143,7 +86,36 @@ async function alternarStatusMembro(id, statusAtual) {
 }
 
 // ==========================================
-// FUNÇÕES DE PRESENÇA (CHAMADA)
+// 3. RENDERIZAÇÃO DE INTERFACE
+// ==========================================
+
+// ESTA É A FUNÇÃO QUE FALTAVA: Preenche a tabela de membros
+async function renderizarListaMembros() {
+    const tabela = document.getElementById('corpoTabelaMembros');
+    if (!tabela) return;
+
+    const membros = await buscarMembrosBanco();
+    tabela.innerHTML = '';
+
+    membros.forEach(membro => {
+        const statusCor = membro.status_registro === 'Ativo' ? '#2ed573' : '#ff4757';
+        
+        tabela.innerHTML += `
+            <tr>
+                <td><strong>${membro.nome_completo}</strong></td>
+                <td>${membro.categoria || 'Membro'}</td>
+                <td><span style="color: ${statusCor}; font-weight: bold;">${membro.status_registro}</span></td>
+                <td>
+                    <button onclick="alternarStatusMembro('${membro.id}', '${membro.status_registro}')" title="Mudar Status">🔄</button>
+                    <button onclick="excluirMembro('${membro.id}')" title="Excluir" style="background:none; border:none; cursor:pointer; font-size:1.2rem;">🗑️</button>
+                </td>
+            </tr>
+        `;
+    });
+}
+
+// ==========================================
+// 4. SISTEMA DE PRESENÇA (CHAMADA)
 // ==========================================
 
 async function salvarPresencas() {
@@ -162,10 +134,7 @@ async function salvarPresencas() {
     });
 
     try {
-        const { error } = await _supabase
-            .from('presencas')
-            .insert(registros);
-
+        const { error } = await _supabase.from('presencas').insert(registros);
         if (error) throw error;
         alert("✅ Chamada salva com sucesso!");
         window.location.href = 'dashboard.html';
@@ -174,18 +143,40 @@ async function salvarPresencas() {
     }
 }
 
-// Função para buscar membros no Supabase
-async function buscarMembrosBanco() {
-    try {
-        const { data, error } = await _supabase
-            .from('membros')
-            .select('*')
-            .order('nome_completo', { ascending: true }); // Organiza de A a Z
+// ==========================================
+// 5. LOGIN E SEGURANÇA
+// ==========================================
 
-        if (error) throw error;
-        return data || [];
-    } catch (error) {
-        console.error("Erro ao buscar membros:", error.message);
-        return [];
+function verificarAcesso() {
+    const usuario = JSON.parse(localStorage.getItem('usuarioLogado'));
+    if (!usuario) {
+        window.location.href = '../index.html';
     }
+    return usuario;
+}
+
+const loginForm = document.getElementById('loginForm');
+if (loginForm) {
+    loginForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        const userIn = document.getElementById('usuario').value.trim().toLowerCase();
+        const passIn = document.getElementById('senha').value.trim();
+
+        const usuariosPadrao = {
+            'pastor': { senha: '123', nivel: 'admin' },
+            'secretaria': { senha: '123', nivel: 'admin' }
+        };
+
+        if (usuariosPadrao[userIn] && usuariosPadrao[userIn].senha === passIn) {
+            localStorage.setItem('usuarioLogado', JSON.stringify({ nome: userIn, nivel: usuariosPadrao[userIn].nivel }));
+            window.location.href = 'pages/dashboard.html';
+        } else {
+            alert('❌ Login falhou!');
+        }
+    });
+}
+
+function logout() {
+    localStorage.removeItem('usuarioLogado');
+    window.location.href = '../index.html';
 }

@@ -98,3 +98,41 @@ if (loginForm) {
         }
     });
 }
+
+// ==========================================
+// 4. FUNÇÕES DE EDIÇÃO E EXCLUSÃO
+// ==========================================
+
+// DELETE: Remove um membro pelo ID
+async function excluirMembro(id) {
+    if (confirm("Tem certeza que deseja excluir este membro?")) {
+        try {
+            const { error } = await _supabase
+                .from('membros')
+                .delete()
+                .eq('id', id); // "eq" significa equal (onde id = id)
+
+            if (error) throw error;
+            alert("Membro removido!");
+            location.reload(); // Recarrega a página para atualizar a lista
+        } catch (error) {
+            alert("Erro ao excluir: " + error.message);
+        }
+    }
+}
+
+// UPDATE: Função simples para desativar membro (mudar status)
+async function alternarStatusMembro(id, statusAtual) {
+    const novoStatus = statusAtual === 'Ativo' ? 'Inativo' : 'Ativo';
+    try {
+        const { error } = await _supabase
+            .from('membros')
+            .update({ status_registro: novoStatus })
+            .eq('id', id);
+
+        if (error) throw error;
+        location.reload();
+    } catch (error) {
+        alert("Erro ao mudar status: " + error.message);
+    }
+}

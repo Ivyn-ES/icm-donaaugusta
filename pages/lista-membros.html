@@ -39,28 +39,31 @@
         verificarAcesso();
 
         // 2. Função que busca os dados no Supabase assim que a página carrega
-        async function carregarMembros() {
-            const lista = await buscarMembrosBanco(); // Chamada para a função no script.js
-            const tabela = document.getElementById('corpoTabela');
-            tabela.innerHTML = ''; // Limpa a tabela antes de preencher
+async function carregarMembros() {
+    const lista = await buscarMembrosBanco();
+    const tabela = document.getElementById('corpoTabela');
+    tabela.innerHTML = '';
 
-            lista.forEach(membro => {
-                const linha = `
-                    <tr style="border-bottom: 1px solid #eee;">
-                        <td style="padding: 10px;">${membro.nome_completo}</td>
-                        <td style="padding: 10px;">${membro.categoria}</td>
-                        <td style="padding: 10px;">${membro.grupo}</td>
-                        <td style="padding: 10px;">
-                            <span style="color: ${membro.status_registro === 'Ativo' ? 'green' : 'red'}">
-                                ${membro.status_registro}
-                            </span>
-                        </td>
-                    </tr>
-                `;
-                tabela.innerHTML += linha;
-            });
-        }
-
+    lista.forEach(membro => {
+        const linha = `
+            <tr style="border-bottom: 1px solid #eee;">
+                <td style="padding: 10px;">${membro.nome_completo}</td>
+                <td style="padding: 10px;">${membro.grupo}</td>
+                <td style="padding: 10px;">
+                    <span style="color: ${membro.status_registro === 'Ativo' ? 'green' : 'red'}">
+                        ${membro.status_registro}
+                    </span>
+                </td>
+                <td style="padding: 10px; display: flex; gap: 5px;">
+                    <button onclick="alternarStatusMembro('${membro.id}', '${membro.status_registro}')" title="Ativar/Desativar" style="cursor:pointer;">🔄</button>
+                    
+                    <button onclick="excluirMembro('${membro.id}')" title="Excluir" style="cursor:pointer; background:#fee; border:1px solid #fcc;">🗑️</button>
+                </td>
+            </tr>
+        `;
+        tabela.innerHTML += linha;
+    });
+}
         // Executa a carga dos dados
         carregarMembros();
 

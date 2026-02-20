@@ -13,57 +13,54 @@ if (typeof supabase !== 'undefined') {
 // 2. SEGURANÇA E ACESSO
 // ==========================================
 
+// VERIFICAÇÃO: Impede acesso de usuários não logados
 function verificarAcesso() {
     const usuario = JSON.parse(localStorage.getItem('usuarioLogado'));
     if (!usuario) {
+        // Se estiver dentro de /pages/, volta um nível para o index
         window.location.href = '../index.html';
         return null;
     }
     return usuario;
 }
 
+// LOGOUT: Limpa a sessão e encerra o sistema
 function logout() {
     localStorage.removeItem('usuarioLogado');
     window.location.href = '../index.html';
 }
 
-// NOVO LOGIN DINÂMICO (Busca na tabela 'usuarios' do Supabase)
+// LOGIN DINÂMICO: Busca credenciais na tabela 'usuarios' do Supabase
 async function realizarLogin(usuarioDigitado, senhaDigitada) {
     try {
+        // .ilike faz a busca ignorar se o usuário digitou maiúsculo ou minúsculo
         const { data, error } = await _supabase
             .from('usuarios')
             .select('*')
-            .eq('login', usuarioDigitado)
+            .ilike('login', usuarioDigitado) 
             .eq('senha', senhaDigitada)
-            .single(); // Esperamos apenas um usuário
+            .single();
 
         if (error || !data) {
+            console.error("Erro Supabase:", error?.message);
             alert('❌ Login falhou! Verifique usuário e senha.');
             return;
         }
 
-        // Salva os dados completos, inclusive o grupo vinculado
+        // SALVAMENTO: Guarda nome, nível (Admin/Master/User) e o Grupo vinculado
         localStorage.setItem('usuarioLogado', JSON.stringify({
             nome: data.login,
             nivel: data.permissao,
             grupo: data.grupo_vinculado 
         }));
         
+        // REDIRECIONAMENTO: Envia para o Dashboard após sucesso
         window.location.href = 'pages/dashboard.html';
-    } catch (err) {
-        console.error("Erro no login:", err);
-    }
-}
 
-// Event Listener para o formulário de login
-const loginForm = document.getElementById('loginForm');
-if (loginForm) {
-    loginForm.addEventListener('submit', function(e) {
-        e.preventDefault();
-        const userIn = document.getElementById('usuario').value.trim().toLowerCase();
-        const passIn = document.getElementById('senha').value.trim();
-        realizarLogin(userIn, passIn);
-    });
+    } catch (err) {
+        console.error("Erro inesperado no sistema:", err);
+        alert('⚠️ Ocorreu um erro ao tentar conectar.');
+    }
 }
 
 // ==========================================

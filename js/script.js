@@ -104,19 +104,24 @@ if (loginForm) {
 // ==========================================
 
 // DELETE: Remove um membro pelo ID
+// SUBSTITUA a antiga excluirMembro por esta:
 async function excluirMembro(id) {
-    if (confirm("Tem certeza que deseja excluir este membro?")) {
-        try {
-            const { error } = await _supabase
-                .from('membros')
-                .delete()
-                .eq('id', id); // "eq" significa equal (onde id = id)
+    if (confirm("Deseja realmente EXCLUIR este registro? Use isso apenas para erros de cadastro.")) {
+        const motivo = confirm("Atenção: Isso apagará todo o histórico deste membro. Tem certeza absoluta?");
+        
+        if (motivo) {
+            try {
+                const { error } = await _supabase
+                    .from('membros')
+                    .delete()
+                    .eq('id', id);
 
-            if (error) throw error;
-            alert("Membro removido!");
-            location.reload(); // Recarrega a página para atualizar a lista
-        } catch (error) {
-            alert("Erro ao excluir: " + error.message);
+                if (error) throw error;
+                alert("Registro apagado permanentemente.");
+                location.reload();
+            } catch (error) {
+                alert("Erro ao excluir: " + error.message);
+            }
         }
     }
 }
@@ -134,5 +139,37 @@ async function alternarStatusMembro(id, statusAtual) {
         location.reload();
     } catch (error) {
         alert("Erro ao mudar status: " + error.message);
+    }
+}
+
+// ==========================================
+// FUNÇÕES DE PRESENÇA (CHAMADA)
+// ==========================================
+
+async function salvarPresencas() {
+    const data = document.getElementById('dataCulto').value;
+    const checkboxes = document.querySelectorAll('.check-presenca');
+    const registros = [];
+
+    if (!data) return alert("Selecione a data do culto!");
+
+    checkboxes.forEach(cb => {
+        registros.push({
+            membro_id: cb.getAttribute('data-id'),
+            data_culto: data,
+            presenca: cb.checked
+        });
+    });
+
+    try {
+        const { error } = await _supabase
+            .from('presencas')
+            .insert(registros);
+
+        if (error) throw error;
+        alert("✅ Chamada salva com sucesso!");
+        window.location.href = 'dashboard.html';
+    } catch (error) {
+        alert("Erro ao salvar presença: " + error.message);
     }
 }

@@ -1,0 +1,19 @@
+async function prepararChamada() {
+    // Busca todos, mas filtra apenas os que estão "Ativo"
+    const lista = await buscarMembrosBanco(); 
+    const divLista = document.getElementById('listaChamada');
+    divLista.innerHTML = '';
+
+    // A mágica da auditoria: só listamos quem está Ativo hoje
+    const ativos = lista.filter(m => m.status_registro === 'Ativo');
+
+    ativos.forEach(membro => {
+        const item = `
+            <div style="display:flex; justify-content:space-between; padding:10px; border-bottom:1px solid #eee;">
+                <span>${membro.nome_completo}</span>
+                <input type="checkbox" class="check-presenca" data-id="${membro.id}">
+            </div>
+        `;
+        divLista.innerHTML += item;
+    });
+}

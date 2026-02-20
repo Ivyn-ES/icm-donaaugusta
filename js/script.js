@@ -1,56 +1,86 @@
-// js/script.js
+// ==========================================
+// 1. CONEXÃO COM O BANCO (SUPABASE)
+// ==========================================
+const SUPABASE_URL = 'https://pxjczmjhzopfxwlmpjfv.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB4amN6bWpoem9wZnh3bG1wamZ2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE1MjUzMjYsImV4cCI6MjA4NzEwMTMyNn0.OfekQPuYUwsZu5X9_lPDGBbVTZYBvAQ5KdiFx3TFOCY';
 
-// Inicializa o banco de dados de forma global
-if (!window.todosUsuarios) {
-    window.todosUsuarios = JSON.parse(localStorage.getItem('todosUsuarios')) || {
-        'pastor': { senha: 'pr1234', permissoes: 'completa' },
-        'secretario': { senha: 'sc1234', permissoes: 'secretaria' },
-        'resp-grupo1': { senha: 'g1234', permissoes: 'grupo1' },
-        'resp-grupo2': { senha: 'g2345', permissoes: 'grupo2' },
-        'membro': { senha: 'm1234', permissoes: 'basica' }
-    };
-}
+// Criando o cliente de conexão
+const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-// Função para salvar no LocalStorage
-function atualizarBanco() {
-    localStorage.setItem('todosUsuarios', JSON.stringify(window.todosUsuarios));
-}
+// ==========================================
+// 2. FUNÇÕES DE MEMBROS (PARA O FORMULÁRIO)
+// ==========================================
 
-// Função para mudar senha
-function mudarSenha(novaSenha) {
-    const logado = JSON.parse(localStorage.getItem('usuarioLogado'));
-    if (logado && window.todosUsuarios[logado.nome]) {
-        window.todosUsuarios[logado.nome].senha = novaSenha.trim();
-        atualizarBanco();
+async function cadastrarMembro(dadosMembro) {
+    try {
+        const { data, error } = await _supabase
+            .from('membros')
+            .insert([
+                {
+                    nome_completo: dadosMembro.nome,
+                    situacao: dadosMembro.situacao,
+                    categoria: dadosMembro.categoria,
+                    sexo: dadosMembro.sexo,
+                    grupo: dadosMembro.grupo,
+                    aniversario_dia: parseInt(dadosMembro.dia),
+                    aniversario_mes: dadosMembro.mes,
+                    status_registro: 'Ativo'
+                }
+            ]);
+
+        if (error) throw error;
+        alert('✅ ' + dadosMembro.nome + ' foi salvo no banco de dados!');
         return true;
+    } catch (error) {
+        console.error('Erro no Supabase:', error);
+        alert('❌ Erro técnico: ' + error.message);
+        return false;
     }
-    return false;
 }
 
-// Lógica de Login
+// ==========================================
+// 3. SISTEMA DE LOGIN (SEGURO)
+// ==========================================
+
+// Função que as páginas usam para verificar se alguém está logado
+function verificarAcesso() {
+    const usuario = JSON.parse(localStorage.getItem('usuarioLogado'));
+    if (!usuario) {
+        window.location.href = '../index.html';
+    }
+    return usuario;
+}
+
+// Lógica para o formulário de login (index.html)
 const loginForm = document.getElementById('loginForm');
 if (loginForm) {
     loginForm.addEventListener('submit', function(e) {
         e.preventDefault();
         const userIn = document.getElementById('usuario').value.trim().toLowerCase();
         const passIn = document.getElementById('senha').value.trim();
-        const msg = document.getElementById('mensagem');
 
-        if (window.todosUsuarios[userIn] && window.todosUsuarios[userIn].senha === passIn) {
+        // Login Temporário (Enquanto não criamos a tabela de usuários no banco)
+        const usuariosPadrao = {
+            'pastor': { senha: '123', nivel: 'admin' },
+            'secretaria': { senha: '123', nivel: 'admin' },
+            'grupo1': { senha: '123', nivel: 'responsavel', grupo: '01' }
+        };
+
+        if (usuariosPadrao[userIn] && usuariosPadrao[userIn].senha === passIn) {
             localStorage.setItem('usuarioLogado', JSON.stringify({
                 nome: userIn,
-                permissoes: window.todosUsuarios[userIn].permissoes
+                nivel: usuariosPadrao[userIn].nivel,
+                grupo: usuariosPadrao[userIn].grupo || null
             }));
             
-            // Redirecionamentos - No GitHub, use caminhos relativos sem a barra inicial se possível
-            const perm = window.todosUsuarios[userIn].permissoes;
-            if (['completa', 'secretaria'].includes(perm)) window.location.href = 'pages/dashboard.html';
-            else if (perm === 'grupo1') window.location.href = 'pages/grupo1.html';
-            else if (perm === 'grupo2') window.location.href = 'pages/grupo2.html';
-            else window.location.href = 'pages/mensagens.html';
+            // Redirecionamento baseado no nível
+            if (usuariosPadrao[userIn].nivel === 'admin') {
+                window.location.href = 'pages/dashboard.html';
+            } else {
+                window.location.href = 'pages/mensagens.html';
+            }
         } else {
-            msg.textContent = '❌ Usuário ou senha incorretos!';
-            msg.style.color = 'red';
+            alert('❌ Usuário ou senha incorretos!');
         }
     });
 }

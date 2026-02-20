@@ -8,25 +8,30 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
+
     <div class="container">
-        <h1>📝 Cadastro de Membros</h1>
-        
+        <header style="text-align: center; margin-bottom: 20px;">
+            <h1>📝 Cadastro de Membros</h1>
+            <p>Preencha os dados para salvar no sistema</p>
+        </header>
+
         <form id="formCadastro">
+            
             <div class="campo">
-                <label>Nome Completo:</label>
-                <input type="text" id="nome_completo" required>
+                <label for="nome_completo">Nome Completo:</label>
+                <input type="text" id="nome_completo" placeholder="Ex: João Silva" required>
             </div>
 
             <div class="linha-dupla">
                 <div class="campo">
-                    <label>Situação:</label>
+                    <label for="situacao">Situação:</label>
                     <select id="situacao">
                         <option value="Membro">Membro</option>
                         <option value="Visitante">Visitante</option>
                     </select>
                 </div>
                 <div class="campo">
-                    <label>Sexo:</label>
+                    <label for="sexo">Sexo:</label>
                     <select id="sexo">
                         <option value="Masculino">Masculino</option>
                         <option value="Feminino">Feminino</option>
@@ -35,7 +40,7 @@
             </div>
 
             <div class="campo">
-                <label>Categoria:</label>
+                <label for="categoria">Categoria:</label>
                 <select id="categoria">
                     <option value="Adulto">Adulto</option>
                     <option value="Jovem">Jovem</option>
@@ -48,13 +53,12 @@
 
             <div class="linha-dupla">
                 <div class="campo">
-                    <label>Grupo:</label>
-                    <select id="grupo">
-                        <option value="01">01</option>
-                        <option value="02">02</option>
-                        <option value="03">03</option>
-                    </select>
+                    <label for="grupo_vinculado">Grupo/Setor:</label>
+                    <select id="grupo_vinculado" required>
+                        <option value="">Carregando grupos...</option>
+                        </select>
                 </div>
+                
                 <div class="campo">
                     <label>Aniversário:</label>
                     <div style="display: flex; gap: 5px;">
@@ -77,35 +81,55 @@
                 </div>
             </div>
 
-            <button type="submit" class="btn-salvar">Salvar no Supabase</button>
-            <a href="dashboard.html" class="btn-voltar">⬅ Voltar ao Painel</a>
+            <div style="margin-top: 30px; display: flex; flex-direction: column; gap: 10px;">
+                <button type="submit" class="btn-salvar" id="btnSalvar">Salvar no Supabase</button>
+                <a href="dashboard.html" class="btn-voltar" style="text-align: center; text-decoration: none;">⬅ Voltar ao Painel</a>
+            </div>
         </form>
     </div>
 
     <script src="../js/script.js"></script>
-    <script>
-        // Proteção: Só entra se estiver logado
-        verificarAcesso();
 
+    <script>
+        // Inicialização ao carregar a página
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Verifica se o usuário tem permissão
+            verificarAcesso();
+            
+            // Carrega os grupos do banco de dados para o Select
+            // Esta função deve estar no seu script.js
+            if (typeof carregarGruposNoSelect === 'function') {
+                await carregarGruposNoSelect();
+            }
+        });
+
+        // Evento de Envio do Formulário
         const form = document.getElementById('formCadastro');
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
-            const btn = e.target.querySelector('button');
+            
+            const btn = document.getElementById('btnSalvar');
             btn.disabled = true;
-            btn.innerText = 'Processando...';
+            btn.innerText = '⌛ Processando...';
 
+            // Coleta de dados seguindo o padrão da tabela 'membros'
             const dados = {
                 nome: document.getElementById('nome_completo').value,
                 situacao: document.getElementById('situacao').value,
                 categoria: document.getElementById('categoria').value,
                 sexo: document.getElementById('sexo').value,
-                grupo: document.getElementById('grupo').value,
+                grupo_vinculado: document.getElementById('grupo_vinculado').value,
                 dia: document.getElementById('niver_dia').value || 0,
                 mes: document.getElementById('niver_mes').value
             };
 
-            const ok = await cadastrarMembro(dados);
-            if (ok) form.reset();
+            // Chama a função global de cadastro
+            const sucesso = await cadastrarMembro(dados);
+            
+            if (sucesso) {
+                alert('✅ Membro cadastrado com sucesso!');
+                form.reset();
+            }
 
             btn.disabled = false;
             btn.innerText = 'Salvar no Supabase';

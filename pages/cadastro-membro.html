@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cadastro de Membros - ICM</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>📝 Cadastro de Membro/Visitante</h1>
+        
+        <form id="formCadastro">
+            <div class="campo">
+                <label>Nome Completo:</label>
+                <input type="text" id="nome_completo" required placeholder="Digite o nome completo">
+            </div>
+
+            <div class="linha-dupla">
+                <div class="campo">
+                    <label>Situação:</label>
+                    <select id="situacao">
+                        <option value="Membro">Membro</option>
+                        <option value="Visitante">Visitante</option>
+                    </select>
+                </div>
+                <div class="campo">
+                    <label>Sexo:</label>
+                    <select id="sexo">
+                        <option value="Masculino">Masculino</option>
+                        <option value="Feminino">Feminino</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="campo">
+                <label>Categoria:</label>
+                <select id="categoria">
+                    <option value="Adulto">Adulto</option>
+                    <option value="Jovem">Jovem</option>
+                    <option value="Adolescente">Adolescente</option>
+                    <option value="Intermediário">Intermediário</option>
+                    <option value="Criança">Criança</option>
+                    <option value="Criança de Colo">Criança de Colo</option>
+                </select>
+            </div>
+
+            <div class="linha-dupla">
+                <div class="campo">
+                    <label>Grupo:</label>
+                    <select id="grupo">
+                        <option value="01">01</option>
+                        <option value="02">02</option>
+                        <option value="03">03</option>
+                    </select>
+                </div>
+                <div class="campo">
+                    <label>Aniversário:</label>
+                    <div style="display: flex; gap: 5px;">
+                        <input type="number" id="niver_dia" placeholder="Dia" min="1" max="31" style="width: 60px;">
+                        <select id="niver_mes">
+                            <option value="Janeiro">Jan</option>
+                            <option value="Fevereiro">Fev</option>
+                            <option value="Março">Mar</option>
+                            <option value="Abril">Abr</option>
+                            <option value="Maio">Mai</option>
+                            <option value="Junho">Jun</option>
+                            <option value="Julho">Jul</option>
+                            <option value="Agosto">Ago</option>
+                            <option value="Setembro">Set</option>
+                            <option value="Outubro">Out</option>
+                            <option value="Novembro">Nov</option>
+                            <option value="Dezembro">Dez</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <button type="submit" class="btn-salvar">Salvar no Banco de Dados</button>
+            <a href="dashboard.html" class="btn-voltar">Voltar</a>
+        </form>
+    </div>
+
+    <script src="../js/script.js"></script>
+    <script>
+        const form = document.getElementById('formCadastro');
+        
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const btn = e.target.querySelector('button');
+            btn.disabled = true;
+            btn.innerText = 'Salvando...';
+
+            const dados = {
+                nome: document.getElementById('nome_completo').value.trim(),
+                situacao: document.getElementById('situacao').value,
+                categoria: document.getElementById('categoria').value,
+                sexo: document.getElementById('sexo').value,
+                grupo: document.getElementById('grupo').value,
+                dia: document.getElementById('niver_dia').value,
+                mes: document.getElementById('niver_mes').value
+            };
+
+            // Chama a função que está no seu script.js
+            const sucesso = await cadastrarMembro(dados);
+            
+            if (sucesso) {
+                form.reset();
+            }
+            
+            btn.disabled = false;
+            btn.innerText = 'Salvar no Banco de Dados';
+        });
+    </script>
+</body>
+</html>

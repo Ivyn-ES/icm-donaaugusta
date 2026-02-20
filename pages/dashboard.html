@@ -3,26 +3,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard - ICM Dona Augusta</title>
+    <title>Dashboard - ICM</title>
     <link rel="stylesheet" href="../css/style.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
     <div class="container">
-        <header>
-            <h1>Dashboard ICM</h1>
-            <p id="boasVindas">Bem-vindo!</p>
-        </header>
+        <h1>Dashboard ICM</h1>
+        <p id="boasVindas">Bem-vindo!</p>
 
         <main class="grid-botoes">
             <button onclick="window.location.href='cadastro-membro.html'" class="btn-menu">
-                <span class="icon">👤</span>
+                <span class="icon">📝</span>
                 Cadastrar Membro
             </button>
 
-            <button onclick="alert('Em breve: Lista de Presença')" class="btn-menu">
-                <span class="icon">📅</span>
-                Lançar Presença
+            <button onclick="window.location.href='lista-membros.html'" class="btn-menu">
+                <span class="icon">👥</span>
+                Lista de Membros
             </button>
 
             <button onclick="alert('Em breve: Relatórios')" class="btn-menu">
@@ -30,25 +28,22 @@
                 Relatórios
             </button>
 
-            <button onclick="alert('Em breve: Gestão de Usuários')" class="btn-menu">
-                <span class="icon">🔐</span>
-                Usuários (Sistema)
+            <button onclick="alert('Em breve: Configurações')" class="btn-menu">
+                <span class="icon">⚙️</span>
+                Configurações
             </button>
         </main>
 
-        <footer class="rodape-acoes">
-            <button onclick="window.location.href='alterar-senha.html'" class="btn-secundario">Alterar Senha</button>
-            <button onclick="fazerLogout()" class="btn-sair">Sair</button>
-        </footer>
+        <div class="action-footer">
+            <button onclick="fazerLogout()" class="btn-sair">Sair do Sistema</button>
+        </div>
     </div>
 
     <script src="../js/script.js"></script>
     <script>
-        // Verifica se o usuário tem permissão para estar aqui
-        const user = verificarAcesso();
-        if (user) {
-            document.getElementById('boasVindas').innerText = `Bem-vindo, ${user.nome}!`;
-        }
+        verificarAcesso();
+        const user = JSON.parse(localStorage.getItem('usuarioLogado'));
+        document.getElementById('boasVindas').innerText = `Bem-vindo, ${user.nome}!`;
 
         function fazerLogout() {
             localStorage.removeItem('usuarioLogado');

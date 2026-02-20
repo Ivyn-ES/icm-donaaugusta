@@ -14,7 +14,7 @@
             <p id="boasVindas">Bem-vindo!</p>
         </header>
 
-        <div class="grid-menu">
+<div class="grid-menu">
             <button onclick="window.location.href='chamada.html'" class="btn-menu" style="background-color: #2ed573;">
                 <span style="font-size: 2rem; display: block;">🗓️</span>
                 Fazer Chamada
@@ -30,22 +30,38 @@
                 Lista de Membros
             </button>
 
+            <button id="btnGrupos" onclick="window.location.href='admin-grupos.html'" class="btn-menu" style="display: none; background-color: #5765f2;">
+                <span style="font-size: 2rem; display: block;">📂</span>
+                Gerenciar Grupos
+            </button>
+
+            <button id="btnUsuarios" onclick="window.location.href='admin-usuarios.html'" class="btn-menu" style="display: none; background-color: #5765f2;">
+                <span style="font-size: 2rem; display: block;">🔑</span>
+                Gerenciar Usuários
+            </button>
+
             <button onclick="logout()" class="btn-menu" style="background-color: #ff4757;">
                 <span style="font-size: 2rem; display: block;">🚪</span>
                 Sair
             </button>
         </div>
-    </div>
 
-    <script src="../js/script.js"></script>
-    <script>
-        // Verifica se o usuário tem permissão para estar aqui
-        verificarAcesso();
+
         
-        // Pequeno script para personalizar o "Bem-vindo"
-        const user = JSON.parse(localStorage.getItem('icm_user'));
-        if (user && user.email) {
-            document.getElementById('boasVindas').innerText = `Logado como: ${user.email}`;
+    <script src="../js/script.js"></script>
+<script>
+        // 1. Verifica acesso e pega os dados do usuário
+        const user = verificarAcesso(); 
+        
+        if (user) {
+            // 2. Personaliza a saudação
+            document.getElementById('boasVindas').innerText = `Logado como: ${user.nome} (${user.nivel})`;
+
+            // 3. Lógica de visibilidade para Admin/Master
+            if (user.nivel === 'Admin' || user.nivel === 'Master') {
+                document.getElementById('btnGrupos').style.display = 'block';
+                document.getElementById('btnUsuarios').style.display = 'block';
+            }
         }
     </script>
 </body>

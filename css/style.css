@@ -1,4 +1,6 @@
-/* Reset e Base */
+/* ==========================================
+   1. RESET E BASE (Seu Estilo Original)
+   ========================================== */
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
 body {
@@ -18,44 +20,116 @@ body {
     border-radius: 20px;
     box-shadow: 0 15px 35px rgba(0,0,0,0.2);
     width: 100%;
-    max-width: 500px;
+    max-width: 550px; /* Aumentei um pouco para caber as tabelas depois */
     text-align: center;
 }
 
 h1 { color: #2d3436; margin-bottom: 0.5rem; font-size: 1.6rem; }
-.welcome-text { color: #636e72; margin-bottom: 2rem; }
+p { color: #636e72; margin-bottom: 1.5rem; }
 
-/* Menu de Navegação */
-.menu-nav { display: flex; flex-direction: column; gap: 12px; }
+/* ==========================================
+   2. DASHBOARD (Grade de Botões)
+   ========================================== */
+.grid-botoes {
+    display: grid;
+    grid-template-columns: 1fr 1fr; /* Dois botões por linha */
+    gap: 15px;
+    margin: 20px 0;
+}
 
-.nav-item {
-    display: block;
-    padding: 15px;
+.btn-menu {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
     background: #f1f2f6;
-    text-decoration: none;
+    border: 2px solid transparent;
+    border-radius: 15px;
     color: #2d3436;
-    border-radius: 12px;
-    font-weight: 500;
+    font-weight: bold;
+    cursor: pointer;
     transition: all 0.3s ease;
+    text-decoration: none;
 }
 
-.nav-item:hover {
+.btn-menu:hover {
     background: #dfe4ea;
-    transform: translateY(-2px);
+    border-color: #667eea;
+    transform: translateY(-3px);
 }
 
-/* --- ÁREA DOS BOTÕES (Onde estava o erro) --- */
+.btn-menu .icon {
+    font-size: 2rem;
+    margin-bottom: 8px;
+}
+
+/* ==========================================
+   3. FORMULÁRIOS (Cadastro e Login)
+   ========================================== */
+.campo {
+    text-align: left;
+    margin-bottom: 15px;
+}
+
+label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 600;
+    color: #2d3436;
+}
+
+input, select {
+    width: 100%;
+    padding: 12px;
+    border: 2px solid #eee;
+    border-radius: 10px;
+    font-size: 1rem;
+    outline: none;
+    transition: 0.3s;
+}
+
+input:focus, select:focus {
+    border-color: #667eea;
+}
+
+.linha-dupla {
+    display: flex;
+    gap: 15px;
+}
+
+.linha-dupla .campo {
+    flex: 1;
+}
+
+.btn-salvar {
+    width: 100%;
+    padding: 15px;
+    background: #27ae60;
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-size: 1.1rem;
+    font-weight: bold;
+    cursor: pointer;
+    margin-top: 10px;
+}
+
+.btn-salvar:hover { background: #219150; }
+
+/* ==========================================
+   4. RODAPÉ E AÇÕES (Sair / Alterar Senha)
+   ========================================== */
 .action-footer {
     margin-top: 30px;
     padding-top: 20px;
     border-top: 1px solid #eee;
-    display: flex; /* Alinha lado a lado */
-    gap: 15px;    /* Espaço entre eles */
+    display: flex;
+    gap: 15px;
 }
 
-/* Botão Alterar Senha */
 .btn-alt-senha {
-    flex: 2; /* Fica um pouco maior que o sair */
+    flex: 1;
     background: #007bff;
     color: white;
     border: none;
@@ -63,12 +137,10 @@ h1 { color: #2d3436; margin-bottom: 0.5rem; font-size: 1.6rem; }
     border-radius: 10px;
     cursor: pointer;
     font-weight: bold;
-    transition: 0.3s;
 }
 
-/* Botão Sair */
 .btn-sair {
-    flex: 1; /* Fica menor */
+    flex: 1;
     background: #dc3545;
     color: white;
     text-decoration: none;
@@ -78,85 +150,10 @@ h1 { color: #2d3436; margin-bottom: 0.5rem; font-size: 1.6rem; }
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: 0.3s;
-}
-
-.btn-alt-senha:hover, .btn-sair:hover { opacity: 0.85; }
-
-/* Formulário de Senha */
-.password-box {
-    margin-top: 20px;
-    background: #fff9e6;
-    padding: 20px;
-    border-radius: 15px;
-    display: none; /* Escondido por padrão */
-    border: 1px solid #ffeaa7;
-}
-
-.password-box h4 { margin-bottom: 10px; color: #856404; }
-
-.password-box input {
-    width: 100%;
-    padding: 12px;
-    margin-bottom: 15px;
-    border: 2px solid #ddd;
-    border-radius: 8px;
-}
-
-.modal-buttons { display: flex; gap: 10px; }
-
-.btn-confirm { background: #28a745; color: white; border: none; padding: 10px; border-radius: 5px; flex: 1; cursor: pointer; }
-.btn-cancel { background: #6c757d; color: white; border: none; padding: 10px; border-radius: 5px; flex: 1; cursor: pointer; }
-
-/* --- ESTILOS EXCLUSIVOS DO LOGIN --- */
-.login-header {
-    margin-bottom: 25px;
-}
-
-.login-header p {
-    color: #636e72;
-    font-size: 0.9rem;
-    margin-top: 5px;
-}
-
-.login-form {
-    display: flex;
-    flex-direction: column;
-    gap: 5px;
-}
-
-.btn-login {
-    background: #667eea;
-    color: white;
-    border: none;
-    padding: 15px;
-    border-radius: 12px;
-    font-size: 16px;
-    font-weight: bold;
-    cursor: pointer;
-    transition: background 0.3s, transform 0.2s;
-    margin-top: 10px;
-}
-
-.btn-login:hover {
-    background: #5a67d8;
-    transform: translateY(-2px);
-}
-
-.btn-login:active {
-    transform: translateY(0);
 }
 
 .error-msg {
-    margin-top: 15px;
-    font-size: 14px;
     color: #dc3545;
-    min-height: 20px; /* Evita que o layout "pule" quando a mensagem aparece */
-}
-
-.version-tag {
-    margin-top: 25px;
-    padding-top: 15px;
-    border-top: 1px solid #eee;
-    color: #b2bec3;
+    margin-top: 10px;
+    font-weight: 500;
 }

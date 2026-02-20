@@ -3,63 +3,56 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard - ICM</title>
+    <title>Dashboard - ICM Dona Augusta</title>
     <link rel="stylesheet" href="../css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
     <div class="container">
-        <h1>📊 Dashboard ICM</h1>
-        <p>Bem-vindo, <strong id="nomeUsuario">...</strong>!</p>
-        
-        <nav class="menu-nav">
-            <a href="lista-presenca.html" class="nav-item">📋 Presença</a>
-            <a href="admin-usuarios.html" class="nav-item">👨‍⚖️ Usuários</a>
-        </nav>
-        
-        <button onclick="mostrarMudarSenha()">🔐 Alterar Senha</button>
-        <a href="../index.html">🚪 Sair</a>
+        <header>
+            <h1>Dashboard ICM</h1>
+            <p id="boasVindas">Bem-vindo!</p>
+        </header>
 
-        <div id="formSenha" style="display:none; margin-top:20px;">
-            <input type="password" id="novaSenha" placeholder="Nova senha">
-            <button onclick="confirmarNovaSenha()">Salvar</button>
-        </div>
+        <main class="grid-botoes">
+            <button onclick="window.location.href='cadastro-membro.html'" class="btn-menu">
+                <span class="icon">👤</span>
+                Cadastrar Membro
+            </button>
+
+            <button onclick="alert('Em breve: Lista de Presença')" class="btn-menu">
+                <span class="icon">📅</span>
+                Lançar Presença
+            </button>
+
+            <button onclick="alert('Em breve: Relatórios')" class="btn-menu">
+                <span class="icon">📊</span>
+                Relatórios
+            </button>
+
+            <button onclick="alert('Em breve: Gestão de Usuários')" class="btn-menu">
+                <span class="icon">🔐</span>
+                Usuários (Sistema)
+            </button>
+        </main>
+
+        <footer class="rodape-acoes">
+            <button onclick="window.location.href='alterar-senha.html'" class="btn-secundario">Alterar Senha</button>
+            <button onclick="fazerLogout()" class="btn-sair">Sair</button>
+        </footer>
     </div>
 
     <script src="../js/script.js"></script>
-    
     <script>
-        // Verificação robusta
-        window.onload = function() {
-            try {
-                const data = localStorage.getItem('usuarioLogado');
-                if (!data) {
-                    window.location.href = '../index.html';
-                    return;
-                }
-                const user = JSON.parse(data);
-                document.getElementById('nomeUsuario').textContent = user.nome;
-            } catch (e) {
-                console.error("Erro no LocalStorage:", e);
-                window.location.href = '../index.html';
-            }
-        };
+        // Verifica se o usuário tem permissão para estar aqui
+        const user = verificarAcesso();
+        if (user) {
+            document.getElementById('boasVindas').innerText = `Bem-vindo, ${user.nome}!`;
+        }
 
-        function mostrarMudarSenha() { document.getElementById('formSenha').style.display = 'block'; }
-
-        function confirmarNovaSenha() {
-            const nova = document.getElementById('novaSenha').value.trim();
-            if (nova.length >= 4) {
-                // Verificamos se a função mudarSenha existe (veio do script.js)
-                if (typeof mudarSenha === 'function') {
-                    mudarSenha(nova);
-                    alert('Senha alterada!');
-                    document.getElementById('formSenha').style.display = 'none';
-                } else {
-                    alert('Erro: Arquivo script.js não carregou corretamente.');
-                }
-            } else {
-                alert('Mínimo 4 caracteres.');
-            }
+        function fazerLogout() {
+            localStorage.removeItem('usuarioLogado');
+            window.location.href = '../index.html';
         }
     </script>
 </body>

@@ -173,3 +173,19 @@ async function salvarPresencas() {
         alert("Erro ao salvar presença: " + error.message);
     }
 }
+
+// Função para buscar membros no Supabase
+async function buscarMembrosBanco() {
+    try {
+        const { data, error } = await _supabase
+            .from('membros')
+            .select('*')
+            .order('nome_completo', { ascending: true }); // Organiza de A a Z
+
+        if (error) throw error;
+        return data || [];
+    } catch (error) {
+        console.error("Erro ao buscar membros:", error.message);
+        return [];
+    }
+}

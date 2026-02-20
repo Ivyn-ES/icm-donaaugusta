@@ -210,3 +210,34 @@ async function salvarPresencas() {
         alert("Erro: " + error.message);
     }
 }
+
+// ==========================================
+// 6. INICIALIZAÇÃO (Ouvintes de Eventos)
+// ==========================================
+
+// Este evento dispara assim que o HTML termina de carregar
+document.addEventListener('DOMContentLoaded', function() {
+    
+    // Conecta o formulário de login à função realizarLogin
+    const formLogin = document.getElementById('loginForm');
+    if (formLogin) {
+        formLogin.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const userIn = document.getElementById('usuario').value.trim();
+            const passIn = document.getElementById('senha').value.trim();
+            
+            // Chama a função que criamos no Módulo 2
+            realizarLogin(userIn, passIn);
+        });
+    }
+
+    // Se estiver na página de Grupos, carrega a lista automaticamente
+    if (document.getElementById('corpoTabelaGrupos')) {
+        renderizarGrupos();
+    }
+
+    // Se estiver na página de Membros, carrega a lista automaticamente
+    if (document.getElementById('corpoTabelaMembros')) {
+        renderizarListaMembros();
+    }
+});

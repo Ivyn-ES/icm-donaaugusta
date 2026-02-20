@@ -10,40 +10,98 @@ if (typeof supabase !== 'undefined') {
 }
 
 // ==========================================
-// 2. FUNÇÕES DE BANCO DE DADOS (CRUD)
+// 2. SEGURANÇA E ACESSO
 // ==========================================
 
-// BUSCAR: Lista membros (usada na lista e na chamada)
-async function buscarMembrosBanco() {
+function verificarAcesso() {
+    const usuario = JSON.parse(localStorage.getItem('usuarioLogado'));
+    if (!usuario) {
+        window.location.href = '../index.html';
+        return null;
+    }
+    return usuario;
+}
+
+function logout() {
+    localStorage.removeItem('usuarioLogado');
+    window.location.href = '../index.html';
+}
+
+// NOVO LOGIN DINÂMICO (Busca na tabela 'usuarios' do Supabase)
+async function realizarLogin(usuarioDigitado, senhaDigitada) {
     try {
         const { data, error } = await _supabase
-            .from('membros')
+            .from('usuarios')
             .select('*')
-            .order('nome_completo', { ascending: true });
+            .eq('login', usuarioDigitado)
+            .eq('senha', senhaDigitada)
+            .single(); // Esperamos apenas um usuário
+
+        if (error || !data) {
+            alert('❌ Login falhou! Verifique usuário e senha.');
+            return;
+        }
+
+        // Salva os dados completos, inclusive o grupo vinculado
+        localStorage.setItem('usuarioLogado', JSON.stringify({
+            nome: data.login,
+            nivel: data.permissao,
+            grupo: data.grupo_vinculado 
+        }));
+        
+        window.location.href = 'pages/dashboard.html';
+    } catch (err) {
+        console.error("Erro no login:", err);
+    }
+}
+
+// Event Listener para o formulário de login
+const loginForm = document.getElementById('loginForm');
+if (loginForm) {
+    loginForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        const userIn = document.getElementById('usuario').value.trim().toLowerCase();
+        const passIn = document.getElementById('senha').value.trim();
+        realizarLogin(userIn, passIn);
+    });
+}
+
+// ==========================================
+// 3. MÓDULO DE MEMBROS (Com Filtro de Grupo)
+// ==========================================
+
+async function buscarMembrosBanco() {
+    try {
+        const user = verificarAcesso();
+        let query = _supabase.from('membros').select('*');
+
+        // SE NÃO FOR ADMIN/MASTER, FILTRA PELO GRUPO DO USUÁRIO
+        if (user && user.nivel === 'User' && user.grupo) {
+            query = query.eq('grupo', user.grupo);
+        }
+
+        const { data, error } = await query.order('nome_completo', { ascending: true });
 
         if (error) throw error;
         return data || [];
     } catch (error) {
-        console.error('Erro ao buscar:', error.message);
+        console.error('Erro ao buscar membros:', error.message);
         return [];
     }
 }
 
-// CADASTRAR: Novo membro
 async function cadastrarMembro(dadosMembro) {
     try {
-        const { data, error } = await _supabase
-            .from('membros')
-            .insert([{
-                nome_completo: dadosMembro.nome,
-                situacao: dadosMembro.situacao,
-                categoria: dadosMembro.categoria,
-                sexo: dadosMembro.sexo,
-                grupo: dadosMembro.grupo,
-                aniversario_dia: parseInt(dadosMembro.dia),
-                aniversario_mes: dadosMembro.mes,
-                status_registro: 'Ativo'
-            }]);
+        const { error } = await _supabase.from('membros').insert([{
+            nome_completo: dadosMembro.nome,
+            situacao: dadosMembro.situacao,
+            categoria: dadosMembro.categoria,
+            sexo: dadosMembro.sexo,
+            grupo: dadosMembro.grupo,
+            aniversario_dia: parseInt(dadosMembro.dia),
+            aniversario_mes: dadosMembro.mes,
+            status_registro: 'Ativo'
+        }]);
         if (error) throw error;
         alert('✅ Sucesso ao cadastrar!');
         return true;
@@ -53,43 +111,29 @@ async function cadastrarMembro(dadosMembro) {
     }
 }
 
-// EXCLUIR: Remove permanentemente
 async function excluirMembro(id) {
-    if (confirm("Deseja realmente EXCLUIR este registro? Use isso apenas para erros de cadastro.")) {
-        if (confirm("Atenção: Isso apagará todo o histórico deste membro. Tem certeza absoluta?")) {
-            try {
-                const { error } = await _supabase.from('membros').delete().eq('id', id);
-                if (error) throw error;
-                alert("Registro apagado.");
-                location.reload();
-            } catch (error) {
-                alert("Erro ao excluir: " + error.message);
-            }
+    if (confirm("Deseja realmente EXCLUIR? Isso apagará todo o histórico.")) {
+        try {
+            const { error } = await _supabase.from('membros').delete().eq('id', id);
+            if (error) throw error;
+            location.reload();
+        } catch (error) {
+            alert("Erro: " + error.message);
         }
     }
 }
 
-// ALTERNAR STATUS: Ativar/Inativar (A "Auditoria" que conversamos)
 async function alternarStatusMembro(id, statusAtual) {
     const novoStatus = statusAtual === 'Ativo' ? 'Inativo' : 'Ativo';
     try {
-        const { error } = await _supabase
-            .from('membros')
-            .update({ status_registro: novoStatus })
-            .eq('id', id);
-
+        const { error } = await _supabase.from('membros').update({ status_registro: novoStatus }).eq('id', id);
         if (error) throw error;
         location.reload();
     } catch (error) {
-        alert("Erro ao mudar status: " + error.message);
+        alert("Erro: " + error.message);
     }
 }
 
-// ==========================================
-// 3. RENDERIZAÇÃO DE INTERFACE
-// ==========================================
-
-// ESTA É A FUNÇÃO QUE FALTAVA: Preenche a tabela de membros
 async function renderizarListaMembros() {
     const tabela = document.getElementById('corpoTabelaMembros');
     if (!tabela) return;
@@ -99,131 +143,73 @@ async function renderizarListaMembros() {
 
     membros.forEach(membro => {
         const statusCor = membro.status_registro === 'Ativo' ? '#2ed573' : '#ff4757';
-        
         tabela.innerHTML += `
             <tr>
                 <td><strong>${membro.nome_completo}</strong></td>
                 <td>${membro.categoria || 'Membro'}</td>
                 <td><span style="color: ${statusCor}; font-weight: bold;">${membro.status_registro}</span></td>
                 <td>
-                    <button onclick="alternarStatusMembro('${membro.id}', '${membro.status_registro}')" title="Mudar Status">🔄</button>
-                    <button onclick="excluirMembro('${membro.id}')" title="Excluir" style="background:none; border:none; cursor:pointer; font-size:1.2rem;">🗑️</button>
-                </td>
-            </tr>
-        `;
-    });
-}
-
-// ==========================================
-// 4. SISTEMA DE PRESENÇA (CHAMADA)
-// ==========================================
-
-async function salvarPresencas() {
-    const data = document.getElementById('dataCulto').value;
-    const checkboxes = document.querySelectorAll('.check-presenca');
-    const registros = [];
-
-    if (!data) return alert("Selecione a data do culto!");
-
-    checkboxes.forEach(cb => {
-        registros.push({
-            membro_id: cb.getAttribute('data-id'),
-            data_culto: data,
-            presenca: cb.checked
-        });
-    });
-
-    try {
-        const { error } = await _supabase.from('presencas').insert(registros);
-        if (error) throw error;
-        alert("✅ Chamada salva com sucesso!");
-        window.location.href = 'dashboard.html';
-    } catch (error) {
-        alert("Erro ao salvar presença: " + error.message);
-    }
-}
-
-// ==========================================
-// 5. LOGIN E SEGURANÇA
-// ==========================================
-
-function verificarAcesso() {
-    const usuario = JSON.parse(localStorage.getItem('usuarioLogado'));
-    if (!usuario) {
-        window.location.href = '../index.html';
-    }
-    return usuario;
-}
-
-const loginForm = document.getElementById('loginForm');
-if (loginForm) {
-    loginForm.addEventListener('submit', function(e) {
-        e.preventDefault();
-        const userIn = document.getElementById('usuario').value.trim().toLowerCase();
-        const passIn = document.getElementById('senha').value.trim();
-
-        const usuariosPadrao = {
-            'pastor': { senha: '123', nivel: 'admin' },
-            'secretaria': { senha: '123', nivel: 'admin' }
-        };
-
-        if (usuariosPadrao[userIn] && usuariosPadrao[userIn].senha === passIn) {
-            localStorage.setItem('usuarioLogado', JSON.stringify({ nome: userIn, nivel: usuariosPadrao[userIn].nivel }));
-            window.location.href = 'pages/dashboard.html';
-        } else {
-            alert('❌ Login falhou!');
-        }
-    });
-}
-
-function logout() {
-    localStorage.removeItem('usuarioLogado');
-    window.location.href = '../index.html';
-}
-
-// BUSCAR GRUPOS
-async function buscarGruposBanco() {
-    const { data, error } = await _supabase
-        .from('grupos')
-        .select('*')
-        .order('nome', { ascending: true });
-    return error ? [] : data;
-}
-
-// CADASTRAR GRUPO
-async function cadastrarGrupo(nome) {
-    const { error } = await _supabase
-        .from('grupos')
-        .insert([{ nome: nome }]);
-    if (error) {
-        alert("Erro: " + error.message);
-        return false;
-    }
-    return true;
-}
-
-// RENDERIZAR NA TABELA
-async function renderizarGrupos() {
-    const tabela = document.getElementById('corpoTabelaGrupos');
-    if (!tabela) return;
-    const grupos = await buscarGruposBanco();
-    tabela.innerHTML = '';
-    grupos.forEach(g => {
-        tabela.innerHTML += `
-            <tr>
-                <td>${g.id}</td>
-                <td><strong>${g.nome}</strong></td>
-                <td>
-                    <button onclick="excluirGrupo(${g.id})" style="background:none; border:none; cursor:pointer;">🗑️</button>
+                    <button onclick="alternarStatusMembro('${membro.id}', '${membro.status_registro}')">🔄</button>
+                    <button onclick="excluirMembro('${membro.id}')" style="background:none; border:none; cursor:pointer;">🗑️</button>
                 </td>
             </tr>`;
     });
 }
 
-// EXCLUIR GRUPO
+// ==========================================
+// 4. MÓDULO DE GRUPOS E USUÁRIOS
+// ==========================================
+
+async function buscarGruposBanco() {
+    const { data, error } = await _supabase.from('grupos').select('*').order('nome', { ascending: true });
+    return error ? [] : data;
+}
+
+async function cadastrarGrupo(nome) {
+    const { error } = await _supabase.from('grupos').insert([{ nome: nome }]);
+    return !error;
+}
+
+async function renderizarGrupos() {
+    const tabela = document.getElementById('corpoTabelaGrupos');
+    if (!tabela) return;
+    const grupos = await buscarGruposBanco();
+    tabela.innerHTML = grupos.map(g => `
+        <tr>
+            <td>${g.id}</td>
+            <td><strong>${g.nome}</strong></td>
+            <td><button onclick="excluirGrupo(${g.id})">🗑️</button></td>
+        </tr>`).join('');
+}
+
 async function excluirGrupo(id) {
-    if (confirm("Deseja apagar este grupo? Membros vinculados a ele ficarão sem grupo.")) {
-        const { error } = await _supabase.from('grupos').delete().eq('id', id);
-        if (!error) renderizarGrupos();
+    if (confirm("Deseja apagar este grupo?")) {
+        await _supabase.from('grupos').delete().eq('id', id);
+        renderizarGrupos();
+    }
+}
+
+// ==========================================
+// 5. MÓDULO DE PRESENÇA
+// ==========================================
+
+async function salvarPresencas() {
+    const data = document.getElementById('dataCulto').value;
+    const checkboxes = document.querySelectorAll('.check-presenca');
+    if (!data) return alert("Selecione a data!");
+
+    const registros = Array.from(checkboxes).map(cb => ({
+        membro_id: cb.getAttribute('data-id'),
+        data_culto: data,
+        presenca: cb.checked
+    }));
+
+    try {
+        const { error } = await _supabase.from('presencas').insert(registros);
+        if (error) throw error;
+        alert("✅ Chamada salva!");
+        window.location.href = 'dashboard.html';
+    } catch (error) {
+        alert("Erro: " + error.message);
     }
 }

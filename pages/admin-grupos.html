@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestão de Grupos - ICM</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <button onclick="window.location.href='dashboard.html'" class="btn-voltar">⬅ Voltar</button>
+            <h1>Gestão de Grupos</h1>
+        </header>
+
+        <div class="card-form">
+            <h3>Cadastrar Novo Grupo</h3>
+            <div style="display: flex; gap: 10px;">
+                <input type="text" id="nomeGrupo" placeholder="Ex: Grupo 01, Jovens..." style="flex: 1;">
+                <button onclick="handleCriarGrupo()" class="btn-novo">Adicionar</button>
+            </div>
+        </div>
+
+        <div class="tabela-responsiva" style="margin-top: 20px;">
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Nome do Grupo</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody id="corpoTabelaGrupos">
+                    </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script src="../js/script.js"></script>
+    <script>
+        window.onload = async () => {
+            const user = verificarAcesso();
+            if(user.nivel !== 'Admin' && user.nivel !== 'Master') {
+                alert("Acesso negado!");
+                window.location.href = 'dashboard.html';
+            }
+            renderizarGrupos();
+        };
+
+        async function handleCriarGrupo() {
+            const nome = document.getElementById('nomeGrupo').value;
+            if(!nome) return alert("Digite o nome do grupo!");
+            
+            const sucesso = await cadastrarGrupo(nome);
+            if(sucesso) {
+                document.getElementById('nomeGrupo').value = '';
+                renderizarGrupos();
+            }
+        }
+    </script>
+</body>
+</html>

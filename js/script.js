@@ -180,3 +180,50 @@ function logout() {
     localStorage.removeItem('usuarioLogado');
     window.location.href = '../index.html';
 }
+
+// BUSCAR GRUPOS
+async function buscarGruposBanco() {
+    const { data, error } = await _supabase
+        .from('grupos')
+        .select('*')
+        .order('nome', { ascending: true });
+    return error ? [] : data;
+}
+
+// CADASTRAR GRUPO
+async function cadastrarGrupo(nome) {
+    const { error } = await _supabase
+        .from('grupos')
+        .insert([{ nome: nome }]);
+    if (error) {
+        alert("Erro: " + error.message);
+        return false;
+    }
+    return true;
+}
+
+// RENDERIZAR NA TABELA
+async function renderizarGrupos() {
+    const tabela = document.getElementById('corpoTabelaGrupos');
+    if (!tabela) return;
+    const grupos = await buscarGruposBanco();
+    tabela.innerHTML = '';
+    grupos.forEach(g => {
+        tabela.innerHTML += `
+            <tr>
+                <td>${g.id}</td>
+                <td><strong>${g.nome}</strong></td>
+                <td>
+                    <button onclick="excluirGrupo(${g.id})" style="background:none; border:none; cursor:pointer;">🗑️</button>
+                </td>
+            </tr>`;
+    });
+}
+
+// EXCLUIR GRUPO
+async function excluirGrupo(id) {
+    if (confirm("Deseja apagar este grupo? Membros vinculados a ele ficarão sem grupo.")) {
+        const { error } = await _supabase.from('grupos').delete().eq('id', id);
+        if (!error) renderizarGrupos();
+    }
+}

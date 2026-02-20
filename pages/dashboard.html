@@ -9,45 +9,43 @@
 </head>
 <body>
     <div class="container">
-        <h1>Dashboard ICM</h1>
-        <p id="boasVindas">Bem-vindo!</p>
+        <header style="text-align: center; margin-bottom: 30px;">
+            <h1>Painel Administrativo</h1>
+            <p id="boasVindas">Bem-vindo!</p>
+        </header>
 
-        <main class="grid-botoes">
-            <button onclick="window.location.href='cadastro-membro.html'" class="btn-menu">
-                <span class="icon">📝</span>
+        <div class="grid-menu">
+            <button onclick="window.location.href='chamada.html'" class="btn-menu" style="background-color: #2ed573;">
+                <span style="font-size: 2rem; display: block;">🗓️</span>
+                Fazer Chamada
+            </button>
+
+            <button onclick="window.location.href='cadastro-membros.html'" class="btn-menu">
+                <span style="font-size: 2rem; display: block;">👤</span>
                 Cadastrar Membro
             </button>
 
             <button onclick="window.location.href='lista-membros.html'" class="btn-menu">
-                <span class="icon">👥</span>
+                <span style="font-size: 2rem; display: block;">📋</span>
                 Lista de Membros
             </button>
 
-            <button onclick="alert('Em breve: Relatórios')" class="btn-menu">
-                <span class="icon">📊</span>
-                Relatórios
+            <button onclick="logout()" class="btn-menu" style="background-color: #ff4757;">
+                <span style="font-size: 2rem; display: block;">🚪</span>
+                Sair
             </button>
-
-            <button onclick="alert('Em breve: Configurações')" class="btn-menu">
-                <span class="icon">⚙️</span>
-                Configurações
-            </button>
-        </main>
-
-        <div class="action-footer">
-            <button onclick="fazerLogout()" class="btn-sair">Sair do Sistema</button>
         </div>
     </div>
 
     <script src="../js/script.js"></script>
     <script>
+        // Verifica se o usuário tem permissão para estar aqui
         verificarAcesso();
-        const user = JSON.parse(localStorage.getItem('usuarioLogado'));
-        document.getElementById('boasVindas').innerText = `Bem-vindo, ${user.nome}!`;
-
-        function fazerLogout() {
-            localStorage.removeItem('usuarioLogado');
-            window.location.href = '../index.html';
+        
+        // Pequeno script para personalizar o "Bem-vindo"
+        const user = JSON.parse(localStorage.getItem('icm_user'));
+        if (user && user.email) {
+            document.getElementById('boasVindas').innerText = `Logado como: ${user.email}`;
         }
     </script>
 </body>

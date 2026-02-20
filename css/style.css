@@ -157,3 +157,30 @@ input:focus, select:focus {
     margin-top: 10px;
     font-weight: 500;
 }
+
+.grid-menu {
+    display: grid;
+    grid-template-columns: 1fr 1fr; /* Duas colunas */
+    gap: 15px;
+    margin-top: 20px;
+}
+
+.btn-menu {
+    padding: 20px;
+    border: none;
+    border-radius: 10px;
+    background-color: #57606f;
+    color: white;
+    font-size: 1.1rem;
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+
+.btn-menu:hover {
+    transform: scale(1.05);
+}
+
+/* No celular, fica uma coluna só */
+@media (max-width: 480px) {
+    .grid-menu { grid-template-columns: 1fr; }
+}

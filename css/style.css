@@ -158,29 +158,39 @@ input:focus, select:focus {
     font-weight: 500;
 }
 
+/* Container do Menu */
 .grid-menu {
     display: grid;
-    grid-template-columns: 1fr 1fr; /* Duas colunas */
-    gap: 15px;
+    grid-template-columns: 1fr 1fr; /* Divide em 2 colunas iguais */
+    gap: 15px;                      /* Espaço entre os botões */
     margin-top: 20px;
 }
 
+/* Estilo dos Botões do Menu */
 .btn-menu {
-    padding: 20px;
+    display: flex;
+    flex-direction: column;         /* Ícone em cima, texto embaixo */
+    align-items: center;
+    justify-content: center;
+    padding: 25px 15px;
     border: none;
-    border-radius: 10px;
-    background-color: #57606f;
+    border-radius: 12px;
+    background-color: #57606f;      /* Cor cinza padrão */
     color: white;
-    font-size: 1.1rem;
+    font-weight: bold;
     cursor: pointer;
-    transition: transform 0.2s;
+    transition: all 0.3s ease;      /* Efeito suave ao passar o mouse */
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
 }
 
 .btn-menu:hover {
-    transform: scale(1.05);
+    transform: translateY(-5px);    /* Botão "levanta" levemente */
+    filter: brightness(1.1);        /* Brilha um pouco */
 }
 
-/* No celular, fica uma coluna só */
+/* Responsividade: No celular, os botões ficam em uma coluna só */
 @media (max-width: 480px) {
-    .grid-menu { grid-template-columns: 1fr; }
+    .grid-menu {
+        grid-template-columns: 1fr;
+    }
 }

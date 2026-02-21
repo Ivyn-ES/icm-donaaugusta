@@ -8,52 +8,39 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
-    <div class="container" style="max-width: 600px;">
-        <h1>🗓️ Chamada do Culto</h1>
-        
-        <div class="campo">
-            <label>Data do Culto:</label>
-            <input type="date" id="dataCulto">
-        </div>
+    <div class="container">
+        <header style="text-align: center; margin-bottom: 20px;">
+            <h1>📋 Fazer Chamada</h1>
+            <p id="infoChamada">Carregando...</p>
+            <input type="date" id="data_chamada" style="padding: 10px; border-radius: 5px; border: 1px solid #ccc;">
+        </header>
 
-        <div id="listaChamada" style="margin-top: 20px;">
-            <p>Carregando membros...</p>
-        </div>
+        <section>
+            <div id="listaChamada" style="display: flex; flex-direction: column; gap: 10px;">
+                </div>
+        </section>
 
-        <div class="action-footer">
-            <button onclick="salvarPresencas()" class="btn-salvar">Salvar Presença</button>
-            <a href="dashboard.html" class="btn-alt-senha" style="text-decoration:none;">Voltar</a>
+        <div style="margin-top: 30px; display: flex; flex-direction: column; gap: 10px;">
+            <button onclick="salvarChamada()" class="btn-salvar" id="btnFinalizar">Finalizar Chamada</button>
+            <a href="dashboard.html" class="btn-voltar" style="text-align: center; text-decoration: none;">⬅ Voltar ao Painel</a>
         </div>
     </div>
 
     <script src="../js/script.js"></script>
     <script>
-        verificarAcesso();
-        
-        // Define a data de hoje como padrão no input
-        document.getElementById('dataCulto').valueAsDate = new Date();
-
-        // Função para carregar apenas membros ativos para a chamada
-        async function prepararChamada() {
-            const lista = await buscarMembrosBanco(); // Reusando sua função
-            const divLista = document.getElementById('listaChamada');
-            divLista.innerHTML = '';
-
-            // Filtra apenas os ativos para não poluir a chamada
-            const ativos = lista.filter(m => m.status_registro === 'Ativo');
-
-            ativos.forEach(membro => {
-                const item = `
-                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #eee;">
-                        <span>${membro.nome_completo}</span>
-                        <input type="checkbox" class="check-presenca" data-id="${membro.id}" style="width: 20px; hieght: 20px;">
-                    </div>
-                `;
-                divLista.innerHTML += item;
-            });
-        }
-
-        prepararChamada();
+        document.addEventListener('DOMContentLoaded', () => {
+            verificarAcesso();
+            
+            // Define a data de hoje como padrão
+            const hoje = new Date().toISOString().split('T')[0];
+            document.getElementById('data_chamada').value = hoje;
+            
+            // Carrega os membros conforme o grupo do usuário logado
+            const user = JSON.parse(localStorage.getItem('icm_user'));
+            document.getElementById('infoChamada').innerText = `Grupo: ${user.grupo_vinculado || 'Geral'}`;
+            
+            renderizarListaChamada();
+        });
     </script>
 </body>
 </html>

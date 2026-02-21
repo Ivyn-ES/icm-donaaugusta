@@ -251,27 +251,81 @@ async function removerUsuario(id) {
 }
 
 // ==========================================
-// 5. MÓDULO DE PRESENÇA
+// 5. MÓDULO DE PRESENÇA (CHAMADA)
 // ==========================================
 
-async function salvarPresencas() {
-    const data = document.getElementById('dataCulto').value;
-    const checkboxes = document.querySelectorAll('.check-presenca');
-    if (!data) return alert("Selecione a data!");
+// Gera a lista de membros com botões de presença
+async function renderizarListaChamada() {
+    const listaContainer = document.getElementById('listaChamada');
+    if (!listaContainer) return;
 
-    const registros = Array.from(checkboxes).map(cb => ({
-        membro_id: cb.getAttribute('data-id'),
-        data_culto: data,
-        presenca: cb.checked
-    }));
+    const user = JSON.parse(localStorage.getItem('icm_user'));
+    
+    try {
+        let consulta = _supabase.from('membros').select('id, nome, grupo_vinculado');
+
+        // Filtro: Se não for Admin, só vê o seu grupo
+        if (user.nivel !== 'Admin' && user.nivel !== 'Master' && user.grupo_vinculado) {
+            consulta = consulta.eq('grupo_vinculado', user.grupo_vinculado);
+        }
+
+        const { data, error } = await consulta.order('nome');
+
+        if (error) throw error;
+
+        listaContainer.innerHTML = "";
+        data.forEach(m => {
+            listaContainer.innerHTML += `
+                <div class="card-chamada" style="display: flex; align-items: center; justify-content: space-between; padding: 15px; background: #fff; border: 1px solid #ddd; border-radius: 8px;">
+                    <span style="font-weight: bold;">${m.nome}</span>
+                    <input type="checkbox" class="check-presenca" data-id="${m.id}" style="width: 25px; height: 25px; cursor: pointer;">
+                </div>
+            `;
+        });
+    } catch (err) {
+        console.error("Erro na chamada:", err.message);
+    }
+}
+
+// Salva as presenças marcadas no banco
+async function salvarChamada() {
+    const btn = document.getElementById('btnFinalizar');
+    const dataCulto = document.getElementById('data_chamada').value;
+    const checkboxes = document.querySelectorAll('.check-presenca');
+    const presencas = [];
+
+    btn.disabled = true;
+    btn.innerText = "Salvando...";
+
+    checkboxes.forEach(cb => {
+        if (cb.checked) {
+            presencas.push({
+                membro_id: cb.getAttribute('data-id'),
+                data_presenca: dataCulto,
+                presente: true
+            });
+        }
+    });
+
+    if (presencas.length === 0) {
+        if (!confirm("Ninguém marcado como presente. Deseja salvar assim mesmo?")) {
+            btn.disabled = false;
+            btn.innerText = "Finalizar Chamada";
+            return;
+        }
+    }
 
     try {
-        const { error } = await _supabase.from('presencas').insert(registros);
+        const { error } = await _supabase.from('presencas').insert(presencas);
         if (error) throw error;
-        alert("✅ Chamada salva!");
+
+        alert("✅ Chamada realizada com sucesso!");
         window.location.href = 'dashboard.html';
-    } catch (error) {
-        alert("Erro: " + error.message);
+    } catch (err) {
+        alert("Erro ao salvar chamada. Verifique a tabela 'presencas'.");
+        console.error(err);
+        btn.disabled = false;
+        btn.innerText = "Finalizar Chamada";
     }
 }
 

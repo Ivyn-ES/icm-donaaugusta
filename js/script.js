@@ -16,7 +16,9 @@ if (typeof supabase !== 'undefined') {
 function verificarAcesso() {
     const usuario = JSON.parse(localStorage.getItem('usuarioLogado'));
     if (!usuario) {
-        window.location.href = '../index.html';
+        if (!window.location.href.includes('index.html')) {
+            window.location.href = '../index.html';
+        }
         return null;
     }
     return usuario;
@@ -203,4 +205,33 @@ async function renderizarListaChamada() {
         listaContainer.innerHTML = "";
         data.forEach(m => {
             listaContainer.innerHTML += `
-                <div class="card-chamada" style="display:flex; align-items:center; justify-content:space-between; padding:15px; margin-bottom:10px; background:#fff; border:
+                <div class="card-chamada" style="display:flex; align-items:center; justify-content:space-between; padding:15px; margin-bottom:10px; background:#fff; border:1px solid #ddd; border-radius:8px;">
+                    <span style="font-weight:bold;">${m.nome}</span>
+                    <input type="checkbox" class="check-presenca" data-id="${m.id}" style="width:25px; height:25px;">
+                </div>`;
+        });
+    } catch (err) {
+        console.error(err);
+    }
+}
+
+// ==========================================
+// 6. INICIALIZAÇÃO (EVENT LISTENERS)
+// ==========================================
+
+document.addEventListener('DOMContentLoaded', function() {
+    const formLogin = document.getElementById('loginForm');
+    if (formLogin) {
+        formLogin.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const userIn = document.getElementById('usuario').value.trim();
+            const passIn = document.getElementById('senha').value.trim();
+            realizarLogin(userIn, passIn);
+        });
+    }
+
+    if (document.getElementById('corpoTabelaGrupos')) renderizarGrupos();
+    if (document.getElementById('corpoTabelaMembros')) renderizarListaMembros();
+    if (document.getElementById('listaChamada')) renderizarListaChamada();
+    if (document.getElementById('grupo_vinculado')) carregarGruposNoSelect();
+});

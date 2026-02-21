@@ -131,58 +131,116 @@ async function alternarStatusMembro(id, statusAtual) {
     }
 }
 
+// ==========================================
+// 3. MÓDULO DE MEMBROS (Busca e Exibição)
+// ==========================================
+
 async function renderizarListaMembros() {
-    const tabela = document.getElementById('corpoTabelaMembros');
-    if (!tabela) return;
+    const corpoTabela = document.getElementById('corpoTabelaMembros');
+    if (!corpoTabela) return;
 
-    const membros = await buscarMembrosBanco();
-    tabela.innerHTML = '';
+    // Pega os dados do usuário logado para saber o que ele pode ver
+    const user = JSON.parse(localStorage.getItem('icm_user'));
+    
+    try {
+        let consulta = _supabase.from('membros').select('*');
 
-    membros.forEach(membro => {
-        const statusCor = membro.status_registro === 'Ativo' ? '#2ed573' : '#ff4757';
-        tabela.innerHTML += `
-            <tr>
-                <td><strong>${membro.nome_completo}</strong></td>
-                <td>${membro.categoria || 'Membro'}</td>
-                <td><span style="color: ${statusCor}; font-weight: bold;">${membro.status_registro}</span></td>
-                <td>
-                    <button onclick="alternarStatusMembro('${membro.id}', '${membro.status_registro}')">🔄</button>
-                    <button onclick="excluirMembro('${membro.id}')" style="background:none; border:none; cursor:pointer;">🗑️</button>
-                </td>
-            </tr>`;
-    });
+        // REGRAS DE FILTRO:
+        // Se NÃO for Admin e tiver um grupo vinculado, filtra os membros
+        if (user.nivel !== 'Admin' && user.nivel !== 'Master' && user.grupo_vinculado) {
+            consulta = consulta.eq('grupo_vinculado', user.grupo_vinculado);
+        }
+
+        const { data, error } = await consulta.order('nome', { ascending: true });
+
+        if (error) throw error;
+
+        corpoTabela.innerHTML = ""; // Limpa a tabela antes de preencher
+
+        if (data.length === 0) {
+            corpoTabela.innerHTML = "<tr><td colspan='5'>Nenhum membro encontrado.</td></tr>";
+            return;
+        }
+
+        data.forEach(m => {
+            corpoTabela.innerHTML += `
+                <tr>
+                    <td>${m.nome}</td>
+                    <td>${m.categoria}</td>
+                    <td>${m.grupo_vinculado || 'Sem Grupo'}</td>
+                    <td>${m.situacao}</td>
+                    <td>
+                        <button onclick="verDetalhes('${m.id}')">Ver</button>
+                    </td>
+                </tr>
+            `;
+        });
+    } catch (err) {
+        console.error("Erro ao carregar lista:", err.message);
+        corpoTabela.innerHTML = "<tr><td colspan='5'>Erro ao carregar dados.</td></tr>";
+    }
 }
 
 // ==========================================
-// 4. MÓDULO DE GRUPOS E USUÁRIOS
+// 4. MÓDULO DE GRUPOS E USUÁRIOS (Enxuto)
 // ==========================================
 
-async function buscarGruposBanco() {
-    const { data, error } = await _supabase.from('grupos').select('*').order('nome', { ascending: true });
-    return error ? [] : data;
+// Função para criar um novo grupo (Ex: Grupo 01)
+async function criarGrupo(nomeGrupo) {
+    try {
+        const { error } = await _supabase
+            .from('grupos')
+            .insert([{ nome: nomeGrupo }]);
+
+        if (error) throw error;
+        alert(`✅ ${nomeGrupo} adicionado com sucesso!`);
+        return true;
+    } catch (err) {
+        console.error("Erro ao criar grupo:", err.message);
+        alert("Erro ao salvar grupo. Verifique se ele já existe.");
+        return false;
+    }
 }
 
-async function cadastrarGrupo(nome) {
-    const { error } = await _supabase.from('grupos').insert([{ nome: nome }]);
-    return !error;
-}
-
+// Função para listar os grupos na tabela da página admin-grupos.html
 async function renderizarGrupos() {
-    const tabela = document.getElementById('corpoTabelaGrupos');
-    if (!tabela) return;
-    const grupos = await buscarGruposBanco();
-    tabela.innerHTML = grupos.map(g => `
-        <tr>
-            <td>${g.id}</td>
-            <td><strong>${g.nome}</strong></td>
-            <td><button onclick="excluirGrupo(${g.id})">🗑️</button></td>
-        </tr>`).join('');
+    const corpoTabela = document.getElementById('corpoTabelaGrupos');
+    if (!corpoTabela) return;
+
+    try {
+        const { data, error } = await _supabase
+            .from('grupos')
+            .select('*')
+            .order('nome', { ascending: true });
+
+        if (error) throw error;
+
+        corpoTabela.innerHTML = "";
+        data.forEach(g => {
+            corpoTabela.innerHTML += `
+                <tr>
+                    <td style="padding: 10px; text-align: center;">${g.nome}</td>
+                    <td style="text-align: center;">
+                        <button onclick="removerGrupo('${g.id}')" style="background: #ff4757; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer;">Excluir</button>
+                    </td>
+                </tr>
+            `;
+        });
+    } catch (err) {
+        console.error("Erro ao listar grupos:", err.message);
+    }
 }
 
-async function excluirGrupo(id) {
-    if (confirm("Deseja apagar este grupo?")) {
-        await _supabase.from('grupos').delete().eq('id', id);
-        renderizarGrupos();
+// Função para remover um grupo
+async function removerGrupo(id) {
+    if (!confirm("Tem certeza que deseja excluir este grupo?")) return;
+
+    try {
+        const { error } = await _supabase.from('grupos').delete().eq('id', id);
+        if (error) throw error;
+        renderizarGrupos(); // Atualiza a lista
+    } catch (err) {
+        alert("Erro ao excluir: Verifique se existem membros vinculados a este grupo.");
     }
 }
 

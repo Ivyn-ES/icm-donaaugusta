@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gerenciar Usuários - ICM</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <div class="container">
+        <header style="text-align: center; margin-bottom: 20px;">
+            <h1>👥 Gestão de Acessos</h1>
+        </header>
+
+        <section class="admin-section">
+            <form id="formUsuario" class="linha-dupla">
+                <div class="campo">
+                    <label>Login:</label>
+                    <input type="text" id="novoLogin" placeholder="Ex: joao_gp01" required>
+                </div>
+                <div class="campo">
+                    <label>Senha:</label>
+                    <input type="password" id="novaSenha" required>
+                </div>
+                <div class="campo">
+                    <label>Nível:</label>
+                    <select id="nivelAcesso">
+                        <option value="User">Líder (User)</option>
+                        <option value="Admin">Admin</option>
+                    </select>
+                </div>
+                <div class="campo">
+                    <label>Grupo:</label>
+                    <input type="text" id="vincularGrupo" placeholder="Ex: 01">
+                </div>
+                <button type="submit" class="btn-salvar" style="margin-top: 10px;">Criar Usuário</button>
+            </form>
+        </section>
+
+        <hr>
+
+        <section>
+            <h3>Usuários Cadastrados</h3>
+            <table border="1" style="width: 100%; border-collapse: collapse; margin-top: 10px;">
+                <thead>
+                    <tr style="background: #f0f2f5;">
+                        <th style="padding: 10px;">Login</th>
+                        <th>Nível</th>
+                        <th>Grupo</th>
+                        <th>Ação</th>
+                    </tr>
+                </thead>
+                <tbody id="corpoTabelaUsuarios">
+                    </tbody>
+            </table>
+        </section>
+
+        <div style="margin-top: 30px;">
+            <a href="dashboard.html" class="btn-voltar" style="display: block; text-align: center; text-decoration: none;">⬅ Voltar ao Painel</a>
+        </div>
+    </div>
+
+    <script src="../js/script.js"></script>
+    
+    <script>
+        // Lógica local para esta página
+        document.addEventListener('DOMContentLoaded', function() {
+            // 1. Verifica acesso usando a função do script.js
+            const user = verificarAcesso();
+            if (!user || (user.nivel !== 'Admin' && user.nivel !== 'Master')) {
+                alert('Acesso negado!');
+                window.location.href = 'dashboard.html';
+                return;
+            }
+
+            // 2. Tenta renderizar a lista se a função existir
+            if (typeof renderizarUsuarios === 'function') {
+                renderizarUsuarios();
+            }
+        });
+
+        // 3. Escuta o envio do formulário
+        const form = document.getElementById('formUsuario');
+        if (form) {
+            form.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                const dados = {
+                    login: document.getElementById('novoLogin').value.trim(),
+                    senha: document.getElementById('novaSenha').value.trim(),
+                    permissao: document.getElementById('nivelAcesso').value,
+                    grupo_vinculado: document.getElementById('vincularGrupo').value.trim()
+                };
+
+                if (typeof criarUsuario === 'function') {
+                    const sucesso = await criarUsuario(dados);
+                    if (sucesso) {
+                        form.reset();
+                        renderizarUsuarios();
+                    }
+                }
+            });
+        }
+    </script>
+</body>
+</html>

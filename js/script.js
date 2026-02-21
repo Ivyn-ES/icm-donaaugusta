@@ -87,24 +87,27 @@ async function buscarMembrosBanco() {
     }
 }
 
+//Cadastrar Membros
 async function cadastrarMembro(dadosMembro) {
     try {
         const { error } = await _supabase.from('membros').insert([{
-            nome_completo: dadosMembro.nome,
+            nome: dadosMembro.nome, // Mudado de nome_completo para nome
             situacao: dadosMembro.situacao,
             categoria: dadosMembro.categoria,
             sexo: dadosMembro.sexo,
             grupo: dadosMembro.grupo,
-            aniversario_dia: parseInt(dadosMembro.dia),
-            aniversario_mes: dadosMembro.mes,
+            dia: parseInt(dadosMembro.dia) || 0, // Mudado para bater com o banco
+            mes: dadosMembro.mes,                 // Mudado para bater com o banco
             status_registro: 'Ativo'
         }]);
+
         if (error) throw error;
-        alert('✅ Sucesso ao cadastrar!');
-        return true;
-    } catch (error) {
-        alert('❌ Erro: ' + error.message);
-        return false;
+
+        alert("✅ Membro cadastrado com sucesso!");
+        window.location.href = "lista-membros.html";
+    } catch (err) {
+        console.error("Erro ao cadastrar:", err.message);
+        alert("Erro ao salvar: " + err.message);
     }
 }
 

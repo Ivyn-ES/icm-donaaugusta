@@ -45,8 +45,13 @@ async function realizarLogin(usuarioDigitado, senhaDigitada) {
             nivel: data.permissao,
             grupo: data.grupo_vinculado 
         }));
-        
-        window.location.href = 'pages/dashboard.html';
+
+        if (data.permissao === 'Livre') {
+    window.location.href = 'pages/livre.html';
+}       
+        else {
+    window.location.href = 'pages/dashboard.html';        
+}
     } catch (err) {
         alert('⚠️ Erro ao conectar ao sistema.');
     }

@@ -11,14 +11,13 @@
     <div class="container">
         <header style="text-align: center; margin-bottom: 20px;">
             <h1>📂 Gestão de Grupos</h1>
-            <p>Cadastre e organize os setores da igreja</p>
         </header>
 
         <section class="admin-section">
             <form id="formGrupo" class="linha-dupla" style="align-items: flex-end;">
                 <div class="campo">
-                    <label for="nome_grupo">Nome do Grupo/Setor:</label>
-                    <input type="text" id="nome_grupo" placeholder="Ex: Grupo 01" required>
+                    <label for="nomeGrupo">Novo Grupo:</label>
+                    <input type="text" id="nomeGrupo" placeholder="Ex: 01" required>
                 </div>
                 <button type="submit" class="btn-salvar">Adicionar</button>
             </form>
@@ -31,7 +30,7 @@
             <table border="1" style="width: 100%; border-collapse: collapse; margin-top: 10px;">
                 <thead>
                     <tr style="background: #f0f2f5;">
-                        <th style="padding: 10px;">Nome do Grupo</th>
+                        <th style="padding: 10px;">Grupo</th>
                         <th>Ação</th>
                     </tr>
                 </thead>
@@ -46,28 +45,30 @@
     </div>
 
     <script src="../js/script.js"></script>
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const user = verificarAcesso();
-            if (user.nivel !== 'Admin' && user.nivel !== 'Master') {
-                alert('Acesso negado!');
-                window.location.href = 'dashboard.html';
-            }
-            renderizarGrupos(); // Função que buscaremos no script.js
-        });
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const user = verificarAcesso();
+        // Verificando se o nível é Admin ou Master (usando o padrão do seu login)
+        if (user.nivel !== 'Admin' && user.nivel !== 'Master') {
+            alert('Acesso negado!');
+            window.location.href = 'dashboard.html';
+        }
+        renderizarGrupos(); 
+    });
 
-        const form = document.getElementById('formGrupo');
-        form.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const nome = document.getElementById('nome_grupo').value;
-            
-            // Chama a função que criaremos no script.js
-            const ok = await criarGrupo(nome);
-            if (ok) {
-                form.reset();
-                renderizarGrupos();
-            }
-        });
-    </script>
+    const form = document.getElementById('formGrupo');
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        // CORREÇÃO AQUI: O ID correto é 'nomeGrupo'
+        const nome = document.getElementById('nomeGrupo').value;
+        
+        const ok = await criarGrupo(nome);
+        if (ok) {
+            form.reset();
+            renderizarGrupos();
+        }
+    });
+</script>
 </body>
 </html>

@@ -330,49 +330,70 @@ async function salvarChamada() {
 }
 
 // ==========================================
-// 6. INICIALIZAÇÃO (Ouvintes de Eventos)
+// 6. MÓDULO DE GESTÃO DE GRUPOS
 // ==========================================
 
-// Este evento dispara assim que o HTML termina de carregar
-document.addEventListener('DOMContentLoaded', function() {
-    
-    // Conecta o formulário de login à função realizarLogin
-    const formLogin = document.getElementById('loginForm');
-    if (formLogin) {
-        formLogin.addEventListener('submit', function(e) {
-            e.preventDefault();
-            const userIn = document.getElementById('usuario').value.trim();
-            const passIn = document.getElementById('senha').value.trim();
-            
-            // Chama a função que criamos no Módulo 2
-            realizarLogin(userIn, passIn);
-        });
+// Função para CRIAR o grupo no banco
+async function criarGrupo(nomeDoGrupo) {
+    try {
+        // Usando a coluna 'nome' conforme padronizamos no SQL
+        const { error } = await _supabase.from('grupos').insert([{ nome: nomeDoGrupo }]);
+        
+        if (error) throw error;
+        
+        alert("✅ Grupo " + nomeDoGrupo + " adicionado com sucesso!");
+        return true;
+    } catch (err) {
+        console.error("Erro ao criar grupo:", err.message);
+        alert("Erro ao criar grupo: " + err.message);
+        return false;
     }
+}
 
-    // Se estiver na página de Grupos, carrega a lista automaticamente
-    if (document.getElementById('corpoTabelaGrupos')) {
-        renderizarGrupos();
-    }
+// Função para LISTAR os grupos na tabela
+async function renderizarGrupos() {
+    const corpoTabela = document.getElementById('corpoTabelaGrupos');
+    if (!corpoTabela) return;
 
-    // Se estiver na página de Membros, carrega a lista automaticamente
-    if (document.getElementById('corpoTabelaMembros')) {
-        renderizarListaMembros();
-    }
-});
+    try {
+        const { data, error } = await _supabase.from('grupos').select('*').order('nome', { ascending: true });
+        
+        if (error) throw error;
 
-async function carregarGruposNoSelect() {
-    const select = document.getElementById('grupo_vinculado');
-    if (!select) return;
+        corpoTabela.innerHTML = ""; // Limpa a tabela antes de preencher
 
-    const { data, error } = await _supabase
-        .from('grupos')
-        .select('nome')
-        .order('nome', { ascending: true });
+        if (data.length === 0) {
+            corpoTabela.innerHTML = "<tr><td colspan='2' style='text-align:center; padding:10px;'>Nenhum grupo cadastrado.</td></tr>";
+            return;
+        }
 
-    if (!error && data) {
-        select.innerHTML = '<option value="">Selecione um Grupo</option>';
         data.forEach(g => {
-            select.innerHTML += `<option value="${g.nome}">${g.nome}</option>`;
+            corpoTabela.innerHTML += `
+                <tr>
+                    <td style="padding: 10px; text-align: center;">${g.nome}</td>
+                    <td style="text-align: center;">
+                        <button onclick="deletarGrupo('${g.id}', '${g.nome}')" style="background:none; border:none; color:red; cursor:pointer; font-size: 1.2rem;">🗑️</button>
+                    </td>
+                </tr>
+            `;
         });
+    } catch (err) {
+        console.error("Erro ao listar grupos:", err.message);
+        corpoTabela.innerHTML = "<tr><td colspan='2'>Erro ao carregar dados.</td></tr>";
+    }
+}
+
+// Função para EXCLUIR um grupo
+async function deletarGrupo(id, nome) {
+    if (!confirm(`Tem certeza que deseja excluir o Grupo ${nome}?`)) return;
+
+    try {
+        const { error } = await _supabase.from('grupos').delete().eq('id', id);
+        if (error) throw error;
+
+        alert("Grupo removido!");
+        renderizarGrupos(); // Atualiza a lista na tela
+    } catch (err) {
+        alert("Erro ao excluir: " + err.message);
     }
 }

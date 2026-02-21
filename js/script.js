@@ -139,21 +139,31 @@ async function renderizarListaMembros() {
     const corpoTabela = document.getElementById('corpoTabelaMembros');
     if (!corpoTabela) return;
 
-    const user = JSON.parse(localStorage.getItem('icm_user'));
+    // Busca o usuário e evita o erro "is null"
+    const usuarioLocalStorage = localStorage.getItem('icm_user');
+    
+    // Se não houver usuário, redireciona para o login ou para o erro amigável
+    if (!usuarioLocalStorage) {
+        console.error("Usuário não está logado.");
+        corpoTabela.innerHTML = "<tr><td colspan='5'>Sessão expirada. Faça login novamente.</td></tr>";
+        return;
+    }
+
+    const user = JSON.parse(usuarioLocalStorage);
     
     try {
-        // Buscamos todos os campos
         let consulta = _supabase.from('membros').select('*');
 
-        // Se não for Admin, filtra pela coluna 'grupo'
-        if (user.nivel !== 'Admin' && user.nivel !== 'Master' && user.grupo_vinculado) {
-            // Aqui comparamos o grupo do usuário com a coluna 'grupo' do membro
+        // Filtro seguro: Só filtra se o usuário existir e NÃO for admin
+        if (user && user.nivel !== 'Admin' && user.nivel !== 'Master') {
             consulta = consulta.eq('grupo', user.grupo_vinculado);
         }
 
         const { data, error } = await consulta.order('nome', { ascending: true });
 
         if (error) throw error;
+        
+        // ... restante do código de preencher a tabela (forEach) ...
 
         corpoTabela.innerHTML = "";
         data.forEach(m => {

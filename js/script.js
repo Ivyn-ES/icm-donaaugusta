@@ -139,24 +139,20 @@ async function renderizarListaMembros() {
     const corpoTabela = document.getElementById('corpoTabelaMembros');
     if (!corpoTabela) return;
 
-    // Busca o usuário e evita o erro "is null"
-    const usuarioLocalStorage = localStorage.getItem('icm_user');
+    // BUSCA O NOME CORRETO QUE VOCÊ DEFINIU NO LOGIN
+    const user = JSON.parse(localStorage.getItem('usuarioLogado'));
     
-    // Se não houver usuário, redireciona para o login ou para o erro amigável
-    if (!usuarioLocalStorage) {
-        console.error("Usuário não está logado.");
+    if (!user) {
         corpoTabela.innerHTML = "<tr><td colspan='5'>Sessão expirada. Faça login novamente.</td></tr>";
         return;
     }
 
-    const user = JSON.parse(usuarioLocalStorage);
-    
     try {
         let consulta = _supabase.from('membros').select('*');
 
-        // Filtro seguro: Só filtra se o usuário existir e NÃO for admin
-        if (user && user.nivel !== 'Admin' && user.nivel !== 'Master') {
-            consulta = consulta.eq('grupo', user.grupo_vinculado);
+        // Ajustado para 'permissao' e 'grupo' conforme seu banco e login
+        if (user.nivel !== 'Admin' && user.nivel !== 'Master') {
+            consulta = consulta.eq('grupo', user.grupo); 
         }
 
         const { data, error } = await consulta.order('nome', { ascending: true });
@@ -261,13 +257,13 @@ async function renderizarListaChamada() {
     const listaContainer = document.getElementById('listaChamada');
     if (!listaContainer) return;
 
-    const user = JSON.parse(localStorage.getItem('icm_user'));
+    const user = JSON.parse(localStorage.getItem('usuarioLogado')); // Nome corrigido
     
     try {
         let consulta = _supabase.from('membros').select('id, nome, grupo');
 
-        if (user.nivel !== 'Admin' && user.nivel !== 'Master' && user.grupo_vinculado) {
-            consulta = consulta.eq('grupo', user.grupo_vinculado);
+        if (user.nivel !== 'Admin' && user.nivel !== 'Master') {
+            consulta = consulta.eq('grupo', user.grupo); // Usando user.grupo
         }
 
         const { data, error } = await consulta.order('nome');

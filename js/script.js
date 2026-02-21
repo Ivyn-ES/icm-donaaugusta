@@ -1,13 +1,10 @@
 // ==========================================
-// 1. CONEXÃO E CHAVES
+// 1. CONFIGURAÇÃO E CONEXÃO
 // ==========================================
 const SUPABASE_URL = 'https://pxjczmjhzopfxwlmpjfv.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB4amN6bWpoem9wZnh3bG1wamZ2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE1MjUzMjYsImV4cCI6MjA4NzEwMTMyNn0.OfekQPuYUwsZu5X9_lPDGBbVTZYBvAQ5KdiFx3TFOCY';
 
-let _supabase;
-if (typeof supabase !== 'undefined') {
-    _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-}
+const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // ==========================================
 // 2. SEGURANÇA E ACESSO
@@ -91,173 +88,143 @@ async function renderizarListaMembros() {
     }
 }
 
-async function cadastrarMembro(dadosMembro) {
+async function cadastrarMembro(dados) {
     try {
         const { error } = await _supabase.from('membros').insert([{
-            nome: dadosMembro.nome,
-            situacao: dadosMembro.situacao,
-            categoria: dadosMembro.categoria,
-            sexo: dadosMembro.sexo,
-            grupo: dadosMembro.grupo,
-            dia: parseInt(dadosMembro.dia) || 0,
-            mes: dadosMembro.mes,
+            nome: dados.nome,
+            situacao: dados.situacao,
+            categoria: dados.categoria,
+            sexo: dados.sexo,
+            grupo: dados.grupo,
+            dia: parseInt(dados.dia) || 0,
+            mes: dados.mes,
             status_registro: 'Ativo'
         }]);
 
         if (error) throw error;
-        alert("✅ Membro cadastrado!");
-        window.location.href = "lista-membros.html";
+        return true;
     } catch (err) {
         alert("Erro ao salvar: " + err.message);
+        return false;
     }
 }
 
 async function excluirMembro(id) {
     if (!confirm("Deseja realmente excluir este membro?")) return;
-    try {
-        await _supabase.from('membros').delete().eq('id', id);
-        renderizarListaMembros();
-    } catch (err) {
-        alert("Erro ao excluir.");
-    }
+    await _supabase.from('membros').delete().eq('id', id);
+    renderizarListaMembros();
 }
 
 // ==========================================
-// 4. MÓDULO DE GRUPOS
+// 4. MÓDULO DE GRUPOS E USUÁRIOS (ADMIN)
 // ==========================================
 
 async function criarGrupo(nomeDoGrupo) {
-    try {
-        const { error } = await _supabase.from('grupos').insert([{ nome: nomeDoGrupo }]);
-        if (error) throw error;
-        alert("✅ Grupo adicionado!");
-        return true;
-    } catch (err) {
-        alert("Erro ao criar grupo: " + err.message);
-        return false;
-    }
+    const { error } = await _supabase.from('grupos').insert([{ nome: nomeDoGrupo }]);
+    if (error) { alert("Erro: " + error.message); return false; }
+    alert("✅ Grupo adicionado!");
+    return true;
 }
 
 async function renderizarGrupos() {
-    const corpoTabela = document.getElementById('corpoTabelaGrupos');
-    if (!corpoTabela) return;
-
-    try {
-        const { data, error } = await _supabase.from('grupos').select('*').order('nome');
-        if (error) throw error;
-
-        corpoTabela.innerHTML = "";
-        data.forEach(g => {
-            corpoTabela.innerHTML += `
-                <tr>
-                    <td style="padding: 10px; text-align: center;">${g.nome}</td>
-                    <td style="text-align: center;">
-                        <button onclick="deletarGrupo('${g.id}', '${g.nome}')" style="background:none; border:none; color:red; cursor:pointer;">🗑️</button>
-                    </td>
-                </tr>`;
-        });
-    } catch (err) {
-        console.error(err);
-    }
-}
-
-async function deletarGrupo(id, nome) {
-    if (!confirm(`Excluir o Grupo ${nome}?`)) return;
-    try {
-        await _supabase.from('grupos').delete().eq('id', id);
-        renderizarGrupos();
-    } catch (err) {
-        alert("Erro ao excluir grupo.");
-    }
+    const corpo = document.getElementById('corpoTabelaGrupos');
+    if (!corpo) return;
+    const { data } = await _supabase.from('grupos').select('*').order('nome');
+    corpo.innerHTML = data.map(g => `
+        <tr>
+            <td style="padding:10px;">${g.nome}</td>
+            <td style="text-align:center;"><button onclick="deletarGrupo('${g.id}')">🗑️</button></td>
+        </tr>`).join('');
 }
 
 async function carregarGruposNoSelect() {
     const select = document.getElementById('grupo_vinculado');
     if (!select) return;
+    const { data } = await _supabase.from('grupos').select('nome').order('nome');
+    select.innerHTML = '<option value="">Selecione um Grupo</option>' + 
+        data.map(g => `<option value="${g.nome}">${g.nome}</option>`).join('');
+}
 
-    const { data, error } = await _supabase.from('grupos').select('nome').order('nome');
-    if (!error && data) {
-        select.innerHTML = '<option value="">Selecione um Grupo</option>';
-        data.forEach(g => {
-            select.innerHTML += `<option value="${g.nome}">${g.nome}</option>`;
-        });
-    }
+async function criarUsuario(dados) {
+    const { error } = await _supabase.from('usuarios').insert([dados]);
+    if (error) { alert("Erro: " + error.message); return false; }
+    alert("✅ Usuário criado!");
+    return true;
+}
+
+async function renderizarUsuarios() {
+    const corpo = document.getElementById('corpoTabelaUsuarios');
+    if (!corpo) return;
+    const { data } = await _supabase.from('usuarios').select('*').order('login');
+    corpo.innerHTML = data.map(u => `
+        <tr>
+            <td>${u.login}</td>
+            <td>${u.permissao}</td>
+            <td>${u.grupo_vinculado || 'Geral'}</td>
+            <td style="text-align:center;"><button onclick="deletarUsuario('${u.id}')">🗑️</button></td>
+        </tr>`).join('');
 }
 
 // ==========================================
-// 5. MÓDULO DE CHAMADA
+// 5. MÓDULO DE CHAMADA (PRESENÇA)
 // ==========================================
 
 async function renderizarListaChamada() {
-    const listaContainer = document.getElementById('listaChamada');
-    if (!listaContainer) return;
-
+    const container = document.getElementById('listaChamada');
+    if (!container) return;
     const user = verificarAcesso();
-    try {
-        let consulta = _supabase.from('membros').select('id, nome, grupo');
-        if (user.nivel !== 'Admin' && user.nivel !== 'Master') {
-            consulta = consulta.eq('grupo', user.grupo);
-        }
-
-        const { data, error } = await consulta.order('nome');
-        if (error) throw error;
-
-        listaContainer.innerHTML = "";
-        data.forEach(m => {
-            listaContainer.innerHTML += `
-                <div class="card-chamada" style="display:flex; align-items:center; justify-content:space-between; padding:15px; margin-bottom:10px; background:#fff; border:1px solid #ddd; border-radius:8px;">
-                    <span style="font-weight:bold;">${m.nome}</span>
-                    <input type="checkbox" class="check-presenca" data-id="${m.id}" style="width:25px; height:25px;">
-                </div>`;
-        });
-    } catch (err) {
-        console.error(err);
-    }
+    let consulta = _supabase.from('membros').select('id, nome, grupo').eq('status_registro', 'Ativo');
+    if (user.nivel !== 'Admin' && user.nivel !== 'Master') consulta = consulta.eq('grupo', user.grupo);
+    
+    const { data } = await consulta.order('nome');
+    container.innerHTML = data.map(m => `
+        <div class="card-chamada" style="display:flex; align-items:center; justify-content:space-between; padding:12px; border:1px solid #ddd; margin-bottom:8px; border-radius:8px; background:#fff;">
+            <span>${m.nome} <small>(${m.grupo})</small></span>
+            <input type="checkbox" class="check-presenca" data-id="${m.id}" style="width:22px; height:22px;">
+        </div>`).join('');
 }
 
-async function finalizarChamada() {
-    const dataChamada = document.getElementById('data_chamada').value;
-    if (!dataChamada) return alert("Por favor, selecione a data do culto.");
+async function salvarChamada() {
+    const btn = document.getElementById('btnFinalizar');
+    const dataCulto = document.getElementById('data_chamada').value;
+    if (!dataCulto) return alert("Selecione a data!");
 
-    const checkboxes = document.querySelectorAll('.check-presenca:checked');
-    if (checkboxes.length === 0) {
-        if (!confirm("Nenhum membro marcado. Deseja registrar falta para todos?")) return;
-    }
-
-    const presencas = Array.from(checkboxes).map(cb => ({
+    const checks = document.querySelectorAll('.check-presenca:checked');
+    const presencas = Array.from(checks).map(cb => ({
         membro_id: cb.getAttribute('data-id'),
-        data_presenca: dataChamada,
-        presente: true
+        data_culto: dataCulto,
+        presenca: true
     }));
 
-    try {
-        const { error } = await _supabase.from('presencas').insert(presencas);
-        if (error) throw error;
-
-        alert("✅ Chamada salva com sucesso!");
-        window.location.href = 'dashboard.html';
-    } catch (err) {
-        alert("Erro ao salvar: " + err.message);
-    }
+    btn.disabled = true;
+    const { error } = await _supabase.from('presencas').insert(presencas);
+    if (error) { alert("Erro: " + error.message); btn.disabled = false; }
+    else { alert("✅ Chamada Salva!"); window.location.href = 'dashboard.html'; }
 }
 
 // ==========================================
-// 6. INICIALIZAÇÃO (EVENT LISTENERS)
+// 6. MÓDULO DE MENSAGENS E SENHA
 // ==========================================
 
-document.addEventListener('DOMContentLoaded', function() {
+async function mudarSenha(nova) {
+    const user = verificarAcesso();
+    const { error } = await _supabase.from('usuarios').update({ senha: nova }).eq('login', user.nome);
+    if (error) { alert("Erro: " + error.message); return false; }
+    alert("✅ Senha alterada!");
+    return true;
+}
+
+// ==========================================
+// 7. INICIALIZAÇÃO AUTOMÁTICA
+// ==========================================
+
+document.addEventListener('DOMContentLoaded', () => {
     const formLogin = document.getElementById('loginForm');
     if (formLogin) {
-        formLogin.addEventListener('submit', function(e) {
+        formLogin.addEventListener('submit', (e) => {
             e.preventDefault();
-            const userIn = document.getElementById('usuario').value.trim();
-            const passIn = document.getElementById('senha').value.trim();
-            realizarLogin(userIn, passIn);
+            realizarLogin(document.getElementById('usuario').value, document.getElementById('senha').value);
         });
     }
-
-    if (document.getElementById('corpoTabelaGrupos')) renderizarGrupos();
-    if (document.getElementById('corpoTabelaMembros')) renderizarListaMembros();
-    if (document.getElementById('listaChamada')) renderizarListaChamada();
-    if (document.getElementById('grupo_vinculado')) carregarGruposNoSelect();
+    
 });

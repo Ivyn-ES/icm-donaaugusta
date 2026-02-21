@@ -13,62 +13,78 @@
             <h1>📂 Gestão de Grupos</h1>
         </header>
 
-        <section class="admin-section">
-            <form id="formGrupo" class="linha-dupla" style="align-items: flex-end;">
-                <div class="campo">
-                    <label for="nomeGrupo">Novo Grupo:</label>
-                    <input type="text" id="nomeGrupo" placeholder="Ex: 01" required>
+        <section class="admin-section" style="background: #f9f9f9; padding: 20px; border-radius: 8px; border: 1px solid #eee;">
+            <form id="formGrupo" class="linha-dupla" style="display: flex; gap: 10px; align-items: flex-end;">
+                <div class="campo" style="flex: 1;">
+                    <label for="nomeGrupo" style="display: block; margin-bottom: 5px; font-weight: bold;">Nome do Grupo/Setor:</label>
+                    <input type="text" id="nomeGrupo" placeholder="Ex: Grupo 01" required style="width: 100%; padding: 10px; border-radius: 5px; border: 1px solid #ccc;">
                 </div>
-                <button type="submit" class="btn-salvar">Adicionar</button>
+                <button type="submit" class="btn-salvar" style="padding: 10px 20px;">Adicionar</button>
             </form>
         </section>
 
-        <hr>
+        <hr style="margin: 30px 0; border: 0; border-top: 1px solid #ddd;">
 
         <section>
             <h3>Grupos Atuais</h3>
-            <table border="1" style="width: 100%; border-collapse: collapse; margin-top: 10px;">
-                <thead>
-                    <tr style="background: #f0f2f5;">
-                        <th style="padding: 10px;">Grupo</th>
-                        <th>Ação</th>
-                    </tr>
-                </thead>
-                <tbody id="corpoTabelaGrupos">
+            <div class="tabela-responsiva">
+                <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
+                    <thead>
+                        <tr style="background: #f0f2f5;">
+                            <th style="padding: 12px; text-align: left; border-bottom: 2px solid #ddd;">Nome do Grupo</th>
+                            <th style="padding: 12px; text-align: center; border-bottom: 2px solid #ddd;">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="corpoTabelaGrupos">
+                        <tr>
+                            <td colspan="2" style="text-align: center; padding: 20px;">Carregando grupos...</td>
+                        </tr>
                     </tbody>
-            </table>
+                </table>
+            </div>
         </section>
 
         <div style="margin-top: 30px;">
-            <a href="dashboard.html" class="btn-voltar" style="display: block; text-align: center; text-decoration: none;">⬅ Voltar ao Painel</a>
+            <a href="dashboard.html" class="btn-voltar" style="display: block; text-align: center; text-decoration: none; padding: 10px; background: #eee; color: #333; border-radius: 5px;">⬅ Voltar ao Painel</a>
         </div>
     </div>
 
     <script src="../js/script.js"></script>
-<script>
-    document.addEventListener('DOMContentLoaded', () => {
-        const user = verificarAcesso();
-        // Verificando se o nível é Admin ou Master (usando o padrão do seu login)
-        if (user.nivel !== 'Admin' && user.nivel !== 'Master') {
-            alert('Acesso negado!');
-            window.location.href = 'dashboard.html';
-        }
-        renderizarGrupos(); 
-    });
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // 1. Verifica acesso usando a função central
+            const user = verificarAcesso();
+            
+            // 2. Trava de segurança para nível de permissão
+            if (user && user.nivel !== 'Admin' && user.nivel !== 'Master') {
+                alert('Acesso negado! Esta área é restrita a administradores.');
+                window.location.href = 'dashboard.html';
+                return;
+            }
 
-    const form = document.getElementById('formGrupo');
-    form.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        
-        // CORREÇÃO AQUI: O ID correto é 'nomeGrupo'
-        const nome = document.getElementById('nomeGrupo').value;
-        
-        const ok = await criarGrupo(nome);
-        if (ok) {
-            form.reset();
-            renderizarGrupos();
+            // 3. Carrega a lista de grupos cadastrados
+            if (typeof renderizarGrupos === 'function') {
+                renderizarGrupos(); 
+            }
+        });
+
+        // Evento de criação de grupo
+        const form = document.getElementById('formGrupo');
+        if (form) {
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const campoNome = document.getElementById('nomeGrupo');
+                const nome = campoNome.value.trim();
+                
+                if (typeof criarGrupo === 'function') {
+                    const ok = await criarGrupo(nome);
+                    if (ok) {
+                        form.reset();
+                        renderizarGrupos(); // Atualiza a tabela imediatamente
+                    }
+                }
+            });
         }
-    });
-</script>
+    </script>
 </body>
 </html>

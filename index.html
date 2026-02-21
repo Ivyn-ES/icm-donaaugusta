@@ -9,7 +9,7 @@
 <body>
     <div class="container login-card">
         <div class="login-header">
-            <span style="font-size: 50px;">📖</span>
+            <span style="font-size: 50px;" role="img" aria-label="Bíblia">📖</span>
             <h1>ICM Dona Augusta</h1>
         </div>
 
@@ -22,17 +22,17 @@
                 <input type="password" id="senha" placeholder="Senha" required>
             </div>
             
-            <button type="submit" class="btn-login">Entrar</button>
+            <button type="submit" class="btn-login" id="btnEntrar">Entrar</button>
         </form>
 
-        <p id="mensagem" class="error-msg"></p>
+        <p id="mensagem" class="error-msg" style="color: red; text-align: center; margin-top: 10px;"></p>
 
         <div class="version-tag">
-            <small>Sistema v1.1</small>
+            <small>Sistema v1.1 - Gerenciamento ICM</small>
         </div>
     </div>
     
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <script src="js/script.js"></script>
 </body>

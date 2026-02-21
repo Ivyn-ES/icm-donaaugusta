@@ -15,23 +15,25 @@
             <button onclick="window.location.href='cadastro-membro.html'" class="btn-novo">+ Novo</button>
         </header>
 
-        <div class="filtros-lista">
-            <input type="text" id="buscaMembro" placeholder="Pesquisar por nome..." onkeyup="filtrarLista()">
+        <div class="filtros-lista" style="margin-bottom: 15px;">
+            <input type="text" id="buscaMembro" placeholder="🔍 Pesquisar por nome..." onkeyup="filtrarLista()" 
+                   style="width: 100%; padding: 10px; border-radius: 5px; border: 1px solid #ddd;">
         </div>
 
         <div class="tabela-responsiva">
-            <table>
+            <table style="width: 100%; border-collapse: collapse;">
                 <thead>
-                    <tr>
-                        <th>Nome</th>
-                        <th>Cargo</th>
-                        <th>Status</th>
-                        <th>Ações</th>
+                    <tr style="background-color: #f4f4f4;">
+                        <th style="text-align: left; padding: 10px;">Nome</th>
+                        <th style="text-align: left;">Categoria</th>
+                        <th style="text-align: left;">Grupo</th>
+                        <th style="text-align: left;">Situação</th>
+                        <th style="text-align: center;">Ações</th>
                     </tr>
                 </thead>
                 <tbody id="corpoTabelaMembros">
                     <tr>
-                        <td colspan="4" style="text-align:center;">Carregando membros...</td>
+                        <td colspan="5" style="text-align:center; padding: 20px;">Carregando membros...</td>
                     </tr>
                 </tbody>
             </table>
@@ -40,20 +42,27 @@
 
     <script src="../js/script.js"></script>
     <script>
-        // Ao carregar a página:
-        window.onload = async () => {
-            await verificarAcesso(); // Garante que está logado
-            await renderizarListaMembros(); // Função que deve estar no seu script.js
-        };
+        // No Linux/Chrome, o DOMContentLoaded é mais confiável que window.onload
+        document.addEventListener('DOMContentLoaded', async () => {
+            verificarAcesso();
+            
+            // Chama a função que criamos no script.js
+            if (typeof renderizarListaMembros === 'function') {
+                await renderizarListaMembros();
+            }
+        });
 
-        // Função de filtro rápido (estilo Access/Excel)
+        // Função de filtro local (Busca em tempo real)
         function filtrarLista() {
             const termo = document.getElementById('buscaMembro').value.toLowerCase();
             const linhas = document.querySelectorAll('#corpoTabelaMembros tr');
             
             linhas.forEach(linha => {
-                const nome = linha.cells[0].textContent.toLowerCase();
-                linha.style.display = nome.includes(termo) ? '' : 'none';
+                // Verifica se a linha tem dados (evita erro se a tabela estiver vazia)
+                if (linha.cells.length > 1) {
+                    const nome = linha.cells[0].textContent.toLowerCase();
+                    linha.style.display = nome.includes(termo) ? '' : 'none';
+                }
             });
         }
     </script>

@@ -11,10 +11,10 @@
     <div class="container">
         <header style="text-align: center; margin-bottom: 30px;">
             <h1>Painel Administrativo</h1>
-            <p id="boasVindas">Bem-vindo!</p>
+            <p id="boasVindas" style="font-weight: bold; color: #555;">Bem-vindo!</p>
         </header>
 
-<div class="grid-menu">
+        <div class="grid-menu">
             <button onclick="window.location.href='chamada.html'" class="btn-menu" style="background-color: #2ed573;">
                 <span style="font-size: 2rem; display: block;">🗓️</span>
                 Fazer Chamada
@@ -45,24 +45,27 @@
                 Sair
             </button>
         </div>
+    </div>
 
-
-        
     <script src="../js/script.js"></script>
-<script>
-        // 1. Verifica acesso e pega os dados do usuário
-        const user = verificarAcesso(); 
-        
-        if (user) {
-            // 2. Personaliza a saudação
-            document.getElementById('boasVindas').innerText = `Logado como: ${user.nome} (${user.nivel})`;
+    <script>
+        // Executa assim que a página carrega
+        document.addEventListener('DOMContentLoaded', () => {
+            // 1. Verifica acesso e pega os dados do usuário (Chave: usuarioLogado no script.js)
+            const user = verificarAcesso(); 
+            
+            if (user) {
+                // 2. Personaliza a saudação na tela
+                const saudacao = document.getElementById('boasVindas');
+                saudacao.innerText = `Logado como: ${user.nome} | Nível: ${user.nivel}`;
 
-            // 3. Lógica de visibilidade para Admin/Master
-            if (user.nivel === 'Admin' || user.nivel === 'Master') {
-                document.getElementById('btnGrupos').style.display = 'block';
-                document.getElementById('btnUsuarios').style.display = 'block';
+                // 3. Mostra ferramentas extras apenas para Admin ou Master
+                if (user.nivel === 'Admin' || user.nivel === 'Master') {
+                    document.getElementById('btnGrupos').style.display = 'block';
+                    document.getElementById('btnUsuarios').style.display = 'block';
+                }
             }
-        }
+        });
     </script>
 </body>
 </html>

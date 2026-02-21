@@ -3,105 +3,117 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gerenciar Usuários - ICM</title>
+    <title>Gestão de Usuários - ICM</title>
     <link rel="stylesheet" href="../css/style.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
     <div class="container">
         <header style="text-align: center; margin-bottom: 20px;">
-            <h1>👥 Gestão de Acessos</h1>
+            <h1>🔑 Gestão de Acessos (Usuários)</h1>
+            <p>Olá, <strong id="nomeAdmin"></strong>! Aqui você cria novos acessos.</p>
         </header>
 
-        <section class="admin-section">
-            <form id="formUsuario" class="linha-dupla">
+        <section class="admin-section" style="background: #f8f9fa; padding: 20px; border-radius: 10px; border: 1px solid #ddd;">
+            <h3>➕ Criar Novo Login</h3>
+            <form id="formUsuario" style="display: flex; flex-direction: column; gap: 10px;">
                 <div class="campo">
-                    <label>Login:</label>
-                    <input type="text" id="novoLogin" placeholder="Ex: joao_gp01" required>
+                    <label>Login (Usuário):</label>
+                    <input type="text" id="novoLogin" placeholder="Ex: marcos_gp01" required>
                 </div>
                 <div class="campo">
                     <label>Senha:</label>
                     <input type="password" id="novaSenha" required>
                 </div>
-                <div class="campo">
-                    <label>Nível:</label>
-                    <select id="nivelAcesso">
-                        <option value="User">Líder (User)</option>
-                        <option value="Admin">Admin</option>
-                    </select>
+                <div class="linha-dupla">
+                    <div class="campo">
+                        <label>Nível de Permissão:</label>
+                        <select id="nivelAcesso">
+                            <option value="User">Líder de Grupo (User)</option>
+                            <option value="Admin">Administrador (Admin)</option>
+                            <option value="Master">Master</option>
+                        </select>
+                    </div>
+                    <div class="campo">
+                        <label>Vincular ao Grupo:</label>
+                        <select id="grupo_vinculado">
+                            <option value="">Todos (Admin)</option>
+                        </select>
+                    </div>
                 </div>
-                <div class="campo">
-                    <label>Grupo:</label>
-                    <input type="text" id="vincularGrupo" placeholder="Ex: 01">
-                </div>
-                <button type="submit" class="btn-salvar" style="margin-top: 10px;">Criar Usuário</button>
+                <button type="submit" class="btn-salvar" style="margin-top: 10px;">💾 Salvar Novo Usuário</button>
             </form>
         </section>
 
-        <hr>
+        <hr style="margin: 30px 0;">
 
         <section>
-            <h3>Usuários Cadastrados</h3>
-            <table border="1" style="width: 100%; border-collapse: collapse; margin-top: 10px;">
-                <thead>
-                    <tr style="background: #f0f2f5;">
-                        <th style="padding: 10px;">Login</th>
-                        <th>Nível</th>
-                        <th>Grupo</th>
-                        <th>Ação</th>
-                    </tr>
-                </thead>
-                <tbody id="corpoTabelaUsuarios">
+            <h3>👥 Usuários Cadastrados</h3>
+            <div class="tabela-responsiva">
+                <table style="width: 100%; border-collapse: collapse;">
+                    <thead>
+                        <tr style="background: #e9ecef;">
+                            <th style="padding: 10px; text-align: left;">Usuário</th>
+                            <th style="text-align: left;">Nível</th>
+                            <th style="text-align: left;">Grupo</th>
+                            <th style="text-align: center;">Ação</th>
+                        </tr>
+                    </thead>
+                    <tbody id="corpoTabelaUsuarios">
+                        <tr><td colspan="4" style="text-align: center;">Carregando...</td></tr>
                     </tbody>
-            </table>
+                </table>
+            </div>
         </section>
 
-        <div style="margin-top: 30px;">
-            <a href="dashboard.html" class="btn-voltar" style="display: block; text-align: center; text-decoration: none;">⬅ Voltar ao Painel</a>
+        <div style="margin-top:30px; display: flex; gap: 10px;">
+            <a href="dashboard.html" class="btn-voltar" style="flex: 1; text-align: center; text-decoration: none; padding: 12px; background: #6c757d; color: white; border-radius: 8px;">← Dashboard</a>
+            <button onclick="logout()" style="flex: 1; padding: 12px; background: #dc3545; color: white; border: none; border-radius: 8px; cursor: pointer;">🚪 Sair</button>
         </div>
     </div>
 
     <script src="../js/script.js"></script>
-    
     <script>
-        // Lógica local para esta página
-        document.addEventListener('DOMContentLoaded', function() {
-            // 1. Verifica acesso usando a função do script.js
+        document.addEventListener('DOMContentLoaded', async () => {
             const user = verificarAcesso();
-            if (!user || (user.nivel !== 'Admin' && user.nivel !== 'Master')) {
-                alert('Acesso negado!');
-                window.location.href = 'dashboard.html';
-                return;
-            }
+            if (user) {
+                document.getElementById('nomeAdmin').innerText = user.nome;
+                
+                // Trava de segurança: apenas Admin/Master vê esta tela
+                if (user.nivel !== 'Admin' && user.nivel !== 'Master') {
+                    alert('Área restrita!');
+                    window.location.href = 'dashboard.html';
+                    return;
+                }
 
-            // 2. Tenta renderizar a lista se a função existir
-            if (typeof renderizarUsuarios === 'function') {
-                renderizarUsuarios();
+                // Carrega grupos no select para vincular o usuário
+                if (typeof carregarGruposNoSelect === 'function') {
+                    await carregarGruposNoSelect();
+                }
+
+                // Lista os usuários já criados
+                if (typeof renderizarUsuarios === 'function') {
+                    renderizarUsuarios();
+                }
             }
         });
 
-        // 3. Escuta o envio do formulário
-        const form = document.getElementById('formUsuario');
-        if (form) {
-            form.addEventListener('submit', async function(e) {
-                e.preventDefault();
-                
-                const dados = {
-                    login: document.getElementById('novoLogin').value.trim(),
-                    senha: document.getElementById('novaSenha').value.trim(),
-                    permissao: document.getElementById('nivelAcesso').value,
-                    grupo_vinculado: document.getElementById('vincularGrupo').value.trim()
-                };
+        // Evento de salvar
+        document.getElementById('formUsuario').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const dados = {
+                login: document.getElementById('novoLogin').value.trim(),
+                senha: document.getElementById('novaSenha').value.trim(),
+                permissao: document.getElementById('nivelAcesso').value,
+                grupo_vinculado: document.getElementById('grupo_vinculado').value
+            };
 
-                if (typeof criarUsuario === 'function') {
-                    const sucesso = await criarUsuario(dados);
-                    if (sucesso) {
-                        form.reset();
-                        renderizarUsuarios();
-                    }
-                }
-            });
-        }
+            const ok = await criarUsuario(dados);
+            if (ok) {
+                document.getElementById('formUsuario').reset();
+                renderizarUsuarios();
+            }
+        });
     </script>
 </body>
 </html>

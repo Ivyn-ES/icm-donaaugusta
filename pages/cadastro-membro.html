@@ -56,7 +56,7 @@
                     <label for="grupo_vinculado">Grupo/Setor:</label>
                     <select id="grupo_vinculado" required>
                         <option value="">Carregando grupos...</option>
-                        </select>
+                    </select>
                 </div>
                 
                 <div class="campo">
@@ -83,7 +83,7 @@
 
             <div style="margin-top: 30px; display: flex; flex-direction: column; gap: 10px;">
                 <button type="submit" class="btn-salvar" id="btnSalvar">Salvar no Supabase</button>
-                <a href="dashboard.html" class="btn-voltar" style="text-align: center; text-decoration: none;">⬅ Voltar ao Painel</a>
+                <a href="dashboard.html" class="btn-voltar" style="text-align: center; text-decoration: none; padding: 10px; background: #eee; color: #333; border-radius: 5px;">⬅ Voltar ao Painel</a>
             </div>
         </form>
     </div>
@@ -91,49 +91,13 @@
     <script src="../js/script.js"></script>
 
     <script>
-        // Inicialização ao carregar a página
         document.addEventListener('DOMContentLoaded', async () => {
-            // Verifica se o usuário tem permissão
             verificarAcesso();
             
-            // Carrega os grupos do banco de dados para o Select
-            // Esta função deve estar no seu script.js
+            // Carrega dinamicamente os grupos na caixinha de seleção
             if (typeof carregarGruposNoSelect === 'function') {
                 await carregarGruposNoSelect();
             }
         });
 
-        // Evento de Envio do Formulário
-        const form = document.getElementById('formCadastro');
-        form.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            
-            const btn = document.getElementById('btnSalvar');
-            btn.disabled = true;
-            btn.innerText = '⌛ Processando...';
-
-            // Coleta de dados seguindo o padrão da tabela 'membros'
-            const dados = {
-                nome: document.getElementById('nome_completo').value,
-                situacao: document.getElementById('situacao').value,
-                categoria: document.getElementById('categoria').value,
-                sexo: document.getElementById('sexo').value,
-                grupo: document.getElementById('grupo_vinculado').value,
-                dia: document.getElementById('niver_dia').value || 0,
-                mes: document.getElementById('niver_mes').value
-            };
-
-            // Chama a função global de cadastro
-            const sucesso = await cadastrarMembro(dados);
-            
-            if (sucesso) {
-                alert('✅ Membro cadastrado com sucesso!');
-                form.reset();
-            }
-
-            btn.disabled = false;
-            btn.innerText = 'Salvar no Supabase';
-        });
-    </script>
-</body>
-</html>
+        const form = document.getElementById

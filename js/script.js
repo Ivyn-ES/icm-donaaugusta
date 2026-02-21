@@ -139,45 +139,37 @@ async function renderizarListaMembros() {
     const corpoTabela = document.getElementById('corpoTabelaMembros');
     if (!corpoTabela) return;
 
-    // Pega os dados do usuário logado para saber o que ele pode ver
     const user = JSON.parse(localStorage.getItem('icm_user'));
     
     try {
+        // Buscamos todos os campos
         let consulta = _supabase.from('membros').select('*');
 
-        // REGRAS DE FILTRO:
-        // Se NÃO for Admin e tiver um grupo vinculado, filtra os membros
+        // Se não for Admin, filtra pela coluna 'grupo'
         if (user.nivel !== 'Admin' && user.nivel !== 'Master' && user.grupo_vinculado) {
-            consulta = consulta.eq('grupo_vinculado', user.grupo_vinculado);
+            // Aqui comparamos o grupo do usuário com a coluna 'grupo' do membro
+            consulta = consulta.eq('grupo', user.grupo_vinculado);
         }
 
         const { data, error } = await consulta.order('nome', { ascending: true });
 
         if (error) throw error;
 
-        corpoTabela.innerHTML = ""; // Limpa a tabela antes de preencher
-
-        if (data.length === 0) {
-            corpoTabela.innerHTML = "<tr><td colspan='5'>Nenhum membro encontrado.</td></tr>";
-            return;
-        }
-
+        corpoTabela.innerHTML = "";
         data.forEach(m => {
             corpoTabela.innerHTML += `
                 <tr>
                     <td>${m.nome}</td>
                     <td>${m.categoria}</td>
-                    <td>${m.grupo_vinculado || 'Sem Grupo'}</td>
+                    <td>${m.grupo || 'Sem Grupo'}</td>
                     <td>${m.situacao}</td>
-                    <td>
-                        <button onclick="verDetalhes('${m.id}')">Ver</button>
-                    </td>
+                    <td><button onclick="verDetalhes('${m.id}')">Ver</button></td>
                 </tr>
             `;
         });
     } catch (err) {
         console.error("Erro ao carregar lista:", err.message);
-        corpoTabela.innerHTML = "<tr><td colspan='5'>Erro ao carregar dados.</td></tr>";
+        corpoTabela.innerHTML = "<tr><td colspan='5'>Erro: " + err.message + "</td></tr>";
     }
 }
 
@@ -262,11 +254,10 @@ async function renderizarListaChamada() {
     const user = JSON.parse(localStorage.getItem('icm_user'));
     
     try {
-        let consulta = _supabase.from('membros').select('id, nome, grupo_vinculado');
+        let consulta = _supabase.from('membros').select('id, nome, grupo');
 
-        // Filtro: Se não for Admin, só vê o seu grupo
         if (user.nivel !== 'Admin' && user.nivel !== 'Master' && user.grupo_vinculado) {
-            consulta = consulta.eq('grupo_vinculado', user.grupo_vinculado);
+            consulta = consulta.eq('grupo', user.grupo_vinculado);
         }
 
         const { data, error } = await consulta.order('nome');
@@ -276,9 +267,9 @@ async function renderizarListaChamada() {
         listaContainer.innerHTML = "";
         data.forEach(m => {
             listaContainer.innerHTML += `
-                <div class="card-chamada" style="display: flex; align-items: center; justify-content: space-between; padding: 15px; background: #fff; border: 1px solid #ddd; border-radius: 8px;">
-                    <span style="font-weight: bold;">${m.nome}</span>
-                    <input type="checkbox" class="check-presenca" data-id="${m.id}" style="width: 25px; height: 25px; cursor: pointer;">
+                <div class="card-chamada" style="display: flex; align-items: center; justify-content: space-between; padding: 15px; margin-bottom:10px; background: #fff; border: 1px solid #ddd; border-radius: 8px;">
+                    <span style="font-weight: bold;">${m.nome} (${m.grupo})</span>
+                    <input type="checkbox" class="check-presenca" data-id="${m.id}" style="width: 25px; height: 25px;">
                 </div>
             `;
         });

@@ -266,3 +266,35 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
 });
+// Novas funções (Não sabia que nome dar)
+// Abre e fecha o formulário de senha na tela
+function toggleSenha() {
+    const form = document.getElementById('formSenha');
+    if (form) {
+        form.style.display = form.style.display === 'none' ? 'block' : 'none';
+        // Limpa o campo de senha ao fechar ou abrir
+        document.getElementById('inputNovaSenha').value = '';
+    }
+}
+
+// Salva a nova senha no banco
+async function salvarNovaSenha() {
+    const input = document.getElementById('inputNovaSenha');
+    const novaSenha = input.value.trim();
+    
+    if (novaSenha.length < 4) {
+        alert("⚠️ A senha deve ter no mínimo 4 caracteres.");
+        return;
+    }
+
+    const confirmacao = confirm("Deseja realmente alterar sua senha?");
+    if (!confirmacao) return;
+
+    // Chame a função que já temos no script.js
+    const sucesso = await mudarSenha(novaSenha);
+    
+    if (sucesso) {
+        toggleSenha(); // Fecha o formulário
+        // Não redirecionamos, apenas avisamos que deu certo
+    }
+}

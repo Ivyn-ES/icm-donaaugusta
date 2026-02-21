@@ -40,15 +40,16 @@
             <p style="text-align: center;">Carregando avisos...</p>
         </div>
 
-        <div id="formSenha" style="background:#fff3cd; padding:20px; border-radius:10px; margin-top: 20px; display:none;">
-            <h4>🔐 Alterar sua Senha</h4>
-            <input type="password" id="inputNovaSenha" placeholder="Digite a nova senha" style="width: 100%; padding: 10px; margin: 10px 0;">
-            <div style="display: flex; gap: 10px;">
-                <button onclick="salvarNovaSenha()" class="btn-salvar" style="flex: 1;">Confirmar</button>
-                <button onclick="toggleSenha()" class="btn-voltar" style="flex: 1;">Cancelar</button>
-            </div>
-        </div>
-
+<div id="formSenha" style="background:#fff3cd; padding:20px; border-radius:10px; margin-top: 20px; display:none;">
+    <h4 style="color: #856404;">🔐 Alterar sua Senha</h4>
+    <input type="password" id="inputNovaSenha" placeholder="Digite a nova senha" 
+           style="width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ffeeba; border-radius: 8px;">
+    
+    <div style="display: flex; gap: 10px;">
+        <button onclick="salvarNovaSenha()" class="btn-salvar" style="flex: 1; background: #28a745;">Confirmar</button>
+        <button onclick="toggleSenha()" class="btn-voltar" style="flex: 1; background: #6c757d; color: white; border: none; cursor: pointer;">Cancelar</button>
+    </div>
+</div>
         <div style="margin-top: 30px; display: flex; flex-direction: column; gap: 10px;">
             <a href="dashboard.html" class="btn-voltar" style="text-align: center; text-decoration: none;">⬅ Voltar ao Painel</a>
             <button onclick="logout()" style="background: #ff4757; color: white; border: none; padding: 10px; border-radius: 5px; cursor: pointer;">🚪 Sair</button>

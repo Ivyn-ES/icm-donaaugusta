@@ -215,6 +215,32 @@ async function renderizarListaChamada() {
     }
 }
 
+async function finalizarChamada() {
+    const dataChamada = document.getElementById('data_chamada').value;
+    if (!dataChamada) return alert("Por favor, selecione a data do culto.");
+
+    const checkboxes = document.querySelectorAll('.check-presenca:checked');
+    if (checkboxes.length === 0) {
+        if (!confirm("Nenhum membro marcado. Deseja registrar falta para todos?")) return;
+    }
+
+    const presencas = Array.from(checkboxes).map(cb => ({
+        membro_id: cb.getAttribute('data-id'),
+        data_presenca: dataChamada,
+        presente: true
+    }));
+
+    try {
+        const { error } = await _supabase.from('presencas').insert(presencas);
+        if (error) throw error;
+
+        alert("✅ Chamada salva com sucesso!");
+        window.location.href = 'dashboard.html';
+    } catch (err) {
+        alert("Erro ao salvar: " + err.message);
+    }
+}
+
 // ==========================================
 // 6. INICIALIZAÇÃO (EVENT LISTENERS)
 // ==========================================

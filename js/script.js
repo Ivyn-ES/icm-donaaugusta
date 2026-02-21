@@ -298,3 +298,20 @@ async function salvarNovaSenha() {
         // Não redirecionamos, apenas avisamos que deu certo
     }
 }
+
+//detalhes que não vi
+function voltarAoPainelCorrespondente() {
+    const usuario = JSON.parse(localStorage.getItem('usuarioLogado'));
+    
+    if (!usuario) {
+        window.location.href = '../index.html';
+        return;
+    }
+
+    // Se for nível Livre, volta para livre.html. Se não, vai para o dashboard.
+    if (usuario.nivel === 'Livre') {
+        window.location.href = 'livre.html';
+    } else {
+        window.location.href = 'dashboard.html';
+    }
+}

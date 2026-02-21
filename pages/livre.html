@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Espaço ICM - Livre</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <div class="container">
+        <header style="text-align: center; margin-bottom: 30px;">
+            <span style="font-size: 50px;">📖</span>
+            <h1>Espaço do Membro</h1>
+            <p>Olá, <strong id="nomeUsuario">...</strong>! Seja bem-vindo.</p>
+        </header>
+
+        <div class="grid-menu">
+            <button onclick="window.location.href='mensagens.html'" class="btn-menu" style="background-color: #3498db;">
+                <span style="font-size: 2.5rem; display: block; margin-bottom: 10px;">📢</span>
+                Mural de Avisos
+            </button>
+
+            <button onclick="alert('Funcionalidade em breve!')" class="btn-menu" style="background-color: #9b59b6;">
+                <span style="font-size: 2.5rem; display: block; margin-bottom: 10px;">📅</span>
+                Programação
+            </button>
+
+            <button onclick="logout()" class="btn-menu" style="background-color: #e74c3c; grid-column: span 2;">
+                <span style="font-size: 1.5rem; margin-bottom: 5px;">🚪</span>
+                Sair do Sistema
+            </button>
+        </div>
+
+        <div style="margin-top: 30px; text-align: center; color: #95a5a6; font-size: 0.8rem;">
+            <p>ICM Dona Augusta - Sistema de Gestão v1.1</p>
+        </div>
+    </div>
+
+    <script src="../js/script.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Verifica o acesso. Se não for nível 'Livre' (ou superior), o script.js redireciona.
+            const user = verificarAcesso();
+            
+            if (user) {
+                document.getElementById('nomeUsuario').innerText = user.nome;
+            }
+        });
+    </script>
+</body>
+</html>

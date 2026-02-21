@@ -241,3 +241,20 @@ document.addEventListener('DOMContentLoaded', function() {
         renderizarListaMembros();
     }
 });
+
+async function carregarGruposNoSelect() {
+    const select = document.getElementById('grupo_vinculado');
+    if (!select) return;
+
+    const { data, error } = await _supabase
+        .from('grupos')
+        .select('nome')
+        .order('nome', { ascending: true });
+
+    if (!error && data) {
+        select.innerHTML = '<option value="">Selecione um Grupo</option>';
+        data.forEach(g => {
+            select.innerHTML += `<option value="${g.nome}">${g.nome}</option>`;
+        });
+    }
+}

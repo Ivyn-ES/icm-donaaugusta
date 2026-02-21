@@ -12,12 +12,39 @@ const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 function verificarAcesso() {
     const usuario = JSON.parse(localStorage.getItem('usuarioLogado'));
+    
+    // 1. Verifica se está logado
     if (!usuario) {
         if (!window.location.href.includes('index.html')) {
             window.location.href = '../index.html';
         }
         return null;
     }
+
+    // 2. Trava de Segurança por Nível (Blindagem)
+    const urlAtual = window.location.href;
+
+    // Se o usuário for nível "Livre", ele SÓ pode acessar livre.html ou mensagens.html
+    if (usuario.nivel === 'Livre') {
+        const paginasProibidas = ['dashboard.html', 'cadastro-membro.html', 'admin-usuarios.html', 'admin-grupos.html', 'chamada.html', 'lista-membros.html'];
+        
+        if (paginasProibidas.some(p => urlAtual.includes(p))) {
+            alert('🚫 Seu acesso é restrito à área de consulta.');
+            window.location.href = 'livre.html';
+            return usuario;
+        }
+    }
+
+    // Se o usuário for "User" (Líder), ele não pode acessar as telas de Admin/Master
+    if (usuario.nivel === 'User') {
+        const paginasAdmin = ['admin-usuarios.html', 'admin-grupos.html'];
+        if (paginasAdmin.some(p => urlAtual.includes(p))) {
+            alert('🚫 Acesso restrito a Administradores.');
+            window.location.href = 'dashboard.html';
+            return usuario;
+        }
+    }
+
     return usuario;
 }
 
@@ -31,29 +58,35 @@ async function realizarLogin(usuarioDigitado, senhaDigitada) {
         const { data, error } = await _supabase
             .from('usuarios')
             .select('*')
-            .ilike('login', usuarioDigitado) 
-            .eq('senha', senhaDigitada)
+            .ilike('login', usuarioDigitado.trim()) 
+            .eq('senha', senhaDigitada.trim())
             .single();
 
         if (error || !data) {
-            alert('❌ Login falhou! Verifique usuário e senha.');
+            alert('❌ Login falhou! Usuário ou senha incorretos.');
             return;
         }
 
+        // Salva os dados no navegador para persistência
         localStorage.setItem('usuarioLogado', JSON.stringify({
             nome: data.login,
             nivel: data.permissao,
             grupo: data.grupo_vinculado 
         }));
 
+        // Redirecionamento Inteligente por Nível
+        console.log(`Logado como ${data.permissao}. Redirecionando...`);
+        
         if (data.permissao === 'Livre') {
-    window.location.href = 'pages/livre.html';
-}       
-        else {
-    window.location.href = 'pages/dashboard.html';        
-}
+            window.location.href = 'pages/livre.html';
+        } else {
+            // Master, Admin e User (Líder) vão para o Dashboard
+            window.location.href = 'pages/dashboard.html';
+        }
+
     } catch (err) {
-        alert('⚠️ Erro ao conectar ao sistema.');
+        console.error('Erro de Login:', err);
+        alert('⚠️ Erro ao conectar ao sistema. Tente novamente.');
     }
 }
 

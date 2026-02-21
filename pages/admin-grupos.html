@@ -9,55 +9,65 @@
 </head>
 <body>
     <div class="container">
-        <header>
-            <button onclick="window.location.href='dashboard.html'" class="btn-voltar">⬅ Voltar</button>
-            <h1>Gestão de Grupos</h1>
+        <header style="text-align: center; margin-bottom: 20px;">
+            <h1>📂 Gestão de Grupos</h1>
+            <p>Cadastre e organize os setores da igreja</p>
         </header>
 
-        <div class="card-form">
-            <h3>Cadastrar Novo Grupo</h3>
-            <div style="display: flex; gap: 10px;">
-                <input type="text" id="nomeGrupo" placeholder="Ex: Grupo 01, Jovens..." style="flex: 1;">
-                <button onclick="handleCriarGrupo()" class="btn-novo">Adicionar</button>
-            </div>
-        </div>
+        <section class="admin-section">
+            <form id="formGrupo" class="linha-dupla" style="align-items: flex-end;">
+                <div class="campo">
+                    <label for="nome_grupo">Nome do Grupo/Setor:</label>
+                    <input type="text" id="nome_grupo" placeholder="Ex: Grupo 01" required>
+                </div>
+                <button type="submit" class="btn-salvar">Adicionar</button>
+            </form>
+        </section>
 
-        <div class="tabela-responsiva" style="margin-top: 20px;">
-            <table>
+        <hr>
+
+        <section>
+            <h3>Grupos Atuais</h3>
+            <table border="1" style="width: 100%; border-collapse: collapse; margin-top: 10px;">
                 <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Nome do Grupo</th>
-                        <th>Ações</th>
+                    <tr style="background: #f0f2f5;">
+                        <th style="padding: 10px;">Nome do Grupo</th>
+                        <th>Ação</th>
                     </tr>
                 </thead>
                 <tbody id="corpoTabelaGrupos">
                     </tbody>
             </table>
+        </section>
+
+        <div style="margin-top: 30px;">
+            <a href="dashboard.html" class="btn-voltar" style="display: block; text-align: center; text-decoration: none;">⬅ Voltar ao Painel</a>
         </div>
     </div>
 
     <script src="../js/script.js"></script>
     <script>
-        window.onload = async () => {
+        document.addEventListener('DOMContentLoaded', () => {
             const user = verificarAcesso();
-            if(user.nivel !== 'Admin' && user.nivel !== 'Master') {
-                alert("Acesso negado!");
+            if (user.nivel !== 'Admin' && user.nivel !== 'Master') {
+                alert('Acesso negado!');
                 window.location.href = 'dashboard.html';
             }
-            renderizarGrupos();
-        };
+            renderizarGrupos(); // Função que buscaremos no script.js
+        });
 
-        async function handleCriarGrupo() {
-            const nome = document.getElementById('nomeGrupo').value;
-            if(!nome) return alert("Digite o nome do grupo!");
+        const form = document.getElementById('formGrupo');
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const nome = document.getElementById('nome_grupo').value;
             
-            const sucesso = await cadastrarGrupo(nome);
-            if(sucesso) {
-                document.getElementById('nomeGrupo').value = '';
+            // Chama a função que criaremos no script.js
+            const ok = await criarGrupo(nome);
+            if (ok) {
+                form.reset();
                 renderizarGrupos();
             }
-        }
+        });
     </script>
 </body>
 </html>

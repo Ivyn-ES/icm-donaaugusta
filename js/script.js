@@ -182,65 +182,71 @@ async function renderizarListaMembros() {
 }
 
 // ==========================================
-// 4. MÓDULO DE GRUPOS E USUÁRIOS (Enxuto)
+// 4. MÓDULO DE USUÁRIOS (Continuação)
 // ==========================================
 
-// Função para criar um novo grupo (Ex: Grupo 01)
-async function criarGrupo(nomeGrupo) {
+// Função para criar um novo usuário de acesso
+async function criarUsuario(dados) {
     try {
         const { error } = await _supabase
-            .from('grupos')
-            .insert([{ nome: nomeGrupo }]);
+            .from('usuarios')
+            .insert([dados]);
 
         if (error) throw error;
-        alert(`✅ ${nomeGrupo} adicionado com sucesso!`);
+        
+        alert(`✅ Usuário "${dados.login}" criado com sucesso!`);
         return true;
     } catch (err) {
-        console.error("Erro ao criar grupo:", err.message);
-        alert("Erro ao salvar grupo. Verifique se ele já existe.");
+        console.error("Erro ao criar usuário:", err.message);
+        alert("Erro ao criar usuário. Verifique se o login já existe.");
         return false;
     }
 }
 
-// Função para listar os grupos na tabela da página admin-grupos.html
-async function renderizarGrupos() {
-    const corpoTabela = document.getElementById('corpoTabelaGrupos');
+// Função para listar os usuários na tabela administrativa
+async function renderizarUsuarios() {
+    const corpoTabela = document.getElementById('corpoTabelaUsuarios');
     if (!corpoTabela) return;
 
     try {
         const { data, error } = await _supabase
-            .from('grupos')
+            .from('usuarios')
             .select('*')
-            .order('nome', { ascending: true });
+            .order('login', { ascending: true });
 
         if (error) throw error;
 
         corpoTabela.innerHTML = "";
-        data.forEach(g => {
+        data.forEach(u => {
+            // Não permitimos excluir o admin principal por aqui por segurança
+            const podeExcluir = u.login !== 'admin'; 
+            
             corpoTabela.innerHTML += `
                 <tr>
-                    <td style="padding: 10px; text-align: center;">${g.nome}</td>
+                    <td style="padding: 8px;">${u.login}</td>
+                    <td>${u.nivel}</td>
+                    <td>${u.grupo_vinculado || 'Todos'}</td>
                     <td style="text-align: center;">
-                        <button onclick="removerGrupo('${g.id}')" style="background: #ff4757; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer;">Excluir</button>
+                        ${podeExcluir ? `<button onclick="removerUsuario('${u.id}')" style="background:#ff4757; color:white; border:none; padding:4px 8px; border-radius:4px; cursor:pointer;">Excluir</button>` : '-'}
                     </td>
                 </tr>
             `;
         });
     } catch (err) {
-        console.error("Erro ao listar grupos:", err.message);
+        console.error("Erro ao listar usuários:", err.message);
     }
 }
 
-// Função para remover um grupo
-async function removerGrupo(id) {
-    if (!confirm("Tem certeza que deseja excluir este grupo?")) return;
+// Função para remover um usuário
+async function removerUsuario(id) {
+    if (!confirm("Deseja realmente remover este acesso?")) return;
 
     try {
-        const { error } = await _supabase.from('grupos').delete().eq('id', id);
+        const { error } = await _supabase.from('usuarios').delete().eq('id', id);
         if (error) throw error;
-        renderizarGrupos(); // Atualiza a lista
+        renderizarUsuarios();
     } catch (err) {
-        alert("Erro ao excluir: Verifique se existem membros vinculados a este grupo.");
+        alert("Erro ao remover usuário.");
     }
 }
 

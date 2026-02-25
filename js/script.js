@@ -131,21 +131,29 @@ async function renderizarListaMembros() {
 
 async function cadastrarMembro(dados) {
     try {
+        let familiaParaSalvar = dados.familia_vinculo;
+        
+        // Se for individual/novo, gera um identificador único
+        if (!familiaParaSalvar) {
+            familiaParaSalvar = crypto.randomUUID(); 
+        }
+
         const { error } = await _supabase.from('membros').insert([{
-            nome: dados.nome,           // Mapeado para a coluna 'nome' do banco
+            nome: dados.nome,
             situacao: dados.situacao,
             categoria: dados.categoria,
             sexo: dados.sexo,
             grupo: dados.grupo,
             niver_dia: parseInt(dados.niver_dia) || 0,
             niver_mes: dados.niver_mes,
+            familia_id: familiaParaSalvar, // PADRÃO ATUAL: entidade_id
             status_registro: 'Ativo'
         }]);
 
         if (error) throw error;
         return true;
     } catch (err) {
-        alert("Erro ao salvar no Supabase: " + err.message);
+        alert("Erro ao salvar: " + err.message);
         return false;
     }
 }

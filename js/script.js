@@ -101,10 +101,13 @@ async function renderizarListaMembros() {
     const user = verificarAcesso();
     try {
         let consulta = _supabase.from('membros').select('*');
+        
+        // Filtro por grupo para usuários comuns
         if (user.nivel !== 'Admin' && user.nivel !== 'Master') {
-            consulta = consulta.eq('grupo', user.grupo); 
+            consulta = consulta.eq('grupo', user.grupo_vinculado); 
         }
 
+        // ORDENAÇÃO: Agora usando a coluna 'nome' que existe no banco
         const { data, error } = await consulta.order('nome', { ascending: true });
         if (error) throw error;
 
@@ -112,8 +115,7 @@ async function renderizarListaMembros() {
         data.forEach(m => {
             corpoTabela.innerHTML += `
                 <tr>
-                    <td>${m.nome}</td>
-                    <td>${m.categoria}</td>
+                    <td>${m.nome}</td> <td>${m.categoria}</td>
                     <td>${m.grupo || 'Sem Grupo'}</td>
                     <td>${m.situacao}</td>
                     <td>
@@ -122,6 +124,7 @@ async function renderizarListaMembros() {
                 </tr>`;
         });
     } catch (err) {
+        console.error(err);
         corpoTabela.innerHTML = "<tr><td colspan='5'>Erro ao carregar lista.</td></tr>";
     }
 }
@@ -129,20 +132,20 @@ async function renderizarListaMembros() {
 async function cadastrarMembro(dados) {
     try {
         const { error } = await _supabase.from('membros').insert([{
-            nome: dados.nome,
+            nome: dados.nome,           // Mapeado para a coluna 'nome' do banco
             situacao: dados.situacao,
             categoria: dados.categoria,
             sexo: dados.sexo,
             grupo: dados.grupo,
-            dia: parseInt(dados.dia) || 0,
-            mes: dados.mes,
+            niver_dia: parseInt(dados.niver_dia) || 0,
+            niver_mes: dados.niver_mes,
             status_registro: 'Ativo'
         }]);
 
         if (error) throw error;
         return true;
     } catch (err) {
-        alert("Erro ao salvar: " + err.message);
+        alert("Erro ao salvar no Supabase: " + err.message);
         return false;
     }
 }

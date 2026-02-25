@@ -88,14 +88,14 @@
         </form>
     </div>
 
-    <script src="../js/script.js"></script>
+<script src="../js/script.js"></script>
 
     <script>
         // Ação ao carregar a página
         document.addEventListener('DOMContentLoaded', async () => {
-            verificarAcesso(); // Garante que está logado
+            verificarAcesso(); 
             
-            // Tenta carregar os grupos no select
+            // Carrega os grupos para o Select
             if (typeof carregarGruposNoSelect === 'function') {
                 await carregarGruposNoSelect();
             }
@@ -105,15 +105,15 @@
         const form = document.getElementById('formCadastro');
 
         form.addEventListener('submit', async (e) => {
-            e.preventDefault(); // Impede a página de recarregar
+            e.preventDefault(); 
             
             const btnSalvar = document.getElementById('btnSalvar');
             btnSalvar.disabled = true;
             btnSalvar.innerText = 'Salvando...';
 
-            // Coleta os dados dos campos
-            const dadosMembro = {
-                nome_completo: document.getElementById('nome_completo').value,
+            // Organizamos os dados exatamente como a tabela 'membros' do Supabase espera
+            const dadosParaEnviar = {
+                nome: document.getElementById('nome_completo').value, // De 'nome_completo' (HTML) para 'nome' (Banco)
                 situacao: document.getElementById('situacao').value,
                 sexo: document.getElementById('sexo').value,
                 categoria: document.getElementById('categoria').value,
@@ -122,24 +122,18 @@
                 niver_mes: document.getElementById('niver_mes').value
             };
 
-            try {
-                // Insere na tabela 'membros' do Supabase
-                const { error } = await _supabase
-                    .from('membros')
-                    .insert([dadosMembro]);
+            // Chamamos a função centralizada que está no seu script.js
+            const sucesso = await cadastrarMembro(dadosParaEnviar);
 
-                if (error) throw error;
-
+            if (sucesso) {
                 alert('✅ Membro cadastrado com sucesso!');
-                form.reset(); // Limpa o formulário
-                
-            } catch (err) {
-                alert('❌ Erro ao salvar: ' + err.message);
-                console.error(err);
-            } finally {
-                btnSalvar.disabled = false;
-                btnSalvar.innerText = 'Salvar no Supabase';
+                form.reset();
+                // Recarrega os grupos caso o reset limpe o select
+                await carregarGruposNoSelect();
             }
+
+            btnSalvar.disabled = false;
+            btnSalvar.innerText = 'Salvar no Supabase';
         });
     </script>
 </body>

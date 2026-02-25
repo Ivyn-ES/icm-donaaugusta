@@ -70,8 +70,8 @@ async function realizarLogin(usuarioDigitado, senhaDigitada) {
         // Salva os dados no navegador para persistência
         localStorage.setItem('usuarioLogado', JSON.stringify({
             nome: data.login,
-            nivel: data.permissao,
-            grupo: data.grupo_vinculado 
+            nivel: data.permissao,// Usando a coluna 'permissao' do seu banco
+            grupo: data.grupo_vinculado // Usando 'grupo_vinculado' do seu banco
         }));
 
         // Redirecionamento Inteligente por Nível
@@ -102,12 +102,11 @@ async function renderizarListaMembros() {
     try {
         let consulta = _supabase.from('membros').select('*');
         
-        // Filtro por grupo para usuários comuns
+        // CORREÇÃO: Usando 'user.grupo' (que definimos no login)
         if (user.nivel !== 'Admin' && user.nivel !== 'Master') {
-            consulta = consulta.eq('grupo', user.grupo_vinculado); 
+            consulta = consulta.eq('grupo', user.grupo); 
         }
 
-        // ORDENAÇÃO: Agora usando a coluna 'nome' que existe no banco
         const { data, error } = await consulta.order('nome', { ascending: true });
         if (error) throw error;
 
@@ -115,7 +114,8 @@ async function renderizarListaMembros() {
         data.forEach(m => {
             corpoTabela.innerHTML += `
                 <tr>
-                    <td>${m.nome}</td> <td>${m.categoria}</td>
+                    <td>${m.nome}</td> 
+                    <td>${m.categoria}</td>
                     <td>${m.grupo || 'Sem Grupo'}</td>
                     <td>${m.situacao}</td>
                     <td>
@@ -129,11 +129,37 @@ async function renderizarListaMembros() {
     }
 }
 
+// NOVA FUNÇÃO: Busca os parentes para o select de vínculo
+async function carregarMembrosParaVinculo() {
+    const select = document.getElementById('vinculo_familia');
+    if (!select) return;
+
+    try {
+        const { data, error } = await _supabase
+            .from('membros')
+            .select('id, nome, familia_id')
+            .order('nome', { ascending: true });
+
+        if (error) throw error;
+
+        select.innerHTML = '<option value="">Ninguém (Membro Individual / Novo Responsável)</option>';
+        data.forEach(m => {
+            const option = document.createElement('option');
+            // Se já tem familia_id, usa ele. Se não, usa o ID dele para iniciar um grupo.
+            option.value = m.familia_id || m.id; 
+            option.text = m.nome;
+            select.appendChild(option);
+        });
+    } catch (err) {
+        console.error("Erro ao carregar vínculos:", err);
+    }
+}
+
 async function cadastrarMembro(dados) {
     try {
         let familiaParaSalvar = dados.familia_vinculo;
         
-        // Se for individual/novo, gera um identificador único
+        
         if (!familiaParaSalvar) {
             familiaParaSalvar = crypto.randomUUID(); 
         }
@@ -144,9 +170,9 @@ async function cadastrarMembro(dados) {
             categoria: dados.categoria,
             sexo: dados.sexo,
             grupo: dados.grupo,
-            niver_dia: parseInt(dados.niver_dia) || 0,
-            niver_mes: dados.niver_mes,
-            familia_id: familiaParaSalvar, // PADRÃO ATUAL: entidade_id
+            dia: parseInt(dados.niver_dia) || 0, // CORREÇÃO: Sua tabela usa 'dia'
+            mes: dados.niver_mes,               // Sua tabela usa 'mes'
+            familia_id: familiaParaSalvar,
             status_registro: 'Ativo'
         }]);
 
@@ -160,7 +186,8 @@ async function cadastrarMembro(dados) {
 
 async function excluirMembro(id) {
     if (!confirm("Deseja realmente excluir este membro?")) return;
-    await _supabase.from('membros').delete().eq('id', id);
+    const { error } = await _supabase.from('membros').delete().eq('id', id);
+    if (error) alert("Erro ao excluir: " + error.message);
     renderizarListaMembros();
 }
 

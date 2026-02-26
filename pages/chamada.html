@@ -12,7 +12,18 @@
         <header style="text-align: center; margin-bottom: 20px;">
             <h1>📋 Fazer Chamada</h1>
             <p id="infoChamada">Verificando grupo...</p>
-            <input type="date" id="data_chamada" style="padding: 10px; border-radius: 5px; border: 1px solid #ccc; font-size: 1rem;">
+            
+            <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 15px;">
+                <select id="tipo_evento" onchange="renderizarListaChamada()" style="padding: 10px; border-radius: 5px; border: 1px solid #ccc; font-size: 1rem;">
+                    <option value="Culto">Culto</option>
+                    <option value="EBD">EBD (Escola Bíblica)</option>
+                    <option value="Vigília">Vigília</option>
+                    <option value="Reunião">Reunião</option>
+                    <option value="Outro">Outro</option>
+                </select>
+
+                <input type="date" id="data_chamada" onchange="renderizarListaChamada()" style="padding: 10px; border-radius: 5px; border: 1px solid #ccc; font-size: 1rem;">
+            </div>
         </header>
 
         <section>
@@ -29,19 +40,19 @@
 
     <script src="../js/script.js"></script>
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const user = verificarAcesso(); // Usa a função central do script.js
+        document.addEventListener('DOMContentLoaded', async () => {
+            const user = verificarAcesso(); 
             
             if (user) {
-                // Define a data de hoje como padrão
+                // 1. Define a data de hoje como padrão
                 const hoje = new Date().toISOString().split('T')[0];
                 document.getElementById('data_chamada').value = hoje;
                 
-                // Exibe o grupo na tela
+                // 2. Exibe o grupo na tela
                 document.getElementById('infoChamada').innerText = `Grupo: ${user.grupo || 'Geral'}`;
                 
-                // Carrega os membros
-                renderizarListaChamada();
+                // 3. Carrega os membros (usando await para garantir que busque no Supabase)
+                await renderizarListaChamada();
             }
         });
     </script>

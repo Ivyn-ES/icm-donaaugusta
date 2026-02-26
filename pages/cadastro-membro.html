@@ -21,13 +21,15 @@
                 <label for="nome_completo">Nome Completo:</label>
                 <input type="text" id="nome_completo" placeholder="Ex: João Silva" required>
             </div>
+
             <div class="campo">
                 <label for="vinculo_familia">Vincular a uma Família existente? (Opcional)</label>
                 <select id="vinculo_familia">
-                    <option value="novo">Nova Família / Individual</option>
-                    </select>
+                    <option value="">Ninguém (Membro Individual / Novo Responsável)</option>
+                </select>
                 <small style="color: #666;">Selecione um parente já cadastrado para agrupar.</small>
             </div>
+
             <div class="linha-dupla">
                 <div class="campo">
                     <label for="situacao">Situação:</label>
@@ -94,32 +96,44 @@
         </form>
     </div>
 
-<script src="../js/script.js"></script>
+    <script src="../js/script.js"></script>
 
     <script>
-        // Ação ao carregar a página
+        // ==========================================
+        // I. AÇÃO AO CARREGAR A PÁGINA
+        // ==========================================
         document.addEventListener('DOMContentLoaded', async () => {
+            // Verifica se o usuário está logado
             verificarAcesso(); 
             
-            // Carrega os grupos para o Select
+            // Busca os grupos no banco de dados
             if (typeof carregarGruposNoSelect === 'function') {
                 await carregarGruposNoSelect();
             }
+
+            // CORREÇÃO: Busca os membros cadastrados para permitir o vínculo familiar logo ao abrir a página
+            if (typeof carregarMembrosParaVinculo === 'function') {
+                await carregarMembrosParaVinculo();
+            }
         });
 
-        // 5. LÓGICA DE ENVIO DO FORMULÁRIO
+        // ==========================================
+        // II. LÓGICA DE ENVIO DO FORMULÁRIO
+        // ==========================================
         const form = document.getElementById('formCadastro');
 
         form.addEventListener('submit', async (e) => {
             e.preventDefault(); 
             
+            // Feedback visual no botão
             const btnSalvar = document.getElementById('btnSalvar');
             btnSalvar.disabled = true;
             btnSalvar.innerText = 'Salvando...';
 
-            // Organizamos os dados exatamente como a tabela 'membros' do Supabase espera
+            // Coleta os dados dos campos (mapeando IDs do HTML para o objeto de envio)
             const dadosParaEnviar = {
-                nome: document.getElementById('nome_completo').value, // De 'nome_completo' (HTML) para 'nome' (Banco)
+                nome: document.getElementById('nome_completo').value,
+                familia_vinculo: document.getElementById('vinculo_familia').value, // Novo campo de família
                 situacao: document.getElementById('situacao').value,
                 sexo: document.getElementById('sexo').value,
                 categoria: document.getElementById('categoria').value,
@@ -128,18 +142,19 @@
                 niver_mes: document.getElementById('niver_mes').value
             };
 
-            // Chamamos a função centralizada que está no seu script.js
+            // Envia para a função centralizada no script.js
             const sucesso = await cadastrarMembro(dadosParaEnviar);
 
             if (sucesso) {
                 alert('✅ Membro cadastrado com sucesso!');
-                form.reset(); // Limpa os campos para o próximo
+                form.reset(); // Limpa o formulário
                 
-                // RECARREGA TUDO: Grupos e a lista de Parentes atualizada
+                // Atualiza as listas sem precisar dar F5 na página
                 await carregarGruposNoSelect();
-                await carregarMembrosParaVinculo(); // <-- ADICIONE ESTA LINHA AQUI
+                await carregarMembrosParaVinculo(); 
             }
 
+            // Restaura o botão
             btnSalvar.disabled = false;
             btnSalvar.innerText = 'Salvar no Supabase';
         });

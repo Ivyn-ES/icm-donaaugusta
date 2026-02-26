@@ -111,6 +111,7 @@ async function renderizarListaMembros() {
         if (error) throw error;
 
         corpoTabela.innerHTML = "";
+        // Função renderizarListaMembros:
         data.forEach(m => {
             corpoTabela.innerHTML += `
                 <tr>
@@ -119,6 +120,7 @@ async function renderizarListaMembros() {
                     <td>${m.grupo || 'Sem Grupo'}</td>
                     <td>${m.situacao}</td>
                     <td>
+                        <button onclick="prepararEdicao('${m.id}')" style="background:none; border:none; color:blue; cursor:pointer; margin-right:10px;">✏️</button>
                         <button onclick="excluirMembro('${m.id}')" style="background:none; border:none; color:red; cursor:pointer;">🗑️</button>
                     </td>
                 </tr>`;
@@ -351,5 +353,38 @@ function voltarAoPainelCorrespondente() {
         window.location.href = 'livre.html';
     } else {
         window.location.href = 'dashboard.html';
+    }
+}
+
+// 1. Busca os dados do membro e leva para a página de cadastro
+async function prepararEdicao(id) {
+    // Salva o ID que queremos editar no navegador para não perder ao trocar de página
+    localStorage.setItem('idMembroEdicao', id);
+    // Redireciona para a página de cadastro (que agora servirá para editar também)
+    window.location.href = 'cadastro-membro.html';
+}
+
+// 2. Função que salva a alteração no Supabase
+async function atualizarMembro(id, dados) {
+    try {
+        const { error } = await _supabase
+            .from('membros')
+            .update({
+                nome: dados.nome,
+                situacao: dados.situacao,
+                categoria: dados.categoria,
+                sexo: dados.sexo,
+                grupo: dados.grupo,
+                dia: parseInt(dados.niver_dia),
+                mes: dados.niver_mes,
+                familia_id: dados.familia_vinculo // Permite mudar o vínculo familiar se precisar
+            })
+            .eq('id', id);
+
+        if (error) throw error;
+        return true;
+    } catch (err) {
+        alert("Erro ao atualizar: " + err.message);
+        return false;
     }
 }

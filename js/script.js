@@ -244,40 +244,106 @@ async function renderizarUsuarios() {
 }
 
 // ==========================================
-// 5. MÓDULO DE CHAMADA (PRESENÇA)
+// 5. MÓDULO DE CHAMADA (PRESENÇA) - ATUALIZADO
 // ==========================================
 
 async function renderizarListaChamada() {
     const container = document.getElementById('listaChamada');
+    const dataSelecionada = document.getElementById('data_chamada').value;
+    const eventoSelecionado = document.getElementById('tipo_evento').value;
+
     if (!container) return;
-    const user = verificarAcesso();
-    let consulta = _supabase.from('membros').select('id, nome, grupo').eq('status_registro', 'Ativo');
-    if (user.nivel !== 'Admin' && user.nivel !== 'Master') consulta = consulta.eq('grupo', user.grupo);
-    
-    const { data } = await consulta.order('nome');
-    container.innerHTML = data.map(m => `
-        <div class="card-chamada" style="display:flex; align-items:center; justify-content:space-between; padding:12px; border:1px solid #ddd; margin-bottom:8px; border-radius:8px; background:#fff;">
-            <span>${m.nome} <small>(${m.grupo})</small></span>
-            <input type="checkbox" class="check-presenca" data-id="${m.id}" style="width:22px; height:22px;">
-        </div>`).join('');
+
+    try {
+        const user = verificarAcesso();
+
+        // 1. BUSCA MEMBROS ATIVOS (Incluindo a coluna 'apelido' que você vai criar)
+        let consultaMembros = _supabase.from('membros')
+            .select('id, nome, apelido, grupo') 
+            .eq('status_registro', 'Ativo');
+
+        if (user.nivel !== 'Admin' && user.nivel !== 'Master') {
+            consultaMembros = consultaMembros.eq('grupo', user.grupo);
+        }
+
+        const { data: membros, error: errMembros } = await consultaMembros.order('nome');
+        if (errMembros) throw errMembros;
+
+        // 2. BUSCA NO BANCO QUEM JÁ ESTÁ PRESENTE HOJE NESTE EVENTO
+        let jaRegistrados = [];
+        if (dataSelecionada && eventoSelecionado) {
+            const { data } = await _supabase
+                .from('presencas')
+                .select('membro_id')
+                .eq('data_culto', dataSelecionada)
+                .eq('tipo_evento', eventoSelecionado);
+            jaRegistrados = data || [];
+        }
+
+        // 3. GERA O HTML COM AS REGRAS DE APELIDO E BLOQUEIO
+        container.innerHTML = membros.map(m => {
+            // Verifica se o ID deste membro está na lista de presença do dia/evento
+            const estaPresente = jaRegistrados.some(r => r.membro_id === m.id);
+
+            // Regra do Nome de Preferência (Apelido)
+            const nomeExibicao = m.apelido ? `<strong>${m.apelido}</strong> <small>(${m.nome})</small>` : m.nome;
+
+            return `
+                <div class="card-chamada" style="display:flex; align-items:center; justify-content:space-between; padding:12px; border:1px solid #ddd; margin-bottom:8px; border-radius:8px; background:${estaPresente ? '#e8f5e9' : '#fff'}; opacity:${estaPresente ? '0.8' : '1'}">
+                    <span>${nomeExibicao} <br><small style="color:#666">${m.grupo}</small></span>
+                    <input type="checkbox" 
+                        class="check-presenca" 
+                        data-id="${m.id}" 
+                        ${estaPresente ? 'checked disabled' : ''} 
+                        style="width:25px; height:25px; cursor:${estaPresente ? 'not-allowed' : 'pointer'};">
+                </div>`;
+        }).join('');
+
+    } catch (err) {
+        console.error("Erro ao renderizar chamada:", err);
+    }
 }
 
 async function salvarChamada() {
     const btn = document.getElementById('btnFinalizar');
     const dataCulto = document.getElementById('data_chamada').value;
-    if (!dataCulto) return alert("Selecione a data!");
+    const tipoEvento = document.getElementById('tipo_evento').value;
 
-    const checks = document.querySelectorAll('.check-presenca:checked');
+    if (!dataCulto) return alert("⚠️ Selecione a data!");
+
+    // Pegamos apenas os novos marcados (ignoramos os que já estavam disabled)
+    const checks = document.querySelectorAll('.check-presenca:checked:not(:disabled)');
+    
+    if (checks.length === 0) {
+        return alert("⚠️ Nenhuma nova presença selecionada.");
+    }
+
+    btn.disabled = true;
+    btn.innerText = "Salvando...";
+
     const presencas = Array.from(checks).map(cb => ({
         membro_id: cb.getAttribute('data-id'),
         data_culto: dataCulto,
+        tipo_evento: tipoEvento, 
         presenca: true
     }));
 
-    btn.disabled = true;
-    const { error } = await _supabase.from('presencas').insert(presencas);
-    if (error) { alert("Erro: " + error.message); btn.disabled = false; }
-    else { alert("✅ Chamada Salva!"); window.location.href = 'dashboard.html'; }
+    try {
+        const { error } = await _supabase
+            .from('presencas')
+            .upsert(presencas, { onConflict: 'membro_id, data_culto, tipo_evento' });
+
+        if (error) throw error;
+
+        alert(`✅ Chamada de ${tipoEvento} salva!`);
+        window.location.href = 'dashboard.html';
+
+    } catch (err) {
+        console.error(err);
+        alert("❌ Erro ao salvar: " + err.message);
+        btn.disabled = false;
+        btn.innerText = "Salvar Chamada";
+    }
 }
 
 // ==========================================

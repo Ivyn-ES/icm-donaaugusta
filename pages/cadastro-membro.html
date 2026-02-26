@@ -99,41 +99,75 @@
     <script src="../js/script.js"></script>
 
     <script>
+        // CAPTURA O "POST-IT" (ID de edição se existir)
+        let idEdicao = localStorage.getItem('idMembroEdicao');
+
         // ==========================================
         // I. AÇÃO AO CARREGAR A PÁGINA
         // ==========================================
         document.addEventListener('DOMContentLoaded', async () => {
-            // Verifica se o usuário está logado
             verificarAcesso(); 
             
-            // Busca os grupos no banco de dados
-            if (typeof carregarGruposNoSelect === 'function') {
-                await carregarGruposNoSelect();
-            }
+            // 1. Carrega as listas necessárias do banco
+            if (typeof carregarGruposNoSelect === 'function') await carregarGruposNoSelect();
+            if (typeof carregarMembrosParaVinculo === 'function') await carregarMembrosParaVinculo();
 
-            // CORREÇÃO: Busca os membros cadastrados para permitir o vínculo familiar logo ao abrir a página
-            if (typeof carregarMembrosParaVinculo === 'function') {
-                await carregarMembrosParaVinculo();
+            // 2. VERIFICA SE ESTAMOS EM MODO EDIÇÃO
+            if (idEdicao) {
+                console.log("Modo Edição Ativado para o ID:", idEdicao);
+                
+                // Muda a aparência da página
+                document.querySelector('h1').innerText = "✏️ Editar Membro";
+                document.getElementById('btnSalvar').innerText = "Atualizar Dados";
+                
+                // Preenche o formulário com os dados atuais do banco
+                await carregarDadosParaEdicao(idEdicao);
             }
         });
 
+        // Função para buscar dados do membro específico e colocar nos campos
+        async function carregarDadosParaEdicao(id) {
+            try {
+                // _supabase é sua conexão global do script.js
+                const { data, error } = await _supabase
+                    .from('membros')
+                    .select('*')
+                    .eq('id', id)
+                    .single();
+
+                if (error) throw error;
+
+                if (data) {
+                    // Preenche os campos usando os IDs do seu HTML
+                    document.getElementById('nome_completo').value = data.nome;
+                    document.getElementById('vinculo_familia').value = data.familia_id || "";
+                    document.getElementById('situacao').value = data.situacao;
+                    document.getElementById('sexo').value = data.sexo;
+                    document.getElementById('categoria').value = data.categoria;
+                    document.getElementById('grupo_vinculado').value = data.grupo;
+                    document.getElementById('niver_dia').value = data.dia; // Sua coluna 'dia'
+                    document.getElementById('niver_mes').value = data.mes; // Sua coluna 'mes'
+                }
+            } catch (err) {
+                console.error("Erro ao carregar dados do membro:", err);
+            }
+        }
+
         // ==========================================
-        // II. LÓGICA DE ENVIO DO FORMULÁRIO
+        // II. LÓGICA DE ENVIO (SALVAR NOVO OU ATUALIZAR)
         // ==========================================
         const form = document.getElementById('formCadastro');
 
         form.addEventListener('submit', async (e) => {
             e.preventDefault(); 
             
-            // Feedback visual no botão
             const btnSalvar = document.getElementById('btnSalvar');
             btnSalvar.disabled = true;
-            btnSalvar.innerText = 'Salvando...';
+            btnSalvar.innerText = 'Processando...';
 
-            // Coleta os dados dos campos (mapeando IDs do HTML para o objeto de envio)
             const dadosParaEnviar = {
                 nome: document.getElementById('nome_completo').value,
-                familia_vinculo: document.getElementById('vinculo_familia').value, // Novo campo de família
+                familia_vinculo: document.getElementById('vinculo_familia').value,
                 situacao: document.getElementById('situacao').value,
                 sexo: document.getElementById('sexo').value,
                 categoria: document.getElementById('categoria').value,
@@ -142,22 +176,41 @@
                 niver_mes: document.getElementById('niver_mes').value
             };
 
-            // Envia para a função centralizada no script.js
-            const sucesso = await cadastrarMembro(dadosParaEnviar);
+            let sucesso = false;
 
-            if (sucesso) {
-                alert('✅ Membro cadastrado com sucesso!');
-                form.reset(); // Limpa o formulário
-                
-                // Atualiza as listas sem precisar dar F5 na página
-                await carregarGruposNoSelect();
-                await carregarMembrosParaVinculo(); 
+            // DECISÃO: Se tem ID, Atualiza. Se não tem, Cadastra.
+            if (idEdicao) {
+                sucesso = await atualizarMembro(idEdicao, dadosParaEnviar);
+            } else {
+                sucesso = await cadastrarMembro(dadosParaEnviar);
             }
 
-            // Restaura o botão
+            if (sucesso) {
+                alert(idEdicao ? '✅ Dados atualizados com sucesso!' : '✅ Membro cadastrado com sucesso!');
+                
+                // LIMPEZA: Remove o ID de edição para não bugar o próximo acesso
+                localStorage.removeItem('idMembroEdicao');
+                
+                if (idEdicao) {
+                    // Se editou, volta para a lista para ver o resultado
+                    window.location.href = 'lista-membros.html';
+                } else {
+                    // Se cadastrou novo, apenas limpa o formulário
+                    form.reset();
+                    await carregarMembrosParaVinculo(); 
+                }
+            }
+
             btnSalvar.disabled = false;
-            btnSalvar.innerText = 'Salvar no Supabase';
+            btnSalvar.innerText = idEdicao ? 'Atualizar Dados' : 'Salvar no Supabase';
         });
+
+        // AJUSTE NO BOTÃO VOLTAR: Para limpar o ID de edição ao sair
+        function voltarComLimpeza() {
+            localStorage.removeItem('idMembroEdicao');
+            voltarAoPainelCorrespondente();
+        }
     </script>
+    
 </body>
 </html>

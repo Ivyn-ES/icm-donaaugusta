@@ -133,9 +133,11 @@
 
             if (sucesso) {
                 alert('✅ Membro cadastrado com sucesso!');
-                form.reset();
-                // Recarrega os grupos caso o reset limpe o select
+                form.reset(); // Limpa os campos para o próximo
+                
+                // RECARREGA TUDO: Grupos e a lista de Parentes atualizada
                 await carregarGruposNoSelect();
+                await carregarMembrosParaVinculo(); // <-- ADICIONE ESTA LINHA AQUI
             }
 
             btnSalvar.disabled = false;

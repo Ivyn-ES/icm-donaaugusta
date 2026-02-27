@@ -211,17 +211,15 @@ async function renderizarListaChamada() {
             document.getElementById('portao_funcao').value = resumoExistente.portao_funcao || "Obreiro";
         }
 
-container.innerHTML = membros.map(m => {
+        container.innerHTML = membros.map(m => {
             const reg = jaRegistrados.find(r => r.membro_id === m.id);
             const estaPresente = reg ? reg.presenca : false;
 
-            // LÓGICA DE ENCURTAR O NOME: Pega apenas as duas primeiras palavras
             const partesNome = m.nome.trim().split(" ");
             const nomeCurto = partesNome.length > 1 
                 ? `${partesNome[0]} ${partesNome[1]}` 
                 : partesNome[0];
 
-            // EXIBIÇÃO: Apelido em destaque. Se não tiver, usa o Nome Curto.
             const nomeExibicao = m.apelido 
                 ? `<strong>${m.apelido}</strong> <br><small style="color:#666">(${nomeCurto})</small>` 
                 : `<strong>${nomeCurto}</strong>`;
@@ -229,11 +227,18 @@ container.innerHTML = membros.map(m => {
             return `
                 <div class="card-chamada" style="display:flex; align-items:center; justify-content:space-between; padding:12px; border:1px solid #ddd; margin-bottom:8px; border-radius:8px; background:${estaPresente ? '#e8f5e9' : '#fff'};">
                     <span>${nomeExibicao} <br><small style="color:#888; font-size: 0.8em;">${m.grupo}</small></span>
-                    <input type="checkbox" class="check-presenca" onchange="atualizarContadores()" data-id="${m.id}" ${estaPresente ? 'checked' : ''} style="width:28px; height:28px; cursor:pointer;">
+                    <input type="checkbox" class="check-presenca" 
+                        onchange="atualizarContadores()" 
+                        data-id="${m.id}" 
+                        data-categoria="${m.grupo}" 
+                        ${estaPresente ? 'checked' : ''} 
+                        style="width:28px; height:28px; cursor:pointer;">
                 </div>`;
         }).join('');
 
+        // Garante que o placar seja calculado assim que a lista carregar
         atualizarContadores();
+
     } catch (err) { console.error(err); }
 }
 
@@ -284,31 +289,27 @@ async function salvarChamada() {
 // ==========================================
 
 function atualizarContadores() {
-    // 1. Contagem de Membros (separando Adultos de CIAs)
     let membrosAd = 0;
     let membrosCi = 0;
 
-    // Buscamos todos os marcados e verificamos a categoria salva no 'data-categoria'
     document.querySelectorAll('.check-presenca:checked').forEach(cb => {
-        const cat = cb.getAttribute('data-categoria');
-        if (cat === 'CIA') {
+        const cat = (cb.getAttribute('data-categoria') || "").toLowerCase();
+        // Verifica se no nome do grupo contém 'cia'
+        if (cat.includes('cia')) {
             membrosCi++;
         } else {
             membrosAd++;
         }
     });
 
-    // 2. Valores de Visitantes (direto dos campos de input)
     const visAd = parseInt(document.getElementById('vis_adultos')?.value) || 0;
     const visCi = parseInt(document.getElementById('vis_cias')?.value) || 0;
 
-    // 3. Atualização dos Displays (os IDs que vamos colocar no HTML)
     if(document.getElementById('cont_membros_ad')) document.getElementById('cont_membros_ad').innerText = membrosAd;
     if(document.getElementById('cont_membros_ci')) document.getElementById('cont_membros_ci').innerText = membrosCi;
     if(document.getElementById('cont_vis_ad')) document.getElementById('cont_vis_ad').innerText = visAd;
     if(document.getElementById('cont_vis_ci')) document.getElementById('cont_vis_ci').innerText = visCi;
 
-    // 4. Total Geral (Soma de tudo)
     const totalGeral = membrosAd + membrosCi + visAd + visCi;
     if(document.getElementById('cont_total')) document.getElementById('cont_total').innerText = totalGeral;
 }

@@ -290,11 +290,9 @@ function atualizarContadores() {
     let membrosCi = 0;
 
     document.querySelectorAll('.check-presenca:checked').forEach(cb => {
-        // Normaliza o texto: remove acentos e deixa em minúsculo
         let cat = cb.getAttribute('data-categoria') || "";
         cat = cat.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
         
-        // Verifica as categorias de CIAs sem se preocupar com acento ou cedilha
         if (cat.includes('crianca') || cat.includes('intermediario') || cat.includes('adolescente')) {
             membrosCi++;
         } else {
@@ -305,14 +303,17 @@ function atualizarContadores() {
     const visAd = parseInt(document.getElementById('vis_adultos')?.value) || 0;
     const visCi = parseInt(document.getElementById('vis_cias')?.value) || 0;
 
-    if(document.getElementById('cont_membros_ad')) document.getElementById('cont_membros_ad').innerText = membrosAd;
-    if(document.getElementById('cont_membros_ci')) document.getElementById('cont_membros_ci').innerText = membrosCi;
-    if(document.getElementById('cont_vis_ad')) document.getElementById('cont_vis_ad').innerText = visAd;
-    if(document.getElementById('cont_vis_ci')) document.getElementById('cont_vis_ci').innerText = visCi;
+    // AQUI ESTÁ A CORREÇÃO: Usando os IDs exatos do seu HTML
+    if(document.getElementById('cont_membros_adultos')) document.getElementById('cont_membros_adultos').innerText = membrosAd;
+    if(document.getElementById('cont_membros_cias')) document.getElementById('cont_membros_cias').innerText = membrosCi;
+    if(document.getElementById('cont_vis_adultos_display')) document.getElementById('cont_vis_adultos_display').innerText = visAd;
+    if(document.getElementById('cont_vis_cias_display')) document.getElementById('cont_vis_cias_display').innerText = visCi;
 
     const totalGeral = membrosAd + membrosCi + visAd + visCi;
     if(document.getElementById('cont_total')) document.getElementById('cont_total').innerText = totalGeral;
 }
+
+// ... manter as funções carregarSugestoesMembros e autoSelecionarFuncao abaixo ...
 
 async function carregarSugestoesMembros() {
     const listagem = document.getElementById('listaMembrosSugestao');

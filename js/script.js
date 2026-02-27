@@ -502,26 +502,50 @@ async function carregarSugestoesMembros() {
     if (!listagem) return;
 
     try {
+        // Agora buscamos NOME e CARGO (cargo é onde está Pastor, Diácono, etc)
         const { data, error } = await _supabase
             .from('membros')
-            .select('nome, apelido')
+            .select('nome, cargo')
             .eq('status_registro', 'Ativo');
 
         if (error) throw error;
 
-        let opcoes = "";
-        data.forEach(m => {
-            opcoes += `<option value="${m.nome}">`;
-            if (m.apelido) {
-                opcoes += `<option value="${m.apelido}">`;
-            }
-        });
-        listagem.innerHTML = opcoes;
+        // Criamos as opções do datalist
+        listagem.innerHTML = data.map(m => 
+            `<option value="${m.nome}">${m.nome} (${m.cargo})</option>`
+        ).join('');
         
+        // Memória temporária para a função de auto-seleção funcionar
+        window.membrosCache = data;
+
     } catch (err) {
         console.error("Erro ao carregar sugestões:", err);
     }
 }
+
+// Nova função para mudar o cargo automaticamente
+function autoSelecionarFuncao(inputElement, selectId) {
+    const nomeDigitado = inputElement.value;
+    const selectCargo = document.getElementById(selectId);
+    
+    if (!window.membrosCache || !selectCargo) return;
+
+    // Procura o membro no cache
+    const membroEncontrado = window.membrosCache.find(m => m.nome === nomeDigitado);
+
+    if (membroEncontrado) {
+        const cargoDoBanco = membroEncontrado.cargo; 
+        
+        // Tenta encontrar o cargo no select e selecionar
+        for (let i = 0; i < selectCargo.options.length; i++) {
+            if (selectCargo.options[i].value === cargoDoBanco) {
+                selectCargo.selectedIndex = i;
+                break;
+            }
+        }
+    }
+}
+
 // CONTADOR 
 function atualizarContadores() {
     // 1. Conta quantos checkboxes de membros estão marcados

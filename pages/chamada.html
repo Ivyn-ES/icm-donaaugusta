@@ -9,6 +9,7 @@
 </head>
 <body>
     <div class="container">
+        
         <header style="text-align: center; margin-bottom: 10px;">
             <h1>📋 Fazer Chamada</h1>
             <p id="infoChamada" style="margin-bottom: 10px;">Verificando grupo...</p>
@@ -67,7 +68,7 @@
             <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 10px; margin-bottom: 15px;">
                 <div>
                     <label>Pregador (Nome)</label>
-                    <input type="text" id="pregador_nome" list="listaMembrosSugestao" placeholder="Digite ou selecione..." style="width:100%; padding:8px; border-radius:5px; border:1px solid #ccc;">
+                    <input type="text" id="pregador_nome" list="listaMembrosSugestao" oninput="autoSelecionarFuncao(this, 'pregador_funcao')" placeholder="Digite ou selecione..." style="width:100%; padding:8px; border-radius:5px; border:1px solid #ccc;">
                 </div>
                 <div>
                     <label>Função</label>
@@ -89,7 +90,7 @@
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
                 <div>
                     <label>Louvor (Nome)</label>
-                    <input type="text" id="louvor_nome" list="listaMembrosSugestao" style="width:100%; padding:8px; margin-bottom:5px; border-radius:5px; border:1px solid #ccc;">
+                    <input type="text" id="louvor_nome" list="listaMembrosSugestao" oninput="autoSelecionarFuncao(this, 'louvor_funcao')" style="width:100%; padding:8px; margin-bottom:5px; border-radius:5px; border:1px solid #ccc;">
                     <select id="louvor_funcao" style="width:100%; padding:8px; border-radius:5px; border:1px solid #ccc;">
                         <option value="Membro">Membro</option>
                         <option value="Obreiro">Obreiro</option>
@@ -99,7 +100,7 @@
                 </div>
                 <div>
                     <label>Portão (Nome)</label>
-                    <input type="text" id="portao_nome" list="listaMembrosSugestao" style="width:100%; padding:8px; margin-bottom:5px; border-radius:5px; border:1px solid #ccc;">
+                    <input type="text" id="portao_nome" list="listaMembrosSugestao" oninput="autoSelecionarFuncao(this, 'portao_funcao')" style="width:100%; padding:8px; margin-bottom:5px; border-radius:5px; border:1px solid #ccc;">
                     <select id="portao_funcao" style="width:100%; padding:8px; border-radius:5px; border:1px solid #ccc;">
                         <option value="Obreiro">Obreiro</option>
                         <option value="Diácono">Diácono</option>
@@ -123,15 +124,20 @@
             const user = verificarAcesso(); 
             
             if (user) {
+                // 1. Data Padrão
                 const hoje = new Date().toISOString().split('T')[0];
                 document.getElementById('data_chamada').value = hoje;
                 document.getElementById('infoChamada').innerText = `Grupo: ${user.grupo || 'Geral'}`;
                 
+                // 2. Carregar Dados do Banco
                 await renderizarListaChamada();
+                
+                // 3. Inicializar Sugestões Inteligentes (Módulo 8)
                 if (typeof carregarSugestoesMembros === 'function') {
                     await carregarSugestoesMembros();
                 }
-                // Inicializa o placar
+                
+                // 4. Inicializar Placar
                 if (typeof atualizarContadores === 'function') {
                     atualizarContadores();
                 }

@@ -26,17 +26,81 @@
             </div>
         </header>
 
-        <section>
+        <section style="margin-bottom: 30px;">
+            <h3 style="border-bottom: 2px solid #007bff; padding-bottom: 5px;">👥 Frequência de Membros</h3>
             <div id="listaChamada" style="display: flex; flex-direction: column; gap: 10px;">
                 <p style="text-align:center;">Carregando membros...</p>
             </div>
         </section>
 
+        <hr style="margin: 30px 0; border: 0; border-top: 2px solid #eee;">
+        
+        <section id="ataCulto" style="background: #fdfdfd; padding: 20px; border-radius: 10px; border: 1px solid #ddd;">
+            <h3 style="margin-top:0; color: #333; border-bottom: 2px solid #28a745; padding-bottom: 5px;">📊 Resumo e Escalas do Culto</h3>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; margin-top: 15px;">
+                <div>
+                    <label>Visitantes Adultos</label>
+                    <input type="number" id="vis_adultos" value="0" min="0" style="width:100%; padding:8px; border-radius:5px; border:1px solid #ccc;">
+                </div>
+                <div>
+                    <label>Visitantes CIAs</label>
+                    <input type="number" id="vis_cias" value="0" min="0" style="width:100%; padding:8px; border-radius:5px; border:1px solid #ccc;">
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 10px; margin-bottom: 15px;">
+                <div>
+                    <label>Pregador (Nome)</label>
+                    <input type="text" id="pregador_nome" list="listaMembrosSugestao" placeholder="Digite ou selecione..." style="width:100%; padding:8px; border-radius:5px; border:1px solid #ccc;">
+                </div>
+                <div>
+                    <label>Função</label>
+                    <select id="pregador_funcao" style="width:100%; padding:8px; border-radius:5px; border:1px solid #ccc;">
+                        <option value="Pastor">Pastor</option>
+                        <option value="Diácono">Diácono</option>
+                        <option value="Obreiro">Obreiro</option>
+                        <option value="Membro">Membro</option>
+                        <option value="Convidado">Convidado</option>
+                    </select>
+                </div>
+            </div>
+
+            <div style="margin-bottom: 15px;">
+                <label>Mensagem (Texto Bíblico)</label>
+                <input type="text" id="texto_biblico" placeholder="Ex: Salmos 119:11" style="width:100%; padding:8px; border-radius:5px; border:1px solid #ccc;">
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                <div>
+                    <label>Louvor (Nome)</label>
+                    <input type="text" id="louvor_nome" list="listaMembrosSugestao" style="width:100%; padding:8px; margin-bottom:5px; border-radius:5px; border:1px solid #ccc;">
+                    <select id="louvor_funcao" style="width:100%; padding:8px; border-radius:5px; border:1px solid #ccc;">
+                        <option value="Membro">Membro</option>
+                        <option value="Obreiro">Obreiro</option>
+                        <option value="Diácono">Diácono</option>
+                        <option value="Pastor">Pastor</option>
+                    </select>
+                </div>
+                <div>
+                    <label>Portão (Nome)</label>
+                    <input type="text" id="portao_nome" list="listaMembrosSugestao" style="width:100%; padding:8px; margin-bottom:5px; border-radius:5px; border:1px solid #ccc;">
+                    <select id="portao_funcao" style="width:100%; padding:8px; border-radius:5px; border:1px solid #ccc;">
+                        <option value="Obreiro">Obreiro</option>
+                        <option value="Diácono">Diácono</option>
+                        <option value="Membro">Membro</option>
+                    </select>
+                </div>
+            </div>
+        </section>
+
         <div style="margin-top: 30px; display: flex; flex-direction: column; gap: 10px;">
-            <button onclick="salvarChamada()" class="btn-salvar" id="btnFinalizar">Finalizar Chamada</button>
+            <button onclick="salvarChamada()" class="btn-salvar" id="btnFinalizar" style="padding: 15px; font-size: 1.1rem; font-weight: bold;">Finalizar Chamada</button>
             <a href="dashboard.html" class="btn-voltar" style="text-align: center; text-decoration: none; padding: 10px; background: #eee; border-radius: 5px; color: #333;">⬅ Voltar ao Painel</a>
         </div>
     </div>
+
+    <datalist id="listaMembrosSugestao"></datalist>
 
     <script src="../js/script.js"></script>
     <script>
@@ -51,8 +115,11 @@
                 // 2. Exibe o grupo na tela
                 document.getElementById('infoChamada').innerText = `Grupo: ${user.grupo || 'Geral'}`;
                 
-                // 3. Carrega os membros (usando await para garantir que busque no Supabase)
+                // 3. Carrega os membros e as sugestões de nomes para as escalas
                 await renderizarListaChamada();
+                if (typeof carregarSugestoesMembros === 'function') {
+                    await carregarSugestoesMembros();
+                }
             }
         });
     </script>

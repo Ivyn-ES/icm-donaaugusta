@@ -244,7 +244,7 @@ async function renderizarUsuarios() {
 }
 
 // ==========================================
-// 5. MÓDULO DE CHAMADA (PRESENÇA) - ATUALIZADO
+// 5. MÓDULO DE CHAMADA E ATA (PRESENÇA) - ATUALIZADO
 // ==========================================
 
 async function renderizarListaChamada() {
@@ -257,45 +257,62 @@ async function renderizarListaChamada() {
     try {
         const user = verificarAcesso();
 
-        // 1. BUSCA MEMBROS ATIVOS (Incluindo a coluna 'apelido' que você vai criar)
-        let consultaMembros = _supabase.from('membros')
-            .select('id, nome, apelido, grupo') 
-            .eq('status_registro', 'Ativo');
+        // 1. BUSCA MEMBROS ATIVOS
+        const { data: membros, error: errMembros } = await _supabase.from('membros')
+            .select('id, nome, apelido, grupo')
+            .eq('status_registro', 'Ativo')
+            .order('nome');
 
-        if (user.nivel !== 'Admin' && user.nivel !== 'Master') {
-            consultaMembros = consultaMembros.eq('grupo', user.grupo);
-        }
-
-        const { data: membros, error: errMembros } = await consultaMembros.order('nome');
         if (errMembros) throw errMembros;
 
-        // 2. BUSCA NO BANCO QUEM JÁ ESTÁ PRESENTE HOJE NESTE EVENTO
+        // 2. BUSCA PRESENÇAS E ATA EXISTENTES
         let jaRegistrados = [];
+        let resumoExistente = null;
+
         if (dataSelecionada && eventoSelecionado) {
-            const { data } = await _supabase
-                .from('presencas')
-                .select('membro_id')
+            // Busca presenças individuais
+            const { data: pres } = await _supabase.from('presencas')
+                .select('membro_id, presenca')
                 .eq('data_culto', dataSelecionada)
                 .eq('tipo_evento', eventoSelecionado);
-            jaRegistrados = data || [];
+            jaRegistrados = pres || [];
+
+            // Busca os dados da Ata (Resumo do Culto)
+            const { data: resu } = await _supabase.from('resumo_culto')
+                .select('*')
+                .eq('data_culto', dataSelecionada)
+                .eq('tipo_evento', eventoSelecionado)
+                .eq('grupo', user.grupo || 'Geral')
+                .maybeSingle();
+            resumoExistente = resu;
         }
 
-        // 3. GERA O HTML COM AS REGRAS DE APELIDO E BLOQUEIO
-        container.innerHTML = membros.map(m => {
-            // Verifica se o ID deste membro está na lista de presença do dia/evento
-            const estaPresente = jaRegistrados.some(r => r.membro_id === m.id);
+        // 3. ATUALIZA OS CAMPOS DA ATA NA TELA (Visitantes e Escalas)
+        document.getElementById('vis_adultos').value = resumoExistente?.vis_adultos || 0;
+        document.getElementById('vis_cias').value = resumoExistente?.vis_cias || 0;
+        document.getElementById('pregador_nome').value = resumoExistente?.pregador_nome || "";
+        document.getElementById('pregador_funcao').value = resumoExistente?.pregador_funcao || "Pastor";
+        document.getElementById('texto_biblico').value = resumoExistente?.texto_biblico || "";
+        document.getElementById('louvor_nome').value = resumoExistente?.louvor_nome || "";
+        document.getElementById('louvor_funcao').value = resumoExistente?.louvor_funcao || "Membro";
+        document.getElementById('portao_nome').value = resumoExistente?.portao_nome || "";
+        document.getElementById('portao_funcao').value = resumoExistente?.portao_funcao || "Obreiro";
 
-            // Regra do Nome de Preferência (Apelido)
+        // 4. GERA A LISTA DE MEMBROS (SEM BLOQUEIO / DISABLED)
+        container.innerHTML = membros.map(m => {
+            const registro = jaRegistrados.find(r => r.membro_id === m.id);
+            const estaPresente = registro ? registro.presenca : false;
+
             const nomeExibicao = m.apelido ? `<strong>${m.apelido}</strong> <small>(${m.nome})</small>` : m.nome;
 
             return `
-                <div class="card-chamada" style="display:flex; align-items:center; justify-content:space-between; padding:12px; border:1px solid #ddd; margin-bottom:8px; border-radius:8px; background:${estaPresente ? '#e8f5e9' : '#fff'}; opacity:${estaPresente ? '0.8' : '1'}">
+                <div class="card-chamada" style="display:flex; align-items:center; justify-content:space-between; padding:12px; border:1px solid #ddd; margin-bottom:8px; border-radius:8px; background:${estaPresente ? '#e8f5e9' : '#fff'};">
                     <span>${nomeExibicao} <br><small style="color:#666">${m.grupo}</small></span>
                     <input type="checkbox" 
                         class="check-presenca" 
                         data-id="${m.id}" 
-                        ${estaPresente ? 'checked disabled' : ''} 
-                        style="width:25px; height:25px; cursor:${estaPresente ? 'not-allowed' : 'pointer'};">
+                        ${estaPresente ? 'checked' : ''} 
+                        style="width:25px; height:25px; cursor:pointer;">
                 </div>`;
         }).join('');
 
@@ -308,41 +325,59 @@ async function salvarChamada() {
     const btn = document.getElementById('btnFinalizar');
     const dataCulto = document.getElementById('data_chamada').value;
     const tipoEvento = document.getElementById('tipo_evento').value;
+    const user = verificarAcesso();
 
     if (!dataCulto) return alert("⚠️ Selecione a data!");
-
-    // Pegamos apenas os novos marcados (ignoramos os que já estavam disabled)
-    const checks = document.querySelectorAll('.check-presenca:checked:not(:disabled)');
-    
-    if (checks.length === 0) {
-        return alert("⚠️ Nenhuma nova presença selecionada.");
-    }
 
     btn.disabled = true;
     btn.innerText = "Salvando...";
 
-    const presencas = Array.from(checks).map(cb => ({
+    // 1. DADOS DOS MEMBROS (Pega todos para atualizar quem foi desmarcado)
+    const todosOsChecks = document.querySelectorAll('.check-presenca');
+    const presencasMembros = Array.from(todosOsChecks).map(cb => ({
         membro_id: cb.getAttribute('data-id'),
         data_culto: dataCulto,
-        tipo_evento: tipoEvento, 
-        presenca: true
+        tipo_evento: tipoEvento,
+        presenca: cb.checked
     }));
 
+    // 2. DADOS DO RESUMO/ATA
+    const dadosAta = {
+        data_culto: dataCulto,
+        tipo_evento: tipoEvento,
+        grupo: user.grupo || 'Geral',
+        vis_adultos: parseInt(document.getElementById('vis_adultos').value) || 0,
+        vis_cias: parseInt(document.getElementById('vis_cias').value) || 0,
+        pregador_nome: document.getElementById('pregador_nome').value,
+        pregador_funcao: document.getElementById('pregador_funcao').value,
+        texto_biblico: document.getElementById('texto_biblico').value,
+        louvor_nome: document.getElementById('louvor_nome').value,
+        louvor_funcao: document.getElementById('louvor_funcao').value,
+        portao_nome: document.getElementById('portao_nome').value,
+        portao_funcao: document.getElementById('portao_funcao').value
+    };
+
     try {
-        const { error } = await _supabase
+        // Salva frequencia individual
+        const { error: err1 } = await _supabase
             .from('presencas')
-            .upsert(presencas, { onConflict: 'membro_id, data_culto, tipo_evento' });
+            .upsert(presencasMembros, { onConflict: 'membro_id, data_culto, tipo_evento' });
+        if (err1) throw err1;
 
-        if (error) throw error;
+        // Salva a Ata do Culto
+        const { error: err2 } = await _supabase
+            .from('resumo_culto')
+            .upsert([dadosAta], { onConflict: 'data_culto, tipo_evento, grupo' });
+        if (err2) throw err2;
 
-        alert(`✅ Chamada de ${tipoEvento} salva!`);
+        alert(`✅ Chamada e Ata de ${tipoEvento} salvas com sucesso!`);
         window.location.href = 'dashboard.html';
 
     } catch (err) {
         console.error(err);
         alert("❌ Erro ao salvar: " + err.message);
         btn.disabled = false;
-        btn.innerText = "Salvar Chamada";
+        btn.innerText = "Finalizar Chamada";
     }
 }
 
@@ -452,5 +487,35 @@ async function atualizarMembro(id, dados) {
     } catch (err) {
         alert("Erro ao atualizar: " + err.message);
         return false;
+    }
+}
+
+// ==========================================
+// 8. MÓDULO DE UTILITÁRIOS (SUGESTÕES)
+// ==========================================
+
+async function carregarSugestoesMembros() {
+    const listagem = document.getElementById('listaMembrosSugestao');
+    if (!listagem) return;
+
+    try {
+        const { data, error } = await _supabase
+            .from('membros')
+            .select('nome, apelido')
+            .eq('status_registro', 'Ativo');
+
+        if (error) throw error;
+
+        let opcoes = "";
+        data.forEach(m => {
+            opcoes += `<option value="${m.nome}">`;
+            if (m.apelido) {
+                opcoes += `<option value="${m.apelido}">`;
+            }
+        });
+        listagem.innerHTML = opcoes;
+        
+    } catch (err) {
+        console.error("Erro ao carregar sugestões:", err);
     }
 }

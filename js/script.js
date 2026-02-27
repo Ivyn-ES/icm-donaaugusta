@@ -366,14 +366,56 @@ async function salvarNovaSenha() {
 }
 
 // ==========================================
-// 8. INICIALIZAÇÃO
+// 8. INICIALIZAÇÃO AUTOMÁTICA POR PÁGINA
 // ==========================================
 document.addEventListener('DOMContentLoaded', () => {
+    const url = window.location.href;
+
+    // 1. GATILHO: LOGIN
     const formLogin = document.getElementById('loginForm');
     if (formLogin) {
         formLogin.addEventListener('submit', (e) => {
             e.preventDefault();
             realizarLogin(document.getElementById('usuario').value, document.getElementById('senha').value);
         });
+    }
+
+    // 2. GATILHO: GERENCIAR USUÁRIOS
+    if (url.includes('admin-usuarios.html')) {
+        renderizarUsuarios();
+        if (typeof carregarGruposNoSelect === "function") {
+            carregarGruposNoSelect();
+        }
+    }
+
+    // 3. GATILHO: GERENCIAR GRUPOS
+    if (url.includes('admin-grupos.html')) {
+        renderizarGrupos();
+    }
+
+    // 4. GATILHO: LISTA DE MEMBROS
+    if (url.includes('lista-membros.html')) {
+        renderizarListaMembros();
+    }
+
+    // 5. GATILHO: TELA DE CHAMADA
+    if (url.includes('chamada.html')) {
+        // Carrega sugestões para os campos de escala (Pregador, Louvor, etc)
+        if (typeof carregarSugestoesMembros === "function") {
+            carregarSugestoesMembros();
+        }
+        // A lista de membros da chamada geralmente é carregada ao mudar a data, 
+        // mas podemos carregar a lista inicial se houver uma data padrão:
+        if (document.getElementById('data_chamada')?.value) {
+            renderizarListaChamada();
+        }
+    }
+
+    // 6. GATILHO: CADASTRO DE MEMBROS
+    if (url.includes('cadastro-membro.html')) {
+        if (typeof carregarMembrosParaVinculo === "function") {
+            carregarMembrosParaVinculo();
+        }
+        // Se houver lógica de edição (preencher campos), ela entra aqui
     }
 });

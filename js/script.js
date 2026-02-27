@@ -185,9 +185,9 @@ async function renderizarListaChamada() {
 
     try {
         const user = verificarAcesso();
-        // Buscando id, nome, apelido, grupo e categoria
+        // Buscando id, nome, apelido, grupo, categoria e TIPO (Membro/Visitante)
         const { data: membros } = await _supabase.from('membros')
-            .select('id, nome, apelido, grupo, categoria')
+            .select('id, nome, apelido, grupo, categoria, tipo')
             .eq('status_registro', 'Ativo')
             .order('nome');
         
@@ -221,15 +221,19 @@ async function renderizarListaChamada() {
 
             const partesNome = m.nome.trim().split(" ");
             const nomeCurto = partesNome.length > 1 ? `${partesNome[0]} ${partesNome[1]}` : partesNome[0];
+            
+            // Exibe (Vis) ao lado do grupo se for Visitante cadastrado na lista
+            const sufixoTipo = m.tipo === 'Visitante' ? ' <span style="color:red">(Vis)</span>' : '';
             const nomeExibicao = m.apelido ? `<strong>${m.apelido}</strong> <br><small style="color:#666">(${nomeCurto})</small>` : `<strong>${nomeCurto}</strong>`;
 
             return `
                 <div class="card-chamada" style="display:flex; align-items:center; justify-content:space-between; padding:12px; border:1px solid #ddd; margin-bottom:8px; border-radius:8px; background:${estaPresente ? '#e8f5e9' : '#fff'};">
-                    <span>${nomeExibicao} <br><small style="color:#888; font-size: 0.8em;">${m.grupo}</small></span>
+                    <span>${nomeExibicao} <br><small style="color:#888; font-size: 0.8em;">${m.grupo}${sufixoTipo}</small></span>
                     <input type="checkbox" class="check-presenca" 
                         onchange="atualizarContadores()" 
                         data-id="${m.id}" 
                         data-categoria="${m.categoria || 'Adulto'}" 
+                        data-tipo="${m.tipo || 'Membro'}" 
                         ${estaPresente ? 'checked' : ''} 
                         style="width:28px; height:28px; cursor:pointer;">
                 </div>`;
@@ -290,20 +294,26 @@ function atualizarContadores() {
     let membrosCi = 0;
 
     document.querySelectorAll('.check-presenca:checked').forEach(cb => {
-        let cat = cb.getAttribute('data-categoria') || "";
-        cat = cat.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+        // Pega o tipo (Membro/Visitante)
+        const tipo = cb.getAttribute('data-tipo') || "Membro";
         
-        if (cat.includes('crianca') || cat.includes('intermediario') || cat.includes('adolescente')) {
-            membrosCi++;
-        } else {
-            membrosAd++;
+        // SÓ CONTA NO PLACAR DE MEMBROS SE O TIPO FOR 'Membro'
+        if (tipo === 'Membro') {
+            let cat = cb.getAttribute('data-categoria') || "";
+            cat = cat.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+            
+            if (cat.includes('crianca') || cat.includes('intermediario') || cat.includes('adolescente')) {
+                membrosCi++;
+            } else {
+                membrosAd++;
+            }
         }
     });
 
     const visAd = parseInt(document.getElementById('vis_adultos')?.value) || 0;
     const visCi = parseInt(document.getElementById('vis_cias')?.value) || 0;
 
-    // AQUI ESTÁ A CORREÇÃO: Usando os IDs exatos do seu HTML
+    // IDs exatos do seu HTML
     if(document.getElementById('cont_membros_adultos')) document.getElementById('cont_membros_adultos').innerText = membrosAd;
     if(document.getElementById('cont_membros_cias')) document.getElementById('cont_membros_cias').innerText = membrosCi;
     if(document.getElementById('cont_vis_adultos_display')) document.getElementById('cont_vis_adultos_display').innerText = visAd;
@@ -312,8 +322,6 @@ function atualizarContadores() {
     const totalGeral = membrosAd + membrosCi + visAd + visCi;
     if(document.getElementById('cont_total')) document.getElementById('cont_total').innerText = totalGeral;
 }
-
-// ... manter as funções carregarSugestoesMembros e autoSelecionarFuncao abaixo ...
 
 async function carregarSugestoesMembros() {
     const listagem = document.getElementById('listaMembrosSugestao');

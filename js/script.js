@@ -323,28 +323,92 @@ function autoSelecionarFuncao(inputElement, selectId) {
 }
 
 // ==========================================
-// 6. MÓDULO ADMINISTRATIVO (GRUPOS E USUÁRIOS)
+// 6. MÓDULO ADMINISTRATIVO (TABELAS E SELECTS)
 // ==========================================
+
+// --- TABELAS ---
+
+async function renderizarGrupos() {
+    const corpo = document.getElementById('corpoTabelaGrupos');
+    if (!corpo) return;
+    try {
+        const { data, error } = await _supabase.from('grupos').select('*').order('nome');
+        if (error) throw error;
+        corpo.innerHTML = data.map(g => `
+            <tr>
+                <td>${g.nome}</td>
+                <td style="text-align:center;">
+                    <button onclick="deletarGrupo('${g.id}')" style="border:none; background:none; cursor:pointer;">🗑️</button>
+                </td>
+            </tr>`).join('');
+    } catch (err) { 
+        console.error("Erro nos grupos:", err);
+        corpo.innerHTML = "<tr><td colspan='2'>Erro ao carregar dados.</td></tr>";
+    }
+}
+
+async function renderizarUsuarios() {
+    const corpo = document.getElementById('corpoTabelaUsuarios');
+    if (!corpo) return;
+    try {
+        const { data, error } = await _supabase.from('usuarios').select('*').order('login');
+        if (error) throw error;
+        corpo.innerHTML = data.map(u => `
+            <tr>
+                <td>${u.login}</td>
+                <td>${u.permissao}</td>
+                <td>${u.grupo_vinculado || 'Geral'}</td>
+                <td style="text-align:center;">
+                    <button onclick="deletarUsuario('${u.id}')" style="border:none; background:none; cursor:pointer;">🗑️</button>
+                </td>
+            </tr>`).join('');
+    } catch (err) { 
+        console.error("Erro nos usuários:", err);
+        corpo.innerHTML = "<tr><td colspan='4'>Erro ao carregar dados.</td></tr>";
+    }
+}
+
+// --- SELECTS E NAVEGAÇÃO ---
 
 async function carregarGruposNoSelect() {
     const select = document.getElementById('grupo_vinculado');
     if (!select) return;
     const { data } = await _supabase.from('grupos').select('nome').order('nome');
-    select.innerHTML = '<option value="">Selecione um Grupo</option>' + 
-        data.map(g => `<option value="${g.nome}">${g.nome}</option>`).join('');
+    if (data) {
+        select.innerHTML = '<option value="">Selecione um Grupo</option>' + 
+            data.map(g => `<option value="${g.nome}">${g.nome}</option>`).join('');
+    }
 }
 
 async function carregarMembrosParaVinculo() {
     const select = document.getElementById('vinculo_familia');
     if (!select) return;
     const { data } = await _supabase.from('membros').select('id, nome, familia_id').order('nome');
-    select.innerHTML = '<option value="">Individual / Novo Responsável</option>' + 
-        data.map(m => `<option value="${m.familia_id || m.id}">${m.nome}</option>`).join('');
+    if (data) {
+        select.innerHTML = '<option value="">Individual / Novo Responsável</option>' + 
+            data.map(m => `<option value="${m.familia_id || m.id}">${m.nome}</option>`).join('');
+    }
 }
 
 function voltarAoPainelCorrespondente() {
     const u = JSON.parse(localStorage.getItem('usuarioLogado'));
     window.location.href = u?.nivel === 'Livre' ? 'livre.html' : 'dashboard.html';
+}
+
+// --- AÇÕES DE EXCLUSÃO ---
+
+async function deletarGrupo(id) {
+    if (confirm("Deseja excluir este grupo?")) {
+        const { error } = await _supabase.from('grupos').delete().eq('id', id);
+        if (!error) renderizarGrupos();
+    }
+}
+
+async function deletarUsuario(id) {
+    if (confirm("Deseja excluir este usuário?")) {
+        const { error } = await _supabase.from('usuarios').delete().eq('id', id);
+        if (!error) renderizarUsuarios();
+    }
 }
 
 // ==========================================

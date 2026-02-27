@@ -284,16 +284,33 @@ async function salvarChamada() {
 // ==========================================
 
 function atualizarContadores() {
-    const elM = document.getElementById('cont_membros');
-    if (!elM) return;
+    // 1. Contagem de Membros (separando Adultos de CIAs)
+    let membrosAd = 0;
+    let membrosCi = 0;
 
-    const membros = document.querySelectorAll('.check-presenca:checked').length;
-    const vAd = parseInt(document.getElementById('vis_adultos')?.value) || 0;
-    const vCi = parseInt(document.getElementById('vis_cias')?.value) || 0;
+    // Buscamos todos os marcados e verificamos a categoria salva no 'data-categoria'
+    document.querySelectorAll('.check-presenca:checked').forEach(cb => {
+        const cat = cb.getAttribute('data-categoria');
+        if (cat === 'CIA') {
+            membrosCi++;
+        } else {
+            membrosAd++;
+        }
+    });
 
-    elM.innerText = membros;
-    if(document.getElementById('cont_visitantes')) document.getElementById('cont_visitantes').innerText = vAd + vCi;
-    if(document.getElementById('cont_total')) document.getElementById('cont_total').innerText = membros + vAd + vCi;
+    // 2. Valores de Visitantes (direto dos campos de input)
+    const visAd = parseInt(document.getElementById('vis_adultos')?.value) || 0;
+    const visCi = parseInt(document.getElementById('vis_cias')?.value) || 0;
+
+    // 3. Atualização dos Displays (os IDs que vamos colocar no HTML)
+    if(document.getElementById('cont_membros_ad')) document.getElementById('cont_membros_ad').innerText = membrosAd;
+    if(document.getElementById('cont_membros_ci')) document.getElementById('cont_membros_ci').innerText = membrosCi;
+    if(document.getElementById('cont_vis_ad')) document.getElementById('cont_vis_ad').innerText = visAd;
+    if(document.getElementById('cont_vis_ci')) document.getElementById('cont_vis_ci').innerText = visCi;
+
+    // 4. Total Geral (Soma de tudo)
+    const totalGeral = membrosAd + membrosCi + visAd + visCi;
+    if(document.getElementById('cont_total')) document.getElementById('cont_total').innerText = totalGeral;
 }
 
 async function carregarSugestoesMembros() {

@@ -27,18 +27,21 @@
             </div>
         </header>
 
-        <div id="placarChamada" style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin: 20px 0; background: #333; color: #fff; padding: 15px; border-radius: 10px; text-align: center;">
-            <div>
-                <small style="display:block; font-size: 0.7rem; color: #bbb;">MEMBROS</small>
-                <span id="cont_membros" style="font-size: 1.5rem; font-weight: bold;">0</span>
+        <div id="placar-chamada" style="font-size: 0.9rem; background: #f8f9fa; padding: 10px; border-radius: 8px; margin-bottom: 15px; display: flex; justify-content: space-around; flex-wrap: wrap; border: 1px solid #ddd;">
+            
+            <div style="text-align: center; margin: 5px;">
+                <span style="display: block; font-weight: bold; color: #2c3e50;">Membros</span>
+                <small>Ad: <span id="cont_membros_adultos">0</span> | CIAs: <span id="cont_membros_cias">0</span></small>
             </div>
-            <div>
-                <small style="display:block; font-size: 0.7rem; color: #bbb;">VISITANTES</small>
-                <span id="cont_visitantes" style="font-size: 1.5rem; font-weight: bold;">0</span>
+
+            <div style="text-align: center; margin: 5px;">
+                <span style="display: block; font-weight: bold; color: #2c3e50;">Visitantes</span>
+                <small>Ad: <span id="cont_vis_adultos_display">0</span> | CIAs: <span id="cont_vis_cias_display">0</span></small>
             </div>
-            <div style="border-left: 1px solid #555;">
-                <small style="display:block; font-size: 0.7rem; color: #4caf50;">TOTAL GERAL</small>
-                <span id="cont_total" style="font-size: 1.5rem; font-weight: bold; color: #4caf50;">0</span>
+
+            <div style="text-align: center; margin: 5px; border-left: 1px solid #ccc; padding-left: 15px;">
+                <span style="display: block; font-weight: bold; color: #d32f2f;">Total Geral</span>
+                <span id="cont_total" style="font-size: 1.1rem; font-weight: bold;">0</span>
             </div>
         </div>
 

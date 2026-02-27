@@ -7,6 +7,20 @@
     <link rel="stylesheet" href="../css/style.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
+        <div id="placarChamada" style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin: 20px 0; background: #333; color: #fff; padding: 15px; border-radius: 10px; text-align: center;">
+            <div>
+                <small style="display:block; font-size: 0.7rem; color: #bbb;">MEMBROS</small>
+                <span id="cont_membros" style="font-size: 1.5rem; font-weight: bold;">0</span>
+            </div>
+            <div>
+                <small style="display:block; font-size: 0.7rem; color: #bbb;">VISITANTES</small>
+                <span id="cont_visitantes" style="font-size: 1.5rem; font-weight: bold;">0</span>
+            </div>
+            <div style="border-left: 1px solid #555;">
+                <small style="display:block; font-size: 0.7rem; color: #4caf50;">TOTAL GERAL</small>
+                <span id="cont_total" style="font-size: 1.5rem; font-weight: bold; color: #4caf50;">0</span>
+            </div>
+        </div>
 <body>
     <div class="container">
         <header style="text-align: center; margin-bottom: 20px;">

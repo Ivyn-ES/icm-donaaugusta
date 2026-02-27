@@ -211,15 +211,25 @@ async function renderizarListaChamada() {
             document.getElementById('portao_funcao').value = resumoExistente.portao_funcao || "Obreiro";
         }
 
-        container.innerHTML = membros.map(m => {
+container.innerHTML = membros.map(m => {
             const reg = jaRegistrados.find(r => r.membro_id === m.id);
             const estaPresente = reg ? reg.presenca : false;
-            const nomeExibicao = m.apelido ? `<strong>${m.apelido}</strong> <small>(${m.nome})</small>` : m.nome;
+
+            // LÓGICA DE ENCURTAR O NOME: Pega apenas as duas primeiras palavras
+            const partesNome = m.nome.trim().split(" ");
+            const nomeCurto = partesNome.length > 1 
+                ? `${partesNome[0]} ${partesNome[1]}` 
+                : partesNome[0];
+
+            // EXIBIÇÃO: Apelido em destaque. Se não tiver, usa o Nome Curto.
+            const nomeExibicao = m.apelido 
+                ? `<strong>${m.apelido}</strong> <br><small style="color:#666">(${nomeCurto})</small>` 
+                : `<strong>${nomeCurto}</strong>`;
 
             return `
                 <div class="card-chamada" style="display:flex; align-items:center; justify-content:space-between; padding:12px; border:1px solid #ddd; margin-bottom:8px; border-radius:8px; background:${estaPresente ? '#e8f5e9' : '#fff'};">
-                    <span>${nomeExibicao} <br><small style="color:#666">${m.grupo}</small></span>
-                    <input type="checkbox" class="check-presenca" onchange="atualizarContadores()" data-id="${m.id}" ${estaPresente ? 'checked' : ''} style="width:25px; height:25px;">
+                    <span>${nomeExibicao} <br><small style="color:#888; font-size: 0.8em;">${m.grupo}</small></span>
+                    <input type="checkbox" class="check-presenca" onchange="atualizarContadores()" data-id="${m.id}" ${estaPresente ? 'checked' : ''} style="width:28px; height:28px; cursor:pointer;">
                 </div>`;
         }).join('');
 

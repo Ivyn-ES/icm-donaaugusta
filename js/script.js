@@ -185,7 +185,7 @@ async function renderizarListaChamada() {
 
     try {
         const user = verificarAcesso();
-        // ADICIONADO 'categoria' na busca do Supabase
+        // Buscando id, nome, apelido, grupo e categoria
         const { data: membros } = await _supabase.from('membros')
             .select('id, nome, apelido, grupo, categoria')
             .eq('status_registro', 'Ativo')
@@ -290,13 +290,14 @@ function atualizarContadores() {
     let membrosCi = 0;
 
     document.querySelectorAll('.check-presenca:checked').forEach(cb => {
-        const cat = (cb.getAttribute('data-categoria') || "").toLowerCase();
+        // Normaliza o texto: remove acentos e deixa em minúsculo
+        let cat = cb.getAttribute('data-categoria') || "";
+        cat = cat.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
         
-        // LÓGICA DE CONTAGEM BASEADA NAS SUAS CATEGORIAS DO SUPABASE
-        if (cat.includes('criança') || cat.includes('intermediário') || cat.includes('adolescente')) {
+        // Verifica as categorias de CIAs sem se preocupar com acento ou cedilha
+        if (cat.includes('crianca') || cat.includes('intermediario') || cat.includes('adolescente')) {
             membrosCi++;
         } else {
-            // Adulto e Jovem contam como Adulto no placar
             membrosAd++;
         }
     });

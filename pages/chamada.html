@@ -6,6 +6,25 @@
     <title>Chamada - ICM</title>
     <link rel="stylesheet" href="../css/style.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <div class="container">
+        <header style="text-align: center; margin-bottom: 10px;">
+            <h1>📋 Fazer Chamada</h1>
+            <p id="infoChamada" style="margin-bottom: 10px;">Verificando grupo...</p>
+            
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+                <select id="tipo_evento" onchange="renderizarListaChamada()" style="padding: 10px; border-radius: 5px; border: 1px solid #ccc; font-size: 1rem;">
+                    <option value="Culto">Culto</option>
+                    <option value="EBD">EBD (Escola Bíblica)</option>
+                    <option value="Vigília">Vigília</option>
+                    <option value="Reunião">Reunião</option>
+                    <option value="Outro">Outro</option>
+                </select>
+
+                <input type="date" id="data_chamada" onchange="renderizarListaChamada()" style="padding: 10px; border-radius: 5px; border: 1px solid #ccc; font-size: 1rem;">
+            </div>
+        </header>
 
         <div id="placarChamada" style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin: 20px 0; background: #333; color: #fff; padding: 15px; border-radius: 10px; text-align: center;">
             <div>
@@ -21,31 +40,6 @@
                 <span id="cont_total" style="font-size: 1.5rem; font-weight: bold; color: #4caf50;">0</span>
             </div>
         </div>
-</head>
-
-
-
-
-
-
-<body>
-    <div class="container">
-        <header style="text-align: center; margin-bottom: 20px;">
-            <h1>📋 Fazer Chamada</h1>
-            <p id="infoChamada">Verificando grupo...</p>
-            
-            <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 15px;">
-                <select id="tipo_evento" onchange="renderizarListaChamada()" style="padding: 10px; border-radius: 5px; border: 1px solid #ccc; font-size: 1rem;">
-                    <option value="Culto">Culto</option>
-                    <option value="EBD">EBD (Escola Bíblica)</option>
-                    <option value="Vigília">Vigília</option>
-                    <option value="Reunião">Reunião</option>
-                    <option value="Outro">Outro</option>
-                </select>
-
-                <input type="date" id="data_chamada" onchange="renderizarListaChamada()" style="padding: 10px; border-radius: 5px; border: 1px solid #ccc; font-size: 1rem;">
-            </div>
-        </header>
 
         <section style="margin-bottom: 30px;">
             <h3 style="border-bottom: 2px solid #007bff; padding-bottom: 5px;">👥 Frequência de Membros</h3>
@@ -62,11 +56,11 @@
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; margin-top: 15px;">
                 <div>
                     <label>Visitantes Adultos</label>
-                    <input type="number" id="vis_adultos" value="0" min="0" style="width:100%; padding:8px; border-radius:5px; border:1px solid #ccc;">
+                    <input type="number" id="vis_adultos" value="0" min="0" onchange="atualizarContadores()" onkeyup="atualizarContadores()" style="width:100%; padding:8px; border-radius:5px; border:1px solid #ccc;">
                 </div>
                 <div>
                     <label>Visitantes CIAs</label>
-                    <input type="number" id="vis_cias" value="0" min="0" style="width:100%; padding:8px; border-radius:5px; border:1px solid #ccc;">
+                    <input type="number" id="vis_cias" value="0" min="0" onchange="atualizarContadores()" onkeyup="atualizarContadores()" style="width:100%; padding:8px; border-radius:5px; border:1px solid #ccc;">
                 </div>
             </div>
 
@@ -129,17 +123,17 @@
             const user = verificarAcesso(); 
             
             if (user) {
-                // 1. Define a data de hoje como padrão
                 const hoje = new Date().toISOString().split('T')[0];
                 document.getElementById('data_chamada').value = hoje;
-                
-                // 2. Exibe o grupo na tela
                 document.getElementById('infoChamada').innerText = `Grupo: ${user.grupo || 'Geral'}`;
                 
-                // 3. Carrega os membros e as sugestões de nomes para as escalas
                 await renderizarListaChamada();
                 if (typeof carregarSugestoesMembros === 'function') {
                     await carregarSugestoesMembros();
+                }
+                // Inicializa o placar
+                if (typeof atualizarContadores === 'function') {
+                    atualizarContadores();
                 }
             }
         });

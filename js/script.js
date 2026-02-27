@@ -185,7 +185,11 @@ async function renderizarListaChamada() {
 
     try {
         const user = verificarAcesso();
-        const { data: membros } = await _supabase.from('membros').select('id, nome, apelido, grupo').eq('status_registro', 'Ativo').order('nome');
+        // ADICIONADO 'categoria' na busca do Supabase
+        const { data: membros } = await _supabase.from('membros')
+            .select('id, nome, apelido, grupo, categoria')
+            .eq('status_registro', 'Ativo')
+            .order('nome');
         
         let jaRegistrados = [];
         let resumoExistente = null;
@@ -216,13 +220,8 @@ async function renderizarListaChamada() {
             const estaPresente = reg ? reg.presenca : false;
 
             const partesNome = m.nome.trim().split(" ");
-            const nomeCurto = partesNome.length > 1 
-                ? `${partesNome[0]} ${partesNome[1]}` 
-                : partesNome[0];
-
-            const nomeExibicao = m.apelido 
-                ? `<strong>${m.apelido}</strong> <br><small style="color:#666">(${nomeCurto})</small>` 
-                : `<strong>${nomeCurto}</strong>`;
+            const nomeCurto = partesNome.length > 1 ? `${partesNome[0]} ${partesNome[1]}` : partesNome[0];
+            const nomeExibicao = m.apelido ? `<strong>${m.apelido}</strong> <br><small style="color:#666">(${nomeCurto})</small>` : `<strong>${nomeCurto}</strong>`;
 
             return `
                 <div class="card-chamada" style="display:flex; align-items:center; justify-content:space-between; padding:12px; border:1px solid #ddd; margin-bottom:8px; border-radius:8px; background:${estaPresente ? '#e8f5e9' : '#fff'};">
@@ -230,15 +229,13 @@ async function renderizarListaChamada() {
                     <input type="checkbox" class="check-presenca" 
                         onchange="atualizarContadores()" 
                         data-id="${m.id}" 
-                        data-categoria="${m.grupo}" 
+                        data-categoria="${m.categoria || 'Adulto'}" 
                         ${estaPresente ? 'checked' : ''} 
                         style="width:28px; height:28px; cursor:pointer;">
                 </div>`;
         }).join('');
 
-        // Garante que o placar seja calculado assim que a lista carregar
         atualizarContadores();
-
     } catch (err) { console.error(err); }
 }
 
@@ -294,10 +291,12 @@ function atualizarContadores() {
 
     document.querySelectorAll('.check-presenca:checked').forEach(cb => {
         const cat = (cb.getAttribute('data-categoria') || "").toLowerCase();
-        // Verifica se no nome do grupo contém 'cia'
-        if (cat.includes('cia')) {
+        
+        // LÓGICA DE CONTAGEM BASEADA NAS SUAS CATEGORIAS DO SUPABASE
+        if (cat.includes('criança') || cat.includes('intermediário') || cat.includes('adolescente')) {
             membrosCi++;
         } else {
+            // Adulto e Jovem contam como Adulto no placar
             membrosAd++;
         }
     });

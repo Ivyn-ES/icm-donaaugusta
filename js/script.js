@@ -298,27 +298,30 @@ async function renderizarListaChamada() {
         document.getElementById('portao_nome').value = resumoExistente?.portao_nome || "";
         document.getElementById('portao_funcao').value = resumoExistente?.portao_funcao || "Obreiro";
 
-        // 4. GERA A LISTA DE MEMBROS (SEM BLOQUEIO / DISABLED)
-        container.innerHTML = membros.map(m => {
-            const registro = jaRegistrados.find(r => r.membro_id === m.id);
-            const estaPresente = registro ? registro.presenca : false;
+// 4. GERA A LISTA DE MEMBROS (COM GATILHO PARA O CONTADOR)
+container.innerHTML = membros.map(m => {
+    const registro = jaRegistrados.find(r => r.membro_id === m.id);
+    const estaPresente = registro ? registro.presenca : false;
 
-            const nomeExibicao = m.apelido ? `<strong>${m.apelido}</strong> <small>(${m.nome})</small>` : m.nome;
+    const nomeExibicao = m.apelido ? `<strong>${m.apelido}</strong> <small>(${m.nome})</small>` : m.nome;
 
-            return `
-                <div class="card-chamada" style="display:flex; align-items:center; justify-content:space-between; padding:12px; border:1px solid #ddd; margin-bottom:8px; border-radius:8px; background:${estaPresente ? '#e8f5e9' : '#fff'};">
-                    <span>${nomeExibicao} <br><small style="color:#666">${m.grupo}</small></span>
-                    <input type="checkbox" 
-                        class="check-presenca" 
-                        data-id="${m.id}" 
-                        ${estaPresente ? 'checked' : ''} 
-                        style="width:25px; height:25px; cursor:pointer;">
-                </div>`;
-        }).join('');
+    return `
+        <div class="card-chamada" style="display:flex; align-items:center; justify-content:space-between; padding:12px; border:1px solid #ddd; margin-bottom:8px; border-radius:8px; background:${estaPresente ? '#e8f5e9' : '#fff'};">
+            <span>${nomeExibicao} <br><small style="color:#666">${m.grupo}</small></span>
+            <input type="checkbox" 
+                class="check-presenca" 
+                onchange="atualizarContadores()" 
+                data-id="${m.id}" 
+                ${estaPresente ? 'checked' : ''} 
+                style="width:25px; height:25px; cursor:pointer;">
+        </div>`;
+}).join('');
 
-    } catch (err) {
-        console.error("Erro ao renderizar chamada:", err);
-    }
+// Linha extra: Logo após gerar a lista, chamamos o contador para atualizar o placar inicial
+atualizarContadores(); 
+
+} catch (err) {
+    console.error("Erro ao renderizar chamada:", err);
 }
 
 async function salvarChamada() {
@@ -518,4 +521,19 @@ async function carregarSugestoesMembros() {
     } catch (err) {
         console.error("Erro ao carregar sugestões:", err);
     }
+}
+// CONTADOR 
+function atualizarContadores() {
+    // 1. Conta quantos checkboxes de membros estão marcados
+    const membrosPresentes = document.querySelectorAll('.check-presenca:checked').length;
+    
+    // 2. Soma os visitantes (Adultos + CIAs)
+    const visAdultos = parseInt(document.getElementById('vis_adultos').value) || 0;
+    const visCias = parseInt(document.getElementById('vis_cias').value) || 0;
+    const totalVisitantes = visAdultos + visCias;
+
+    // 3. Atualiza na tela
+    document.getElementById('cont_membros').innerText = membrosPresentes;
+    document.getElementById('cont_visitantes').innerText = totalVisitantes;
+    document.getElementById('cont_total').innerText = membrosPresentes + totalVisitantes;
 }

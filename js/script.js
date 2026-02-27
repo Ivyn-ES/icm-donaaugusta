@@ -494,7 +494,7 @@ async function atualizarMembro(id, dados) {
 }
 
 // ==========================================
-// 8. MÓDULO DE UTILITÁRIOS (SUGESTÕES)
+// 8. MÓDULO DE UTILITÁRIOS E AUTOMAÇÃO
 // ==========================================
 
 async function carregarSugestoesMembros() {
@@ -502,20 +502,19 @@ async function carregarSugestoesMembros() {
     if (!listagem) return;
 
     try {
-        // Agora buscamos NOME e CARGO (cargo é onde está Pastor, Diácono, etc)
+        // Mudamos de 'cargo' para 'funcao' na consulta
         const { data, error } = await _supabase
             .from('membros')
-            .select('nome, cargo')
+            .select('nome, funcao') 
             .eq('status_registro', 'Ativo');
 
         if (error) throw error;
 
-        // Criamos as opções do datalist
+        // Criamos as opções usando a propriedade 'funcao'
         listagem.innerHTML = data.map(m => 
-            `<option value="${m.nome}">${m.nome} (${m.cargo})</option>`
+            `<option value="${m.nome}">${m.nome} (${m.funcao || 'Membro'})</option>`
         ).join('');
         
-        // Memória temporária para a função de auto-seleção funcionar
         window.membrosCache = data;
 
     } catch (err) {
@@ -523,41 +522,24 @@ async function carregarSugestoesMembros() {
     }
 }
 
-// Nova função para mudar o cargo automaticamente
 function autoSelecionarFuncao(inputElement, selectId) {
     const nomeDigitado = inputElement.value;
-    const selectCargo = document.getElementById(selectId);
+    const selectDestino = document.getElementById(selectId);
     
-    if (!window.membrosCache || !selectCargo) return;
+    if (!window.membrosCache || !selectDestino) return;
 
     // Procura o membro no cache
     const membroEncontrado = window.membrosCache.find(m => m.nome === nomeDigitado);
 
     if (membroEncontrado) {
-        const cargoDoBanco = membroEncontrado.cargo; 
+        const funcaoDoBanco = membroEncontrado.funcao; // Aqui também mudamos para funcao
         
-        // Tenta encontrar o cargo no select e selecionar
-        for (let i = 0; i < selectCargo.options.length; i++) {
-            if (selectCargo.options[i].value === cargoDoBanco) {
-                selectCargo.selectedIndex = i;
+        // Percorre as opções do select (Pastor, Diácono, etc) para marcar a correta
+        for (let i = 0; i < selectDestino.options.length; i++) {
+            if (selectDestino.options[i].value === funcaoDoBanco) {
+                selectDestino.selectedIndex = i;
                 break;
             }
         }
     }
-}
-
-// CONTADOR 
-function atualizarContadores() {
-    // 1. Conta quantos checkboxes de membros estão marcados
-    const membrosPresentes = document.querySelectorAll('.check-presenca:checked').length;
-    
-    // 2. Soma os visitantes (Adultos + CIAs)
-    const visAdultos = parseInt(document.getElementById('vis_adultos').value) || 0;
-    const visCias = parseInt(document.getElementById('vis_cias').value) || 0;
-    const totalVisitantes = visAdultos + visCias;
-
-    // 3. Atualiza na tela
-    document.getElementById('cont_membros').innerText = membrosPresentes;
-    document.getElementById('cont_visitantes').innerText = totalVisitantes;
-    document.getElementById('cont_total').innerText = membrosPresentes + totalVisitantes;
 }

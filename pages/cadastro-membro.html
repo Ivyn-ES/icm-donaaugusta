@@ -17,25 +17,57 @@
 
         <form id="formCadastro">
             
-            <div class="campo">
-                <label for="nome_completo">Nome Completo:</label>
-                <input type="text" id="nome_completo" placeholder="Ex: João Silva" required>
+            <div style="background: #f9f9f9; padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 5px solid #007bff;">
+                <div class="campo">
+                    <label for="nome_completo">Nome Completo:</label>
+                    <input type="text" id="nome_completo" placeholder="Ex: João Silva" required>
+                </div>
+
+                <div class="campo" style="margin-top: 10px;">
+                    <label for="apelido">Nome de Preferência (Apelido):</label>
+                    <input type="text" id="apelido" placeholder="Como a pessoa gosta de ser chamada?">
+                    <small style="color: #666;">Aparecerá na lista de chamada.</small>
+                </div>
             </div>
 
-            <div class="campo">
-                <label for="vinculo_familia">Vincular a uma Família existente? (Opcional)</label>
-                <select id="vinculo_familia">
-                    <option value="">Ninguém (Membro Individual / Novo Responsável)</option>
-                </select>
-                <small style="color: #666;">Selecione um parente já cadastrado para agrupar.</small>
-            </div>
-
-            <div class="linha-dupla">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
+                <div class="campo">
+                    <label for="funcao">Função (Voluntário):</label>
+                    <select id="funcao">
+                        <option value="Membro">Membro</option>
+                        <option value="Obreiro">Obreiro</option>
+                        <option value="Diácono">Diácono</option>
+                        <option value="Pastor">Pastor</option>
+                        <option value="Instrumentista">Instrumentista</option>
+                        <option value="Grupo de Louvor">Grupo de Louvor</option>
+                        <option value="Professora">Professora</option>
+                    </select>
+                </div>
                 <div class="campo">
                     <label for="situacao">Situação:</label>
                     <select id="situacao">
                         <option value="Membro">Membro</option>
                         <option value="Visitante">Visitante</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="campo" style="margin-bottom: 20px;">
+                <label for="vinculo_familia">Vincular a uma Família existente? (Opcional)</label>
+                <select id="vinculo_familia">
+                    <option value="">Ninguém (Membro Individual / Novo Responsável)</option>
+                </select>
+            </div>
+
+            <div class="linha-dupla">
+                <div class="campo">
+                    <label for="categoria">Categoria:</label>
+                    <select id="categoria">
+                        <option value="Adulto">Adulto</option>
+                        <option value="Jovem">Jovem</option>
+                        <option value="Adolescente">Adolescente</option>
+                        <option value="Intermediário">Intermediário</option>
+                        <option value="Criança">Criança</option>
                     </select>
                 </div>
                 <div class="campo">
@@ -45,18 +77,6 @@
                         <option value="Feminino">Feminino</option>
                     </select>
                 </div>
-            </div>
-
-            <div class="campo">
-                <label for="categoria">Categoria:</label>
-                <select id="categoria">
-                    <option value="Adulto">Adulto</option>
-                    <option value="Jovem">Jovem</option>
-                    <option value="Adolescente">Adolescente</option>
-                    <option value="Intermediário">Intermediário</option>
-                    <option value="Criança">Criança</option>
-                    <option value="Criança de Colo">Criança de Colo</option>
-                </select>
             </div>
 
             <div class="linha-dupla">
@@ -91,7 +111,7 @@
 
             <div style="margin-top: 30px; display: flex; flex-direction: column; gap: 10px;">
                 <button type="submit" class="btn-salvar" id="btnSalvar">Salvar no Supabase</button>
-                <button type="button" onclick="voltarAoPainelCorrespondente()" class="btn-voltar">⬅ Voltar ao Painel</button>
+                <button type="button" onclick="voltarComLimpeza()" class="btn-voltar">⬅ Voltar ao Painel</button>
             </div>
         </form>
     </div>
@@ -99,36 +119,23 @@
     <script src="../js/script.js"></script>
 
     <script>
-        // CAPTURA O "POST-IT" (ID de edição se existir)
         let idEdicao = localStorage.getItem('idMembroEdicao');
 
-        // ==========================================
-        // I. AÇÃO AO CARREGAR A PÁGINA
-        // ==========================================
         document.addEventListener('DOMContentLoaded', async () => {
             verificarAcesso(); 
             
-            // 1. Carrega as listas necessárias do banco
             if (typeof carregarGruposNoSelect === 'function') await carregarGruposNoSelect();
             if (typeof carregarMembrosParaVinculo === 'function') await carregarMembrosParaVinculo();
 
-            // 2. VERIFICA SE ESTAMOS EM MODO EDIÇÃO
             if (idEdicao) {
-                console.log("Modo Edição Ativado para o ID:", idEdicao);
-                
-                // Muda a aparência da página
                 document.querySelector('h1').innerText = "✏️ Editar Membro";
                 document.getElementById('btnSalvar').innerText = "Atualizar Dados";
-                
-                // Preenche o formulário com os dados atuais do banco
                 await carregarDadosParaEdicao(idEdicao);
             }
         });
 
-        // Função para buscar dados do membro específico e colocar nos campos
         async function carregarDadosParaEdicao(id) {
             try {
-                // _supabase é sua conexão global do script.js
                 const { data, error } = await _supabase
                     .from('membros')
                     .select('*')
@@ -138,24 +145,22 @@
                 if (error) throw error;
 
                 if (data) {
-                    // Preenche os campos usando os IDs do seu HTML
                     document.getElementById('nome_completo').value = data.nome;
+                    document.getElementById('apelido').value = data.apelido || "";
+                    document.getElementById('funcao').value = data.funcao || "Membro";
                     document.getElementById('vinculo_familia').value = data.familia_id || "";
                     document.getElementById('situacao').value = data.situacao;
                     document.getElementById('sexo').value = data.sexo;
                     document.getElementById('categoria').value = data.categoria;
                     document.getElementById('grupo_vinculado').value = data.grupo;
-                    document.getElementById('niver_dia').value = data.dia; // Sua coluna 'dia'
-                    document.getElementById('niver_mes').value = data.mes; // Sua coluna 'mes'
+                    document.getElementById('niver_dia').value = data.dia; 
+                    document.getElementById('niver_mes').value = data.mes; 
                 }
             } catch (err) {
-                console.error("Erro ao carregar dados do membro:", err);
+                console.error("Erro ao carregar dados:", err);
             }
         }
 
-        // ==========================================
-        // II. LÓGICA DE ENVIO (SALVAR NOVO OU ATUALIZAR)
-        // ==========================================
         const form = document.getElementById('formCadastro');
 
         form.addEventListener('submit', async (e) => {
@@ -167,6 +172,8 @@
 
             const dadosParaEnviar = {
                 nome: document.getElementById('nome_completo').value,
+                apelido: document.getElementById('apelido').value,
+                funcao: document.getElementById('funcao').value,
                 familia_vinculo: document.getElementById('vinculo_familia').value,
                 situacao: document.getElementById('situacao').value,
                 sexo: document.getElementById('sexo').value,
@@ -178,7 +185,6 @@
 
             let sucesso = false;
 
-            // DECISÃO: Se tem ID, Atualiza. Se não tem, Cadastra.
             if (idEdicao) {
                 sucesso = await atualizarMembro(idEdicao, dadosParaEnviar);
             } else {
@@ -186,16 +192,11 @@
             }
 
             if (sucesso) {
-                alert(idEdicao ? '✅ Dados atualizados com sucesso!' : '✅ Membro cadastrado com sucesso!');
-                
-                // LIMPEZA: Remove o ID de edição para não bugar o próximo acesso
+                alert(idEdicao ? '✅ Dados atualizados!' : '✅ Membro cadastrado!');
                 localStorage.removeItem('idMembroEdicao');
-                
                 if (idEdicao) {
-                    // Se editou, volta para a lista para ver o resultado
                     window.location.href = 'lista-membros.html';
                 } else {
-                    // Se cadastrou novo, apenas limpa o formulário
                     form.reset();
                     await carregarMembrosParaVinculo(); 
                 }
@@ -205,12 +206,14 @@
             btnSalvar.innerText = idEdicao ? 'Atualizar Dados' : 'Salvar no Supabase';
         });
 
-        // AJUSTE NO BOTÃO VOLTAR: Para limpar o ID de edição ao sair
         function voltarComLimpeza() {
             localStorage.removeItem('idMembroEdicao');
-            voltarAoPainelCorrespondente();
+            if (typeof voltarAoPainelCorrespondente === 'function') {
+                voltarAoPainelCorrespondente();
+            } else {
+                window.location.href = 'dashboard.html';
+            }
         }
     </script>
-    
 </body>
 </html>

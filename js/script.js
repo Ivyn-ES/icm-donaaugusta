@@ -185,36 +185,51 @@ async function renderizarListaChamada() {
 
     try {
         const user = verificarAcesso();
-        // Buscando id, nome, apelido, grupo, categoria e TIPO (Membro/Visitante)
-        const { data: membros } = await _supabase.from('membros')
+        // Buscando id, nome, apelido, grupo, categoria e tipo
+        const { data: membros, error: errM } = await _supabase.from('membros')
             .select('id, nome, apelido, grupo, categoria, tipo')
             .eq('status_registro', 'Ativo')
             .order('nome');
         
+        if (errM) throw errM;
+
         let jaRegistrados = [];
         let resumoExistente = null;
 
         if (dataSelecionada && eventoSelecionado) {
-            const { data: pres } = await _supabase.from('presencas').select('membro_id, presenca').eq('data_culto', dataSelecionada).eq('tipo_evento', eventoSelecionado);
+            const { data: pres } = await _supabase.from('presencas')
+                .select('membro_id, presenca')
+                .eq('data_culto', dataSelecionada)
+                .eq('tipo_evento', eventoSelecionado);
             jaRegistrados = pres || [];
 
-            const { data: resu } = await _supabase.from('resumo_culto').select('*').eq('data_culto', dataSelecionada).eq('tipo_evento', eventoSelecionado).eq('grupo', user.grupo || 'Geral').maybeSingle();
+            const { data: resu } = await _supabase.from('resumo_culto')
+                .select('*')
+                .eq('data_culto', dataSelecionada)
+                .eq('tipo_evento', eventoSelecionado)
+                .eq('grupo', user.grupo || 'Geral')
+                .maybeSingle();
             resumoExistente = resu;
         }
 
-        // Atualiza campos da Ata
+        // Atualiza campos da Ata/Resumo
         if (resumoExistente) {
-            document.getElementById('vis_adultos').value = resumoExistente.vis_adultos || 0;
-            document.getElementById('vis_cias').value = resumoExistente.vis_cias || 0;
-            document.getElementById('pregador_nome').value = resumoExistente.pregador_nome || "";
-            document.getElementById('pregador_funcao').value = resumoExistente.pregador_funcao || "Pastor";
-            document.getElementById('texto_biblico').value = resumoExistente.texto_biblico || "";
-            document.getElementById('louvor_nome').value = resumoExistente.louvor_nome || "";
-            document.getElementById('louvor_funcao').value = resumoExistente.louvor_funcao || "Membro";
-            document.getElementById('portao_nome').value = resumoExistente.portao_nome || "";
-            document.getElementById('portao_funcao').value = resumoExistente.portao_funcao || "Obreiro";
+            if(document.getElementById('vis_adultos')) document.getElementById('vis_adultos').value = resumoExistente.vis_adultos || 0;
+            if(document.getElementById('vis_cias')) document.getElementById('vis_cias').value = resumoExistente.vis_cias || 0;
+            if(document.getElementById('pregador_nome')) document.getElementById('pregador_nome').value = resumoExistente.pregador_nome || "";
+            if(document.getElementById('pregador_funcao')) document.getElementById('pregador_funcao').value = resumoExistente.pregador_funcao || "Pastor";
+            if(document.getElementById('texto_biblico')) document.getElementById('texto_biblico').value = resumoExistente.texto_biblico || "";
+            if(document.getElementById('louvor_nome')) document.getElementById('louvor_nome').value = resumoExistente.louvor_nome || "";
+            if(document.getElementById('louvor_funcao')) document.getElementById('louvor_funcao').value = resumoExistente.louvor_funcao || "Membro";
+            if(document.getElementById('portao_nome')) document.getElementById('portao_nome').value = resumoExistente.portao_nome || "";
+            if(document.getElementById('portao_funcao')) document.getElementById('portao_funcao').value = resumoExistente.portao_funcao || "Obreiro";
+        } else {
+            // Limpa campos se for um novo registro
+            const camposAta = ['vis_adultos', 'vis_cias', 'pregador_nome', 'texto_biblico', 'louvor_nome', 'portao_nome'];
+            camposAta.forEach(id => { if(document.getElementById(id)) document.getElementById(id).value = (id.includes('vis') ? 0 : ""); });
         }
 
+        // Renderiza a lista de Cards
         container.innerHTML = membros.map(m => {
             const reg = jaRegistrados.find(r => r.membro_id === m.id);
             const estaPresente = reg ? reg.presenca : false;
@@ -222,13 +237,14 @@ async function renderizarListaChamada() {
             const partesNome = m.nome.trim().split(" ");
             const nomeCurto = partesNome.length > 1 ? `${partesNome[0]} ${partesNome[1]}` : partesNome[0];
             
-            // Exibe (Vis) ao lado do grupo se for Visitante cadastrado na lista
-            const sufixoTipo = m.tipo === 'Visitante' ? ' <span style="color:red">(Vis)</span>' : '';
-            const nomeExibicao = m.apelido ? `<strong>${m.apelido}</strong> <br><small style="color:#666">(${nomeCurto})</small>` : `<strong>${nomeCurto}</strong>`;
+            const eVisitante = m.tipo === 'Visitante';
+            const nomeExibicao = m.apelido 
+                ? `<strong>${m.apelido}</strong> <br><small style="color:#666">(${nomeCurto})</small>` 
+                : `<strong>${nomeCurto}</strong>`;
 
             return `
                 <div class="card-chamada" style="display:flex; align-items:center; justify-content:space-between; padding:12px; border:1px solid #ddd; margin-bottom:8px; border-radius:8px; background:${estaPresente ? '#e8f5e9' : '#fff'};">
-                    <span>${nomeExibicao} <br><small style="color:#888; font-size: 0.8em;">${m.grupo}${sufixoTipo}</small></span>
+                    <span>${nomeExibicao} <br><small style="color:#888; font-size: 0.8em;">${m.grupo}${eVisitante ? ' <span style="color:#d32f2f">(Vis)</span>' : ''}</small></span>
                     <input type="checkbox" class="check-presenca" 
                         onchange="atualizarContadores()" 
                         data-id="${m.id}" 
@@ -239,8 +255,13 @@ async function renderizarListaChamada() {
                 </div>`;
         }).join('');
 
+        // Dispara o placar após renderizar
         atualizarContadores();
-    } catch (err) { console.error(err); }
+
+    } catch (err) { 
+        console.error("Erro na renderização:", err);
+        container.innerHTML = `<p style="color:red">Erro ao carregar lista. Verifique o console.</p>`;
+    }
 }
 
 async function salvarChamada() {
@@ -294,10 +315,9 @@ function atualizarContadores() {
     let membrosCi = 0;
 
     document.querySelectorAll('.check-presenca:checked').forEach(cb => {
-        // Pega o tipo (Membro/Visitante)
         const tipo = cb.getAttribute('data-tipo') || "Membro";
         
-        // SÓ CONTA NO PLACAR DE MEMBROS SE O TIPO FOR 'Membro'
+        // Só conta no placar de MEMBROS se não for visitante na lista
         if (tipo === 'Membro') {
             let cat = cb.getAttribute('data-categoria') || "";
             cat = cat.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
@@ -313,7 +333,7 @@ function atualizarContadores() {
     const visAd = parseInt(document.getElementById('vis_adultos')?.value) || 0;
     const visCi = parseInt(document.getElementById('vis_cias')?.value) || 0;
 
-    // IDs exatos do seu HTML
+    // Atualização usando os IDs exatos do seu HTML
     if(document.getElementById('cont_membros_adultos')) document.getElementById('cont_membros_adultos').innerText = membrosAd;
     if(document.getElementById('cont_membros_cias')) document.getElementById('cont_membros_cias').innerText = membrosCi;
     if(document.getElementById('cont_vis_adultos_display')) document.getElementById('cont_vis_adultos_display').innerText = visAd;

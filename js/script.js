@@ -185,9 +185,10 @@ async function renderizarListaChamada() {
 
     try {
         const user = verificarAcesso();
-        // Buscando id, nome, apelido, grupo, categoria e tipo
+        
+        // CORREÇÃO: Usando 'situacao' conforme o seu banco de dados
         const { data: membros, error: errM } = await _supabase.from('membros')
-            .select('id, nome, apelido, grupo, categoria, tipo')
+            .select('id, nome, apelido, grupo, categoria, situacao') 
             .eq('status_registro', 'Ativo')
             .order('nome');
         
@@ -212,7 +213,7 @@ async function renderizarListaChamada() {
             resumoExistente = resu;
         }
 
-        // Atualiza campos da Ata/Resumo
+        // Preenchimento da Ata
         if (resumoExistente) {
             if(document.getElementById('vis_adultos')) document.getElementById('vis_adultos').value = resumoExistente.vis_adultos || 0;
             if(document.getElementById('vis_cias')) document.getElementById('vis_cias').value = resumoExistente.vis_cias || 0;
@@ -223,24 +224,17 @@ async function renderizarListaChamada() {
             if(document.getElementById('louvor_funcao')) document.getElementById('louvor_funcao').value = resumoExistente.louvor_funcao || "Membro";
             if(document.getElementById('portao_nome')) document.getElementById('portao_nome').value = resumoExistente.portao_nome || "";
             if(document.getElementById('portao_funcao')) document.getElementById('portao_funcao').value = resumoExistente.portao_funcao || "Obreiro";
-        } else {
-            // Limpa campos se for um novo registro
-            const camposAta = ['vis_adultos', 'vis_cias', 'pregador_nome', 'texto_biblico', 'louvor_nome', 'portao_nome'];
-            camposAta.forEach(id => { if(document.getElementById(id)) document.getElementById(id).value = (id.includes('vis') ? 0 : ""); });
         }
 
-        // Renderiza a lista de Cards
         container.innerHTML = membros.map(m => {
             const reg = jaRegistrados.find(r => r.membro_id === m.id);
             const estaPresente = reg ? reg.presenca : false;
-
             const partesNome = m.nome.trim().split(" ");
             const nomeCurto = partesNome.length > 1 ? `${partesNome[0]} ${partesNome[1]}` : partesNome[0];
             
-            const eVisitante = m.tipo === 'Visitante';
-            const nomeExibicao = m.apelido 
-                ? `<strong>${m.apelido}</strong> <br><small style="color:#666">(${nomeCurto})</small>` 
-                : `<strong>${nomeCurto}</strong>`;
+            // Identifica se é Visitante pela coluna 'situacao'
+            const eVisitante = m.situacao === 'Visitantes';
+            const nomeExibicao = m.apelido ? `<strong>${m.apelido}</strong> <br><small style="color:#666">(${nomeCurto})</small>` : `<strong>${nomeCurto}</strong>`;
 
             return `
                 <div class="card-chamada" style="display:flex; align-items:center; justify-content:space-between; padding:12px; border:1px solid #ddd; margin-bottom:8px; border-radius:8px; background:${estaPresente ? '#e8f5e9' : '#fff'};">
@@ -249,18 +243,16 @@ async function renderizarListaChamada() {
                         onchange="atualizarContadores()" 
                         data-id="${m.id}" 
                         data-categoria="${m.categoria || 'Adulto'}" 
-                        data-tipo="${m.tipo || 'Membro'}" 
+                        data-situacao="${m.situacao || 'Membros'}" 
                         ${estaPresente ? 'checked' : ''} 
                         style="width:28px; height:28px; cursor:pointer;">
                 </div>`;
         }).join('');
 
-        // Dispara o placar após renderizar
         atualizarContadores();
-
     } catch (err) { 
-        console.error("Erro na renderização:", err);
-        container.innerHTML = `<p style="color:red">Erro ao carregar lista. Verifique o console.</p>`;
+        console.error("Erro fatal:", err);
+        container.innerHTML = `<p style="color:red">Erro ao carregar lista. Verifique se a coluna 'situacao' existe na tabela membros.</p>`;
     }
 }
 
@@ -269,7 +261,6 @@ async function salvarChamada() {
     const dataCulto = document.getElementById('data_chamada').value;
     const tipoEvento = document.getElementById('tipo_evento').value;
     const user = verificarAcesso();
-
     if (!dataCulto) return alert("⚠️ Selecione a data!");
     btn.disabled = true;
 
@@ -315,10 +306,10 @@ function atualizarContadores() {
     let membrosCi = 0;
 
     document.querySelectorAll('.check-presenca:checked').forEach(cb => {
-        const tipo = cb.getAttribute('data-tipo') || "Membro";
+        const sit = cb.getAttribute('data-situacao') || "Membros";
         
-        // Só conta no placar de MEMBROS se não for visitante na lista
-        if (tipo === 'Membro') {
+        // Só conta no placar de MEMBROS se a situação não for 'Visitantes'
+        if (sit !== 'Visitantes') {
             let cat = cb.getAttribute('data-categoria') || "";
             cat = cat.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
             
@@ -333,7 +324,6 @@ function atualizarContadores() {
     const visAd = parseInt(document.getElementById('vis_adultos')?.value) || 0;
     const visCi = parseInt(document.getElementById('vis_cias')?.value) || 0;
 
-    // Atualização usando os IDs exatos do seu HTML
     if(document.getElementById('cont_membros_adultos')) document.getElementById('cont_membros_adultos').innerText = membrosAd;
     if(document.getElementById('cont_membros_cias')) document.getElementById('cont_membros_cias').innerText = membrosCi;
     if(document.getElementById('cont_vis_adultos_display')) document.getElementById('cont_vis_adultos_display').innerText = visAd;
@@ -357,14 +347,10 @@ function autoSelecionarFuncao(inputElement, selectId) {
     const nome = inputElement.value;
     const select = document.getElementById(selectId);
     if (!window.membrosCache || !select) return;
-
     const membro = window.membrosCache.find(m => m.nome === nome);
     if (membro && membro.funcao) {
         for (let i = 0; i < select.options.length; i++) {
-            if (select.options[i].value === membro.funcao) {
-                select.selectedIndex = i;
-                break;
-            }
+            if (select.options[i].value === membro.funcao) { select.selectedIndex = i; break; }
         }
     }
 }

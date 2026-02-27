@@ -186,7 +186,6 @@ async function renderizarListaChamada() {
     try {
         const user = verificarAcesso();
         
-        // Buscando membros com a coluna 'situacao' correta
         const { data: membros, error: errM } = await _supabase.from('membros')
             .select('id, nome, apelido, grupo, categoria, situacao') 
             .eq('status_registro', 'Ativo')
@@ -213,7 +212,6 @@ async function renderizarListaChamada() {
             resumoExistente = resu;
         }
 
-        // Preenchimento automático dos campos da Ata se já existirem no banco
         if (resumoExistente) {
             if(document.getElementById('vis_adultos')) document.getElementById('vis_adultos').value = resumoExistente.vis_adultos || 0;
             if(document.getElementById('vis_cias')) document.getElementById('vis_cias').value = resumoExistente.vis_cias || 0;
@@ -232,8 +230,10 @@ async function renderizarListaChamada() {
             const partesNome = m.nome.trim().split(" ");
             const nomeCurto = partesNome.length > 1 ? `${partesNome[0]} ${partesNome[1]}` : partesNome[0];
             
-            // Verifica se é Visitante Cadastrado (situacao: Visitantes)
-            const eVisitante = m.situacao === 'Visitantes';
+            // Compara em minúsculo para evitar erro de Membro/membro
+            const sit = (m.situacao || "").toLowerCase();
+            const eVisitante = sit.includes('visitante');
+
             const nomeExibicao = m.apelido ? `<strong>${m.apelido}</strong> <br><small style="color:#666">(${nomeCurto})</small>` : `<strong>${nomeCurto}</strong>`;
 
             return `
@@ -243,7 +243,7 @@ async function renderizarListaChamada() {
                         onchange="atualizarContadores()" 
                         data-id="${m.id}" 
                         data-categoria="${m.categoria || 'Adulto'}" 
-                        data-situacao="${m.situacao || 'Membros'}" 
+                        data-situacao="${m.situacao || 'Membro'}" 
                         ${estaPresente ? 'checked' : ''} 
                         style="width:28px; height:28px; cursor:pointer;">
                 </div>`;
@@ -252,7 +252,6 @@ async function renderizarListaChamada() {
         atualizarContadores();
     } catch (err) { 
         console.error("Erro fatal:", err);
-        container.innerHTML = `<p style="color:red">Erro ao carregar lista. Verifique o console.</p>`;
     }
 }
 
@@ -307,34 +306,30 @@ function atualizarContadores() {
     let visListaAd = 0;
     let visListaCi = 0;
 
-    // 1. Contagem dos Checkboxes (Quem está na lista)
     document.querySelectorAll('.check-presenca:checked').forEach(cb => {
-        const situacao = cb.getAttribute('data-situacao') || "Membros";
+        // Normalização: tudo para minúsculo e sem acento
         let cat = (cb.getAttribute('data-categoria') || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-        
-        const isCia = cat.includes('crianca') || cat.includes('intermediario') || cat.includes('adolescente');
+        let sit = (cb.getAttribute('data-situacao') || "").toLowerCase();
 
-        if (situacao === 'Membros') {
-            if (isCia) membrosCi++; else membrosAd++;
+        const eCia = (cat.includes('crianca') || cat.includes('intermediario') || cat.includes('adolescente'));
+
+        // Lógica de separação Membro vs Visitante
+        if (sit.includes('visitante')) {
+            if (eCia) visListaCi++; else visListaAd++;
         } else {
-            // Se situação for 'Visitantes', soma no contador de visitantes da lista
-            if (isCia) visListaCi++; else visListaAd++;
+            // Se não for visitante, assume-se que é Membro
+            if (eCia) membrosCi++; else membrosAd++;
         }
     });
 
-    // 2. Captura dos valores digitados nos campos de "Visitantes" da Ata
     const visDigitadoAd = parseInt(document.getElementById('vis_adultos')?.value) || 0;
     const visDigitadoCi = parseInt(document.getElementById('vis_cias')?.value) || 0;
 
-    // 3. Soma Total de Visitantes (Lista + Digitados)
     const totalVisAd = visListaAd + visDigitadoAd;
     const totalVisCi = visListaCi + visDigitadoCi;
 
-    // 4. Atualização Visual do Placar
     if(document.getElementById('cont_membros_adultos')) document.getElementById('cont_membros_adultos').innerText = membrosAd;
     if(document.getElementById('cont_membros_cias')) document.getElementById('cont_membros_cias').innerText = membrosCi;
-    
-    // Mostra a soma correta no placar de visitantes
     if(document.getElementById('cont_vis_adultos_display')) document.getElementById('cont_vis_adultos_display').innerText = totalVisAd;
     if(document.getElementById('cont_vis_cias_display')) document.getElementById('cont_vis_cias_display').innerText = totalVisCi;
 

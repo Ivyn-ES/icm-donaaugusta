@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aniversariantes - ICM Dona Augusta</title>
+    <link rel="stylesheet" href="../css/style.css"> 
+    <style>
+        :root {
+            --primaria: #d81b60; /* Rosa/Vinho das Senhoras */
+            --secundaria: #25d366; /* Verde WhatsApp */
+            --bg-corpo: #f4f7f6;
+        }
+        
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background-color: var(--bg-corpo); 
+            margin: 0; 
+            padding: 20px; 
+        }
+        
+        .container { 
+            max-width: 850px; 
+            margin: auto; 
+            background: white; 
+            padding: 25px; 
+            border-radius: 15px; 
+            box-shadow: 0 8px 25px rgba(0,0,0,0.08); 
+        }
+        
+        header { 
+            text-align: center; 
+            border-bottom: 2px solid #f1f1f1; 
+            padding-bottom: 20px; 
+            margin-bottom: 25px; 
+        }
+        
+        header img { margin-bottom: 10px; }
+        
+        h2 { color: var(--primaria); margin: 0; font-size: 1.8rem; }
+        
+        .filtros { 
+            display: flex; 
+            gap: 15px; 
+            margin-bottom: 25px; 
+            justify-content: center; 
+            background: #fdfdfd;
+            padding: 15px;
+            border-radius: 10px;
+            border: 1px solid #eee;
+        }
+        
+        select { 
+            padding: 12px; 
+            border-radius: 8px; 
+            border: 1px solid #ddd; 
+            font-size: 16px; 
+            width: 220px; 
+            outline: none;
+        }
+
+        select:focus { border-color: var(--primaria); }
+        
+        .btn-buscar { 
+            background-color: var(--primaria); 
+            color: white; 
+            border: none; 
+            padding: 12px 25px; 
+            border-radius: 8px; 
+            cursor: pointer; 
+            font-weight: bold; 
+            transition: all 0.3s ease; 
+        }
+        
+        .btn-buscar:hover { 
+            background-color: #ad1457; 
+            transform: translateY(-1px);
+        }
+
+        .tabela-wrapper { overflow-x: auto; }
+
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th { 
+            background-color: #fcfcfc; 
+            color: #666; 
+            text-align: left; 
+            padding: 15px; 
+            border-bottom: 2px solid #eee;
+            text-transform: uppercase;
+            font-size: 0.85rem;
+            letter-spacing: 1px;
+        }
+        td { padding: 15px; border-bottom: 1px solid #f9f9f9; color: #444; }
+        
+        .dia-destaque { 
+            color: var(--primaria); 
+            font-weight: bold; 
+            font-size: 1.2rem; 
+        }
+        
+        .btn-voltar { 
+            display: inline-block; 
+            margin-top: 30px; 
+            text-decoration: none; 
+            color: #888; 
+            font-size: 0.95rem; 
+            transition: color 0.2s;
+        }
+        
+        .btn-voltar:hover { color: var(--primaria); }
+        
+        @media (max-width: 600px) {
+            .filtros { flex-direction: column; }
+            select, .btn-buscar { width: 100%; }
+        }
+    </style>
+</head>
+<body style="display: none;" id="corpoPagina"> <div class="container">
+        <header>
+            <img src="../img/logo.png" alt="ICM" width="70"> 
+            <h2>Aniversariantes do Mês</h2>
+            <p style="color: #999; margin-top: 5px;">Coordenação - ICM Dona Augusta</p>
+        </header>
+
+        <div class="filtros">
+            <select id="filtroMesAniversario">
+                <option value="">Selecione o Mês</option>
+                <option value="Janeiro">Janeiro</option>
+                <option value="Fevereiro">Fevereiro</option>
+                <option value="Março">Março</option>
+                <option value="Abril">Abril</option>
+                <option value="Maio">Maio</option>
+                <option value="Junho">Junho</option>
+                <option value="Julho">Julho</option>
+                <option value="Agosto">Agosto</option>
+                <option value="Setembro">Setembro</option>
+                <option value="Outubro">Outubro</option>
+                <option value="Novembro">Novembro</option>
+                <option value="Dezembro">Dezembro</option>
+            </select>
+            <button class="btn-buscar" onclick="gerarRelatorioAniversariantes()">Listar Irmãs</button>
+        </div>
+
+        <div class="tabela-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th width="15%">Dia</th>
+                        <th width="45%">Nome Completo / Apelido</th>
+                        <th width="25%">Grupo</th>
+                        <th width="15%" style="text-align: center;">Parabéns</th>
+                    </tr>
+                </thead>
+                <tbody id="corpoRelatorioAniversariantes">
+                    <tr>
+                        <td colspan="4" style="text-align: center; color: #bbb; padding: 40px;">
+                            Escolha um mês para carregar a lista das irmãs.
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <a href="dashboard.html" class="btn-voltar">← Voltar para o Painel</a>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="../js/script.js"></script> 
+    <script>
+        // Pequena verificação local de acesso antes de mostrar a página
+        document.addEventListener('DOMContentLoaded', () => {
+            const user = verificarAcesso();
+            if (user) {
+                document.getElementById('corpoPagina').style.display = 'block';
+            }
+        });
+    </script>
+</body>
+</html>

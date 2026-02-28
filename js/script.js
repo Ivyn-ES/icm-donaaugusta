@@ -7,7 +7,7 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // ==========================================
-// 2. SEGURANÇA E ACESSO
+// 2. SEGURANÇA E ACESSO (Ajustado: Lowercase)
 // ==========================================
 
 function verificarAcesso() {
@@ -22,16 +22,20 @@ function verificarAcesso() {
     }
 
     const urlAtual = window.location.href;
+    // Normaliza o nível para minúsculo para evitar erros de comparação
+    const nivel = (usuario.nivel || "").toLowerCase();
 
-    if (usuario.nivel === 'Livre') {
-        const proibidas = ['dashboard.html', 'cadastro-membro.html', 'admin-usuarios.html', 'admin-grupos.html', 'chamada.html', 'lista-membros.html', 'relatorio-presenca.html'];
+    // Nível Livre
+    if (nivel === 'livre') {
+        const proibidas = ['dashboard.html', 'cadastro-membro.html', 'admin-usuarios.html', 'admin-grupos.html', 'chamada.html', 'lista-membros.html', 'relatorio-presenca.html', 'relatorio-aniversariantes.html'];
         if (proibidas.some(p => urlAtual.includes(p))) {
             window.location.href = 'livre.html';
             return usuario;
         }
     }
 
-    if (usuario.nivel === 'User' || usuario.nivel === 'Apoio') {
+    // Níveis User, Apoio ou Coordenadora (Acesso restrito a Admins)
+    if (nivel === 'user' || nivel === 'apoio' || nivel === 'coordenadora') {
         const adminPaginas = ['admin-usuarios.html', 'admin-grupos.html'];
         if (adminPaginas.some(p => urlAtual.includes(p))) {
             window.location.href = 'dashboard.html';
@@ -55,15 +59,17 @@ async function realizarLogin(usuarioDigitado, senhaDigitada) {
             return;
         }
 
+        // SALVAMENTO PADRONIZADO EM MINÚSCULAS
         localStorage.setItem('usuarioLogado', JSON.stringify({
-            nome: data.login,
-            login: data.login,
-            nivel: data.permissao,
-            permissao: data.permissao,
+            nome: data.login.toLowerCase(),
+            login: data.login.toLowerCase(),
+            nivel: data.permissao.toLowerCase(),
+            permissao: data.permissao.toLowerCase(),
             grupo: data.grupo_vinculado
         }));
 
-        if (data.permissao === 'Livre') {
+        // Redirecionamento baseado no nível (em minúsculo)
+        if (data.permissao.toLowerCase() === 'livre') {
             window.location.href = 'pages/livre.html';
         } else {
             window.location.href = 'pages/dashboard.html';
@@ -241,23 +247,30 @@ async function salvarChamada() {
 }
 
 // ==========================================
-// 5. MÓDULO DE AUTOMAÇÃO E WHATSAPP (Ajustado)
+// 5. MÓDULO DE AUTOMAÇÃO E WHATSAPP (Finalizado)
 // ==========================================
 
 function gerarResumoWhatsApp() {
+    // 1. Dados da Igreja e do Evento
+    const nomeIgreja = "ICM - Dona Augusta";
+    const tipoEvento = document.getElementById('tipo_evento')?.value || "Evento";
+    const dataCulto = document.getElementById('data_chamada')?.value || "";
+
+    // 2. Dados de Público
     const membrosAd = document.getElementById('cont_membros_adultos')?.innerText || 0;
     const membrosCi = document.getElementById('cont_membros_cias')?.innerText || 0;
     const totalVisAd = document.getElementById('cont_vis_adultos_display')?.innerText || 0;
     const totalVisCi = document.getElementById('cont_vis_cias_display')?.innerText || 0;
     const totalGeral = document.getElementById('cont_total')?.innerText || 0;
 
+    // 3. Dados da Escala
     const pregador = document.getElementById('pregador_nome')?.value.trim() || "";
     const louvor = document.getElementById('louvor_nome')?.value.trim() || "";
     const portao = document.getElementById('portao_nome')?.value.trim() || "Não informado";
     const texto = document.getElementById('texto_biblico')?.value.trim() || "Não informado";
-    const dataCulto = document.getElementById('data_chamada')?.value || "";
     const obs = document.getElementById('observacoes_culto')?.value.trim() || "";
 
+    // 4. Lógica de Dirigente vs Pregador/Louvor
     let blocoEscala = "";
     if (pregador === louvor && pregador !== "") {
         blocoEscala = `👤 *Dirigente:* ${pregador}\n`;
@@ -267,19 +280,27 @@ function gerarResumoWhatsApp() {
     }
     blocoEscala += `🚪 *Portão:* ${portao}\n`;
 
-    let mensagem = `*📊 RESUMO DO CULTO - ${dataCulto}*\n\n`;
+    // 5. Montagem da Mensagem Personalizada
+    let mensagem = `*⛪ ${nomeIgreja}*\n`;
+    mensagem += `*📊 RESUMO: ${tipoEvento.toUpperCase()} - ${dataCulto}*\n\n`;
+    
     mensagem += `*PÚBLICO:*\n`;
     mensagem += `• Membros (Ad/Cia): ${membrosAd} / ${membrosCi}\n`;
     mensagem += `• Visitantes (Ad/Cia): ${totalVisAd} / ${totalVisCi}\n`;
     mensagem += `*⭐ TOTAL GERAL: ${totalGeral}*\n\n`;
+    
     mensagem += `*ESCALA:*\n${blocoEscala}`;
     mensagem += `📖 *Texto:* ${texto}\n`;
-    if (obs) mensagem += `\n📝 *Obs:* ${obs}\n`;
-    mensagem += `\n_Gerado via Sistema ICM_`;
+    
+    if (obs) {
+        mensagem += `\n📝 *Obs:* ${obs}\n`;
+    }
 
+    mensagem += `\n_Gerado via Sistema de Gestão ICM_`;
+
+    // 6. Enviar
     window.open(`https://wa.me/?text=${encodeURIComponent(mensagem)}`, '_blank');
 }
-
 // ==========================================
 // 6. PLACAR E SUGESTÕES
 // ==========================================
@@ -350,38 +371,59 @@ async function carregarGruposNoSelect() {
 }
 
 // ==========================================
-// 8. INTERFACE E PERMISSÕES
+// 8. INTERFACE E PERMISSÕES (Ajustado: Lowercase)
 // ==========================================
 
 function ajustarInterfacePorPerfil() {
     const user = JSON.parse(localStorage.getItem('usuarioLogado'));
     if (!user) return;
-    const nivel = user.permissao || user.nivel; 
+    
+    // Normalizamos o nível para minúsculo para garantir a comparação
+    const nivel = (user.permissao || user.nivel || "").toLowerCase(); 
+    
     const b = {
         chamada: document.getElementById('btnChamada'),
         cadastro: document.getElementById('idBtnCadastro'),
         lista: document.getElementById('btnLista'),
         grupos: document.getElementById('btnGrupos'),
         usuarios: document.getElementById('btnUsuarios'),
-        relatorios: document.getElementById('btnRelatorios')
+        relatorios: document.getElementById('btnRelatorios'),
+        aniversariantes: document.getElementById('btnAniversariantes')
     };
 
-    if (nivel === 'Admin' || nivel === 'Master') {
+    // 1. ADMIN / MASTER: Vê tudo
+    if (nivel === 'admin' || nivel === 'master') {
         Object.values(b).forEach(el => { if(el) el.style.display = 'flex'; });
-    } else if (nivel === 'User') {
+    } 
+    // 2. COORDENADORA: Foco nas irmãs (Lista e Aniversariantes)
+    else if (nivel === 'coordenadora') {
+        if (b.lista) b.lista.style.display = 'flex';
+        if (b.aniversariantes) b.aniversariantes.style.display = 'flex';
+        // Esconde o restante
+        [b.chamada, b.cadastro, b.grupos, b.usuarios, b.relatorios].forEach(el => { if(el) el.style.display = 'none'; });
+    }
+    // 3. APOIO: Apenas chamada
+    else if (nivel === 'apoio') {
+        if (b.chamada) b.chamada.style.display = 'flex';
+        [b.cadastro, b.lista, b.relatorios, b.grupos, b.usuarios, b.aniversariantes].forEach(el => { if(el) el.style.display = 'none'; });
+    }
+    // 4. USER (Líder de Grupo): Lista e Relatórios
+    else if (nivel === 'user') {
         if (b.lista) b.lista.style.display = 'flex';
         if (b.relatorios) b.relatorios.style.display = 'flex';
-        [b.chamada, b.cadastro, b.grupos, b.usuarios].forEach(el => { if(el) el.style.display = 'none'; });
-    } else if (nivel === 'Apoio') {
-        if (b.chamada) b.chamada.style.display = 'flex';
-        [b.cadastro, b.lista, b.relatorios, b.grupos, b.usuarios].forEach(el => { if(el) el.style.display = 'none'; });
+        [b.chamada, b.cadastro, b.grupos, b.usuarios, b.aniversariantes].forEach(el => { if(el) el.style.display = 'none'; });
+    }
+    // 5. LIVRE: Esconde tudo (Segurança extra)
+    else if (nivel === 'livre') {
+        Object.values(b).forEach(el => { if(el) el.style.display = 'none'; });
     }
 }
 
 // ==========================================
-// 9. RELATÓRIOS E ACOMPANHAMENTO
+// 9. RELATÓRIOS E ACOMPANHAMENTO (Ajustado: Padrão Capitalizado)
 // ==========================================
 
+// --- PARTE 1: RELATÓRIO DE PRESENÇA ---
 async function gerarRelatorio() {
     const dataFiltro = document.getElementById('filtroData').value;
     const corpoRelatorio = document.getElementById('corpoRelatorio');
@@ -415,23 +457,96 @@ function contatarMembro(nome) {
     window.open(`https://wa.me/?text=${msg}`, '_blank');
 }
 
+// --- PARTE 2: RELATÓRIO DE ANIVERSARIANTES (Ajustado: Feminino / Ativo) ---
+async function gerarRelatorioAniversariantes() {
+    const mesFiltro = document.getElementById('filtroMesAniversario')?.value;
+    const corpoAniv = document.getElementById('corpoRelatorioAniversariantes');
+    if (!mesFiltro || !corpoAniv) return;
+
+    try {
+        // RESPEITANDO O PADRÃO: Primeira letra Maiúscula nos dados
+        const { data, error } = await _supabase
+            .from('membros')
+            .select('nome, apelido, dia, mes, grupo')
+            .eq('sexo', 'Feminino')        // Dado no banco: "Feminino"
+            .eq('mes', mesFiltro)          // O value do select deve ser "Janeiro", "Fevereiro"...
+            .eq('status_registro', 'Ativo') // Dado no banco: "Ativo"
+            .order('dia', { ascending: true });
+
+        if (error) throw error;
+
+        if (!data || data.length === 0) {
+            corpoAniv.innerHTML = `<tr><td colspan="4" style="text-align:center;">Nenhuma irmã aniversariante em ${mesFiltro}.</td></tr>`;
+            return;
+        }
+
+        corpoAniv.innerHTML = data.map(m => `
+            <tr>
+                <td style="font-weight:bold; color:#d81b60;">${m.dia}</td>
+                <td>${m.nome} ${m.apelido ? `<br><small>(${m.apelido})</small>` : ''}</td>
+                <td>Grupo ${m.grupo}</td>
+                <td style="text-align:center;">
+                    <button onclick="enviarParabensIrma('${m.nome}')" style="background:#25d366; color:white; border:none; border-radius:5px; padding:6px 10px; cursor:pointer;" title="Enviar Parabéns">🌹📱</button>
+                </td>
+            </tr>
+        `).join('');
+
+    } catch (err) {
+        console.error("Erro ao carregar aniversariantes:", err);
+        corpoAniv.innerHTML = `<tr><td colspan="4">Erro ao carregar dados.</td></tr>`;
+    }
+}
+
+function enviarParabensIrma(nome) {
+    const msg = encodeURIComponent(`Paz do Senhor, irmã ${nome}! 🌹\n\nEm nome da Coordenação da ICM - Dona Augusta, passamos para desejar um feliz aniversário! Que o Senhor Jesus continue te abençoando ricamente. 🎂✨`);
+    window.open(`https://wa.me/?text=${msg}`, '_blank');
+}
+
 // ==========================================
-// 10. INICIALIZAÇÃO AUTOMÁTICA
+// 10. INICIALIZAÇÃO AUTOMÁTICA (Finalizado)
 // ==========================================
 
 document.addEventListener('DOMContentLoaded', () => {
     const url = window.location.href;
+    
+    // Ajusta o que cada perfil pode ver no menu/dashboard
     ajustarInterfacePorPerfil();
 
-    if (document.getElementById('loginForm')) {
-        document.getElementById('loginForm').addEventListener('submit', (e) => {
+    // Lógica do formulário de Login
+    const formLogin = document.getElementById('loginForm');
+    if (formLogin) {
+        formLogin.addEventListener('submit', (e) => {
             e.preventDefault();
             realizarLogin(document.getElementById('usuario').value, document.getElementById('senha').value);
         });
     }
 
-    if (url.includes('admin-usuarios.html')) { renderizarUsuarios(); carregarGruposNoSelect(); }
-    if (url.includes('admin-grupos.html')) { renderizarGrupos(); }
-    if (url.includes('lista-membros.html')) { renderizarListaMembros(); }
-    if (url.includes('chamada.html')) { carregarSugestoesMembros(); }
+    // Carregamento específico por página (URL)
+    if (url.includes('admin-usuarios.html')) { 
+        renderizarUsuarios(); 
+        carregarGruposNoSelect(); 
+    }
+    
+    if (url.includes('admin-grupos.html')) { 
+        renderizarGrupos(); 
+    }
+    
+    if (url.includes('lista-membros.html')) { 
+        renderizarListaMembros(); 
+    }
+    
+    if (url.includes('chamada.html')) { 
+        carregarSugestoesMembros(); 
+    }
+
+    if (url.includes('cadastro-membro.html')) {
+        carregarGruposNoSelect();
+        carregarMembrosParaVinculo(); // Para famílias/responsáveis
+    }
+
+    // NOVA PÁGINA: Relatório de Aniversariantes (Coordenadora)
+    if (url.includes('relatorio-aniversariantes.html')) {
+        // Se quiser que carregue algo ao abrir, pode colocar aqui
+        console.log("Módulo de Aniversariantes carregado.");
+    }
 });

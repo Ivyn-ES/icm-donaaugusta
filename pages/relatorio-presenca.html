@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Relatório de Presença - ICM</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Relatório de Frequência</h1>
+            <button onclick="window.location.href='dashboard.html'" class="btn-voltar">⬅ Voltar</button>
+        </header>
+
+        <section class="filtros-relatorio">
+            <input type="date" id="filtroData">
+            <select id="filtroGrupoRelatorio">
+                </select>
+            <button onclick="gerarRelatorio()" class="btn-primario">Gerar Relatório</button>
+        </section>
+
+        <div id="resumoCards" class="grid-resumo">
+            </div>
+
+        <table id="tabelaRelatorio">
+            <thead>
+                <tr>
+                    <th>Nome</th>
+                    <th>Status</th>
+                    <th>Ação</th>
+                </tr>
+            </thead>
+            <tbody id="corpoRelatorio">
+                </tbody>
+        </table>
+    </div>
+
+    <script src="../js/script.js"></script>
+</body>
+</html>

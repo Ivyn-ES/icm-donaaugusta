@@ -581,66 +581,68 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // ==========================================
-// 9. FUNÇÕES DE AÇÃO (CRIAR USUÁRIO E GRUPO)
+// 9. MÓDULO DE RELATÓRIOS E ACOMPANHAMENTO
 // ==========================================
 
-/**
- * Função para Criar Usuário (Chamada pelo HTML admin-usuarios.html)
- */
-async function criarUsuario(dados) {
+async function gerarRelatorio() {
+    const dataFiltro = document.getElementById('filtroData').value;
+    const corpoRelatorio = document.getElementById('corpoRelatorio');
+    const resumo = document.getElementById('resumoCards');
+
+    if (!dataFiltro) return alert("Por favor, selecione uma data.");
+
     try {
-        if (!dados.login || !dados.senha) {
-            alert("⚠️ Login e Senha são obrigatórios!");
-            return false;
+        const user = verificarAcesso();
+        
+        // 1. Buscar todos os membros (filtrando por grupo se for User)
+        let queryMembros = _supabase.from('membros').select('id, nome, grupo, situacao');
+        if (user.nivel === 'User') {
+            queryMembros = queryMembros.eq('grupo', user.grupo);
         }
+        const { data: membros, error: errM } = await queryMembros;
 
-        const { error } = await _supabase.from('usuarios').insert([{
-            login: dados.login,
-            senha: dados.senha,
-            permissao: dados.permissao,
-            grupo_vinculado: dados.grupo_vinculado || 'Geral'
-        }]);
+        // 2. Buscar as presenças registradas naquela data
+        const { data: presencas, error: errP } = await _supabase
+            .from('chamadas') // Certifique-se que o nome da sua tabela de chamada é esse
+            .select('membro_id')
+            .eq('data_culto', dataFiltro);
 
-        if (error) throw error;
+        if (errM || errP) throw (errM || errP);
 
-        alert("✅ Usuário criado com sucesso!");
-        return true; 
+        // 3. Cruzar dados: Quem está na lista de membros mas NÃO está na lista de presenças?
+        const idsPresentes = presencas.map(p => p.membro_id);
+        
+        let presentes = 0;
+        let ausentes = 0;
+
+        corpoRelatorio.innerHTML = membros.map(m => {
+            const estaPresente = idsPresentes.includes(m.id);
+            if (estaPresente) presentes++; else ausentes++;
+
+            return `
+                <tr style="border-left: 5px solid ${estaPresente ? '#2ed573' : '#ff4757'}">
+                    <td>${m.nome}</td>
+                    <td>${estaPresente ? '✅ Presente' : '⚠️ Não compareceu'}</td>
+                    <td>
+                        ${!estaPresente ? `<button class="btn-whatsapp" onclick="contatarMembro('${m.nome}')">📱 Cuidar</button>` : '---'}
+                    </td>
+                </tr>
+            `;
+        }).join('');
+
+        // 4. Atualizar os Cards de Resumo
+        resumo.innerHTML = `
+            <div class="card-resumo"><h3>${presentes}</h3><p>Presentes</p></div>
+            <div class="card-resumo" style="color: #ff4757"><h3>${ausentes}</h3><p>Ausentes</p></div>
+        `;
+
     } catch (err) {
-        console.error("Erro ao criar login:", err);
-        alert("❌ Erro ao salvar usuário: " + err.message);
-        return false;
+        console.error("Erro no relatório:", err);
+        alert("Erro ao gerar relatório.");
     }
 }
 
-/**
- * Função para Criar Grupo (Chamada pelo HTML admin-grupos.html)
- * @param {string} nome - Nome do grupo vindo do formulário
- */
-async function criarGrupo(nome) {
-    if (!nome) {
-        alert("⚠️ O nome do grupo não pode estar vazio!");
-        return false;
-    }
-
-    try {
-        // Insere na tabela 'grupos' (certifique-se que o nome da tabela está correto no Supabase)
-        const { error } = await _supabase.from('grupos').insert([{ nome: nome }]);
-
-        if (error) throw error;
-
-        alert("✅ Grupo adicionado com sucesso!");
-        return true; // Retorna true para o HTML resetar o form e atualizar a lista
-    } catch (err) {
-        console.error("Erro ao criar grupo:", err);
-        alert("❌ Erro ao salvar grupo: " + err.message);
-        return false;
-    }
-}
-
-/**
- * Função global de Logout
- */
-function logout() {
-    localStorage.removeItem('usuarioLogado');
-    window.location.href = '../index.html';
+function contatarMembro(nome) {
+    const mensagem = encodeURIComponent(`Paz do Senhor, irmão ${nome}! Sentimos sua falta no culto. Está tudo bem?`);
+    window.open(`https://wa.me/?text=${mensagem}`, '_blank');
 }

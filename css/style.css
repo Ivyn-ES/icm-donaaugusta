@@ -157,3 +157,56 @@ tr:nth-child(even) { background-color: #fafafa; } /* Efeito Zebra */
     .linha-dupla { flex-direction: column; gap: 0; }
     .container { padding: 1.5rem; }
 }
+
+/* ==========================================
+   6. RELATÓRIOS E ACOMPANHAMENTO (Novo)
+   ========================================== */
+
+.grid-resumo {
+    display: flex;
+    gap: 15px;
+    margin: 20px 0;
+}
+
+.card-resumo {
+    background: #f8f9fa; /* Um cinza bem claro para destacar do fundo branco */
+    padding: 15px;
+    border-radius: 12px;
+    border: 2px solid #eee;
+    flex: 1;
+    text-align: center;
+}
+
+.card-resumo h3 {
+    margin-top: 0;
+    font-size: 1.5rem;
+    color: #667eea; /* Cor do seu gradiente principal */
+}
+
+.card-resumo p {
+    margin-bottom: 0;
+    font-size: 0.9rem;
+    font-weight: bold;
+}
+
+.btn-whatsapp {
+    background-color: #25d366;
+    color: white;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 0.85rem;
+    transition: 0.3s;
+}
+
+.btn-whatsapp:hover {
+    background-color: #1ebd59;
+    transform: scale(1.05);
+}
+
+/* Ajuste de responsividade para os cards de resumo */
+@media (max-width: 480px) {
+    .grid-resumo { flex-direction: column; }
+}

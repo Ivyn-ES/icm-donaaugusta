@@ -31,6 +31,7 @@
                 <select id="nivelAcesso">
                     <option value="Master">Master</option>
                     <option value="Admin">Admin</option>
+                    <option value="Coordenadora">Coordenadora (Senhoras)</option>
                     <option value="User">Resp Grupo</option>
                     <option value="Apoio">Apoio (Faz Chamada)</option>
                     <option value="Livre">Membro (apenas leitura)</option>
@@ -79,11 +80,15 @@
         document.addEventListener('DOMContentLoaded', async () => {
             const user = verificarAcesso();
             if (user) {
-                document.getElementById('nomeAdmin').innerText = user.nome;
+                // Exibe o nome do admin no cabeçalho
+                document.getElementById('nomeAdmin').innerText = user.nome || user.login;
                 
-                // Trava de segurança: apenas Admin/Master vê esta tela
-                if (user.nivel !== 'Admin' && user.nivel !== 'Master') {
-                    alert('Área restrita!');
+                // --- TRAVA DE SEGURANÇA AJUSTADA ---
+                // Convertemos para minúsculas antes de comparar para evitar erro de acesso negado
+                const nivelLogado = (user.permissao || user.nivel || "").toLowerCase();
+
+                if (nivelLogado !== 'admin' && nivelLogado !== 'master') {
+                    alert('Acesso negado! Esta área é restrita a administradores.');
                     window.location.href = 'dashboard.html';
                     return;
                 }
@@ -106,7 +111,7 @@
             const dados = {
                 login: document.getElementById('novoLogin').value.trim(),
                 senha: document.getElementById('novaSenha').value.trim(),
-                permissao: document.getElementById('nivelAcesso').value,
+                permissao: document.getElementById('nivelAcesso').value, // Envia o valor do select (Ex: Coordenadora)
                 grupo_vinculado: document.getElementById('grupo_vinculado').value
             };
 

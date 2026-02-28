@@ -55,11 +55,15 @@
             // 1. Verifica acesso usando a função central
             const user = verificarAcesso();
             
-            // 2. Trava de segurança para nível de permissão
-            if (user && user.nivel !== 'Admin' && user.nivel !== 'Master') {
-                alert('Acesso negado! Esta área é restrita a administradores.');
-                window.location.href = 'dashboard.html';
-                return;
+            // 2. Trava de segurança AJUSTADA (Aceita minúsculas do novo padrão)
+            if (user) {
+                const nivelLogado = (user.permissao || user.nivel || "").toLowerCase();
+                
+                if (nivelLogado !== 'admin' && nivelLogado !== 'master') {
+                    alert('Acesso negado! Esta área é restrita a administradores.');
+                    window.location.href = 'dashboard.html';
+                    return;
+                }
             }
 
             // 3. Carrega a lista de grupos cadastrados

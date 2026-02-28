@@ -43,6 +43,48 @@ function verificarAcesso() {
     return usuario;
 }
 
+// Função para ocultar botões baseado no nível de acesso
+function ajustarInterfacePorPerfil() {
+    const user = JSON.parse(localStorage.getItem('usuarioLogado'));
+    if (!user) return;
+
+    // IMPORTANTE: Use o nome da coluna exatamente como está no seu banco/localStorage
+    const nivel = user.permissao || user.nivel; 
+
+    const btnChamada = document.getElementById('btnChamada');
+    const btnCadastro = document.getElementById('idBtnCadastro');
+    const btnLista = document.getElementById('btnLista');
+    const btnGrupos = document.getElementById('btnGrupos');
+    const btnUsuarios = document.getElementById('btnUsuarios');
+
+    // Resetamos para o padrão (escondendo os de admin por segurança)
+    if (btnGrupos) btnGrupos.style.display = 'none';
+    if (btnUsuarios) btnUsuarios.style.display = 'none';
+
+    // 1. ADMIN / MASTER: Vê tudo
+    if (nivel === 'Admin' || nivel === 'Master') {
+        if (btnGrupos) btnGrupos.style.display = 'block';
+        if (btnUsuarios) btnUsuarios.style.display = 'block';
+        if (btnChamada) btnChamada.style.display = 'block';
+        if (btnCadastro) btnCadastro.style.display = 'block';
+        if (btnLista) btnLista.style.display = 'block';
+    }
+
+    // 2. USER (Responsável de Grupo): Não faz chamada nem cadastro
+    if (nivel === 'User') {
+        if (btnChamada) btnChamada.style.display = 'none';
+        if (btnCadastro) btnCadastro.style.display = 'none';
+        if (btnLista) btnLista.style.display = 'block';
+    }
+
+    // 3. APOIO: Só faz chamada
+    if (nivel === 'Apoio') {
+        if (btnChamada) btnChamada.style.display = 'block';
+        if (btnCadastro) btnCadastro.style.display = 'none';
+        if (btnLista) btnLista.style.display = 'none';
+    }
+}
+
 async function realizarLogin(usuarioDigitado, senhaDigitada) {
     try {
         const { data, error } = await _supabase

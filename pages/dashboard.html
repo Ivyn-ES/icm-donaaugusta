@@ -20,14 +20,19 @@
                 Fazer Chamada
             </button>
 
-            <button id="idBtnCadastro" onclick="window.location.href='cadastro-membro.html'" class="btn-menu">
+            <button id="idBtnCadastro" onclick="window.location.href='cadastro-membro.html'" class="btn-menu" style="background-color: #57606f;">
                 <span style="font-size: 2rem; display: block;">👤</span>
                 Cadastrar Membro
             </button>
 
-            <button id="btnLista" onclick="window.location.href='lista-membros.html'" class="btn-menu">
+            <button id="btnLista" onclick="window.location.href='lista-membros.html'" class="btn-menu" style="background-color: #57606f;">
                 <span style="font-size: 2rem; display: block;">📋</span>
                 Lista de Membros
+            </button>
+
+            <button id="btnRelatorios" onclick="window.location.href='relatorio-presenca.html'" class="btn-menu" style="background-color: #ffa502;">
+                <span style="font-size: 2rem; display: block;">📊</span>
+                Acompanhamento
             </button>
 
             <button id="btnGrupos" onclick="window.location.href='admin-grupos.html'" class="btn-menu" style="display: none; background-color: #5765f2;">
@@ -49,20 +54,19 @@
 
     <script src="../js/script.js"></script>
     <script>
-        // Executa assim que a página carrega
+        // Inicialização do Dashboard
         document.addEventListener('DOMContentLoaded', () => {
-            // 1. Verifica acesso e pega os dados do usuário (Chave: usuarioLogado no script.js)
             const user = verificarAcesso(); 
             
             if (user) {
-                // 2. Personaliza a saudação na tela
+                // Personaliza a saudação
                 const saudacao = document.getElementById('boasVindas');
                 saudacao.innerText = `Logado como: ${user.nome} | Nível: ${user.nivel}`;
 
-                // 3. Mostra ferramentas extras apenas para Admin ou Master
-                if (user.nivel === 'Admin' || user.nivel === 'Master') {
-                    document.getElementById('btnGrupos').style.display = 'block';
-                    document.getElementById('btnUsuarios').style.display = 'block';
+                // Chama a função global de permissões que está no script.js
+                // Isso garante que os botões sumam/apareçam conforme o perfil logado
+                if (typeof ajustarInterfacePorPerfil === "function") {
+                    ajustarInterfacePorPerfil();
                 }
             }
         });

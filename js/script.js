@@ -465,33 +465,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 2. GATILHO: GERENCIAR USUÁRIOS (admin-usuarios.html)
     if (url.includes('admin-usuarios.html')) {
-        renderizarUsuarios();
-        carregarGruposNoSelect();
+        if (typeof renderizarUsuarios === "function") renderizarUsuarios();
+        if (typeof carregarGruposNoSelect === "function") carregarGruposNoSelect();
     }
 
     // 3. GATILHO: GERENCIAR GRUPOS (admin-grupos.html)
     if (url.includes('admin-grupos.html')) {
-        renderizarGrupos();
-        
-        // Adiciona o evento de salvar ao formulário de grupos
-        const formGrupo = document.getElementById('formGrupo'); // Verifique se o ID no HTML é este
-        if (formGrupo) {
-            formGrupo.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                await salvarGrupo();
-            });
-        }
+        if (typeof renderizarGrupos === "function") renderizarGrupos();
     }
 
-    // 4. GATILHO: LISTA DE MEMBROS
+    // 4. GATILHO: OUTRAS TELAS (Lista de Membros, Chamada, etc.)
     if (url.includes('lista-membros.html')) {
         if (typeof renderizarListaMembros === "function") renderizarListaMembros();
     }
-
-    // 5. GATILHO: TELA DE CHAMADA
+    
     if (url.includes('chamada.html')) {
         if (typeof carregarSugestoesMembros === "function") carregarSugestoesMembros();
-        if (document.getElementById('data_chamada')?.value) renderizarListaChamada();
     }
 });
 
@@ -528,30 +517,34 @@ async function criarUsuario(dados) {
 }
 
 /**
- * Função para Salvar Grupo (Chamada pelo formulário em admin-grupos.html)
+ * Função para Criar Grupo (Chamada pelo HTML admin-grupos.html)
+ * @param {string} nome - Nome do grupo vindo do formulário
  */
-async function salvarGrupo() {
-    const nomeInput = document.getElementById('nomeGrupo') || document.getElementById('nome_grupo');
-    
-    if (!nomeInput || !nomeInput.value.trim()) {
-        return alert("⚠️ Informe o nome do grupo!");
+async function criarGrupo(nome) {
+    if (!nome) {
+        alert("⚠️ O nome do grupo não pode estar vazio!");
+        return false;
     }
 
     try {
-        const { error } = await _supabase.from('grupos').insert([{ 
-            nome: nomeInput.value.trim() 
-        }]);
+        // Insere na tabela 'grupos' (certifique-se que o nome da tabela está correto no Supabase)
+        const { error } = await _supabase.from('grupos').insert([{ nome: nome }]);
 
         if (error) throw error;
-        
-        alert("✅ Grupo criado com sucesso!");
-        
-        // Limpa o campo e atualiza a tabela sem recarregar a página inteira
-        nomeInput.value = '';
-        if (typeof renderizarGrupos === "function") renderizarGrupos();
-        
+
+        alert("✅ Grupo adicionado com sucesso!");
+        return true; // Retorna true para o HTML resetar o form e atualizar a lista
     } catch (err) {
-        console.error("Erro ao salvar grupo:", err);
+        console.error("Erro ao criar grupo:", err);
         alert("❌ Erro ao salvar grupo: " + err.message);
+        return false;
     }
+}
+
+/**
+ * Função global de Logout
+ */
+function logout() {
+    localStorage.removeItem('usuarioLogado');
+    window.location.href = '../index.html';
 }

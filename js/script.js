@@ -475,3 +475,36 @@ function contatarMembro(nome) {
     const msg = encodeURIComponent(`Paz do Senhor, irmão ${nome}! Sentimos sua falta no culto. Está tudo bem?`);
     window.open(`https://wa.me/?text=${msg}`, '_blank');
 }
+
+// Função para o Apoio enviar o resumo imediato do culto
+function gerarResumoWhatsApp() {
+    // 1. Pegar os dados dos contadores (Membros e Visitantes)
+    const membrosAd = document.getElementById('cont_membros_adultos')?.innerText || 0;
+    const membrosCi = document.getElementById('cont_membros_cias')?.innerText || 0;
+    const totalVisAd = document.getElementById('cont_vis_adultos_display')?.innerText || 0;
+    const totalVisCi = document.getElementById('cont_vis_cias_display')?.innerText || 0;
+    const totalGeral = document.getElementById('cont_total')?.innerText || 0;
+
+    // 2. Pegar os dados da escala/resumo
+    const pregador = document.getElementById('pregador_nome')?.value || "Não informado";
+    const texto = document.getElementById('texto_biblico')?.value || "Não informado";
+    const louvor = document.getElementById('louvor_nome')?.value || "Não informado";
+    const dataCulto = document.getElementById('data_chamada')?.value || "";
+
+    // 3. Montar o texto formatado (Padrão ICM)
+    let mensagem = `*📊 RESUMO DO CULTO - ${dataCulto}*\n\n`;
+    mensagem += `*PÚBLICO:*\n`;
+    mensagem += `• Membros (Ad/Cia): ${membrosAd} / ${membrosCi}\n`;
+    mensagem += `• Visitantes (Ad/Cia): ${totalVisAd} / ${totalVisCi}\n`;
+    mensagem += `*⭐ TOTAL GERAL: ${totalGeral}*\n\n`;
+    
+    mensagem += `*ESCALA:*\n`;
+    mensagem += `🎤 Pregador: ${pregador}\n`;
+    mensagem += `📖 Texto: ${texto}\n`;
+    mensagem += `🎶 Louvor: ${louvor}\n\n`;
+    mensagem += `_Enviado via Sistema de Gestão ICM_`;
+
+    // 4. Abrir o WhatsApp
+    const link = `https://wa.me/?text=${encodeURIComponent(mensagem)}`;
+    window.open(link, '_blank');
+}

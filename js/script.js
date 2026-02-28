@@ -476,7 +476,10 @@ function contatarMembro(nome) {
     window.open(`https://wa.me/?text=${msg}`, '_blank');
 }
 
-// Função para o Apoio enviar o resumo imediato do culto
+// ==========================================
+// 5. UTILITÁRIOS E AUTOMAÇÃO (Ajustado)
+// ==========================================
+
 function gerarResumoWhatsApp() {
     // 1. Pegar os dados dos contadores (Membros e Visitantes)
     const membrosAd = document.getElementById('cont_membros_adultos')?.innerText || 0;
@@ -485,26 +488,42 @@ function gerarResumoWhatsApp() {
     const totalVisCi = document.getElementById('cont_vis_cias_display')?.innerText || 0;
     const totalGeral = document.getElementById('cont_total')?.innerText || 0;
 
-    // 2. Pegar os dados da escala/resumo
-    const pregador = document.getElementById('pregador_nome')?.value || "Não informado";
-    const texto = document.getElementById('texto_biblico')?.value || "Não informado";
-    const louvor = document.getElementById('louvor_nome')?.value || "Não informado";
+    // 2. Pegar os dados da escala/resumo (Limpando espaços extras)
+    const pregador = document.getElementById('pregador_nome')?.value.trim() || "";
+    const louvor = document.getElementById('louvor_nome')?.value.trim() || "";
+    const texto = document.getElementById('texto_biblico')?.value.trim() || "Não informado";
     const dataCulto = document.getElementById('data_chamada')?.value || "";
+    const obs = document.getElementById('observacoes_culto')?.value.trim() || ""; // Caso você adicione esse campo no HTML
 
-    // 3. Montar o texto formatado (Padrão ICM)
+    // 3. LÓGICA DE ESCALA INTELIGENTE (Dirigente vs Pregador/Louvor)
+    let blocoEscala = "";
+    if (pregador === louvor && pregador !== "") {
+        blocoEscala = `👤 *Dirigente:* ${pregador}\n`;
+    } else {
+        if (pregador) blocoEscala += `🎤 *Pregador:* ${pregador}\n`;
+        if (louvor) blocoEscala += `🎶 *Louvor:* ${louvor}\n`;
+    }
+
+    // 4. Montar o texto formatado (Padrão ICM)
     let mensagem = `*📊 RESUMO DO CULTO - ${dataCulto}*\n\n`;
+    
     mensagem += `*PÚBLICO:*\n`;
     mensagem += `• Membros (Ad/Cia): ${membrosAd} / ${membrosCi}\n`;
     mensagem += `• Visitantes (Ad/Cia): ${totalVisAd} / ${totalVisCi}\n`;
     mensagem += `*⭐ TOTAL GERAL: ${totalGeral}*\n\n`;
     
     mensagem += `*ESCALA:*\n`;
-    mensagem += `🎤 Pregador: ${pregador}\n`;
-    mensagem += `📖 Texto: ${texto}\n`;
-    mensagem += `🎶 Louvor: ${louvor}\n\n`;
-    mensagem += `_Enviado via Sistema de Gestão ICM_`;
+    mensagem += blocoEscala; 
+    mensagem += `📖 *Texto:* ${texto}\n`;
+    
+    // Adiciona observações apenas se houver texto
+    if (obs) {
+        mensagem += `\n📝 *Obs:* ${obs}\n`;
+    }
 
-    // 4. Abrir o WhatsApp
+    mensagem += `\n_Enviado via Sistema de Gestão ICM_`;
+
+    // 5. Abrir o WhatsApp
     const link = `https://wa.me/?text=${encodeURIComponent(mensagem)}`;
     window.open(link, '_blank');
 }

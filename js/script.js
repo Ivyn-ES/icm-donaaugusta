@@ -136,6 +136,8 @@ async function renderizarListaMembros() {
     const user = verificarAcesso();
     try {
         let consulta = _supabase.from('membros').select('*');
+        
+        // REGRA: Se não for Admin/Master, vê apenas o seu grupo
         if (user.nivel !== 'Admin' && user.nivel !== 'Master') {
             consulta = consulta.eq('grupo', user.grupo); 
         }
@@ -143,23 +145,37 @@ async function renderizarListaMembros() {
         const { data, error } = await consulta.order('nome', { ascending: true });
         if (error) throw error;
 
-        corpoTabela.innerHTML = data.map(m => `
+        corpoTabela.innerHTML = data.map(m => {
+            // TRAVA VISUAL: Apenas Admin/Master vê botões de editar e excluir
+            const ehAdmin = (user.nivel === 'Admin' || user.nivel === 'Master');
+            
+            return `
             <tr>
                 <td>${m.nome} ${m.apelido ? `<br><small>(${m.apelido})</small>` : ''}</td> 
                 <td>${m.categoria}</td>
                 <td>${m.grupo || 'Sem Grupo'}</td>
                 <td>${m.situacao}</td>
-                <td>
-                    <button onclick="prepararEdicao('${m.id}')" style="background:none; border:none; cursor:pointer;">✏️</button>
-                    <button onclick="excluirMembro('${m.id}')" style="background:none; border:none; cursor:pointer;">🗑️</button>
+                <td style="text-align:center;">
+                    ${ehAdmin ? `
+                        <button onclick="prepararEdicao('${m.id}')" style="background:none; border:none; cursor:pointer;" title="Editar">✏️</button>
+                        <button onclick="excluirMembro('${m.id}')" style="background:none; border:none; cursor:pointer;" title="Excluir">🗑️</button>
+                    ` : '<span title="Acesso restrito">🔒</span>'}
                 </td>
-            </tr>`).join('');
+            </tr>`;
+        }).join('');
     } catch (err) {
         corpoTabela.innerHTML = "<tr><td colspan='5'>Erro ao carregar lista.</td></tr>";
     }
 }
 
 async function cadastrarMembro(dados) {
+    const user = verificarAcesso();
+    // SEGURANÇA: Bloqueia tentativa de cadastro via console/comando por User/Apoio
+    if (user.nivel === 'User' || user.nivel === 'Apoio') {
+        alert("⚠️ Você não tem permissão para cadastrar membros.");
+        return false;
+    }
+
     try {
         const { error } = await _supabase.from('membros').insert([{
             nome: dados.nome,
@@ -183,6 +199,13 @@ async function cadastrarMembro(dados) {
 }
 
 async function atualizarMembro(id, dados) {
+    const user = verificarAcesso();
+    // SEGURANÇA: Bloqueia tentativa de atualização por perfis restritos
+    if (user.nivel !== 'Admin' && user.nivel !== 'Master') {
+        alert("⚠️ Apenas o Secretário (Admin) pode alterar dados de membros.");
+        return false;
+    }
+
     try {
         const { error } = await _supabase.from('membros').update({
             nome: dados.nome,
@@ -210,6 +233,11 @@ async function prepararEdicao(id) {
 }
 
 async function excluirMembro(id) {
+    const user = verificarAcesso();
+    if (user.nivel !== 'Admin' && user.nivel !== 'Master') {
+        return alert("⚠️ Você não tem permissão para excluir membros.");
+    }
+
     if (!confirm("Deseja realmente excluir este membro?")) return;
     await _supabase.from('membros').delete().eq('id', id);
     renderizarListaMembros();
@@ -496,6 +524,12 @@ async function deletarUsuario(id) {
 document.addEventListener('DOMContentLoaded', () => {
     const url = window.location.href;
 
+    // --- PROTEÇÃO GLOBAL DE INTERFACE ---
+    // Executa em todas as páginas para esconder botões proibidos
+    if (typeof ajustarInterfacePorPerfil === "function") {
+        ajustarInterfacePorPerfil();
+    }
+
     // 1. GATILHO: LOGIN
     const formLogin = document.getElementById('loginForm');
     if (formLogin) {
@@ -516,13 +550,33 @@ document.addEventListener('DOMContentLoaded', () => {
         if (typeof renderizarGrupos === "function") renderizarGrupos();
     }
 
-    // 4. GATILHO: OUTRAS TELAS (Lista de Membros, Chamada, etc.)
+    // 4. GATILHO: LISTA DE MEMBROS
     if (url.includes('lista-membros.html')) {
         if (typeof renderizarListaMembros === "function") renderizarListaMembros();
     }
     
+    // 5. GATILHO: TELA DE CHAMADA
     if (url.includes('chamada.html')) {
-        if (typeof carregarSugestoesMembros === "function") carregarSugestoesMembros();
+        const user = verificarAcesso();
+        // Bloqueio: User (Responsável) não pode entrar na chamada
+        if (user && user.nivel === 'User') {
+            alert("Acesso restrito: Responsáveis de grupo não realizam chamadas.");
+            window.location.href = 'dashboard.html';
+        } else {
+            if (typeof carregarSugestoesMembros === "function") carregarSugestoesMembros();
+        }
+    }
+
+    // 6. GATILHO: CADASTRO DE MEMBROS
+    if (url.includes('cadastro-membro.html')) {
+        const user = verificarAcesso();
+        // Bloqueio: Apenas Admin/Master pode cadastrar ou editar
+        if (user && user.nivel !== 'Admin' && user.nivel !== 'Master') {
+            alert("Acesso negado: Apenas o Secretário pode gerenciar cadastros.");
+            window.location.href = 'dashboard.html';
+        } else {
+            if (typeof carregarMembrosParaVinculo === "function") carregarMembrosParaVinculo();
+        }
     }
 });
 

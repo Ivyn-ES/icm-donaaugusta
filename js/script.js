@@ -23,7 +23,6 @@ function verificarAcesso() {
 
     const urlAtual = window.location.href;
 
-    // Nível Livre
     if (usuario.nivel === 'Livre') {
         const proibidas = ['dashboard.html', 'cadastro-membro.html', 'admin-usuarios.html', 'admin-grupos.html', 'chamada.html', 'lista-membros.html', 'relatorio-presenca.html'];
         if (proibidas.some(p => urlAtual.includes(p))) {
@@ -32,7 +31,6 @@ function verificarAcesso() {
         }
     }
 
-    // Nível User (Líder) ou Apoio
     if (usuario.nivel === 'User' || usuario.nivel === 'Apoio') {
         const adminPaginas = ['admin-usuarios.html', 'admin-grupos.html'];
         if (adminPaginas.some(p => urlAtual.includes(p))) {
@@ -73,7 +71,7 @@ async function realizarLogin(usuarioDigitado, senhaDigitada) {
 
     } catch (err) {
         console.error('Erro de Login:', err);
-        alert('⚠️ Erro ao conectar. Verifique sua internet.');
+        alert('⚠️ Erro ao conectar.');
     }
 }
 
@@ -83,7 +81,7 @@ function logout() {
 }
 
 // ==========================================
-// 3. MÓDULO DE MEMBROS (CADASTRO, LISTA, EDIÇÃO)
+// 3. MÓDULO DE MEMBROS
 // ==========================================
 
 async function renderizarListaMembros() {
@@ -110,24 +108,18 @@ async function renderizarListaMembros() {
                 <td>${m.situacao}</td>
                 <td style="text-align:center;">
                     ${ehAdmin ? `
-                        <button onclick="prepararEdicao('${m.id}')" style="background:none; border:none; cursor:pointer;" title="Editar">✏️</button>
-                        <button onclick="excluirMembro('${m.id}')" style="background:none; border:none; cursor:pointer;" title="Excluir">🗑️</button>
-                    ` : '<span title="Acesso restrito">🔒</span>'}
+                        <button onclick="prepararEdicao('${m.id}')" style="background:none; border:none; cursor:pointer;">✏️</button>
+                        <button onclick="excluirMembro('${m.id}')" style="background:none; border:none; cursor:pointer;">🗑️</button>
+                    ` : '🔒'}
                 </td>
             </tr>`;
         }).join('');
-    } catch (err) {
-        corpoTabela.innerHTML = "<tr><td colspan='5'>Erro ao carregar lista.</td></tr>";
-    }
+    } catch (err) { corpoTabela.innerHTML = "<tr><td>Erro ao carregar.</td></tr>"; }
 }
 
 async function cadastrarMembro(dados) {
     const user = verificarAcesso();
-    if (user.nivel === 'User' || user.nivel === 'Apoio' || user.nivel === 'Livre') {
-        alert("⚠️ Você não tem permissão para cadastrar membros.");
-        return false;
-    }
-    // ... (restante da lógica de cadastro mantida igual)
+    if (user.nivel !== 'Admin' && user.nivel !== 'Master') return alert("Sem permissão");
     try {
         const { error } = await _supabase.from('membros').insert([{
             nome: dados.nome, apelido: dados.apelido, funcao: dados.funcao,
@@ -137,25 +129,7 @@ async function cadastrarMembro(dados) {
         }]);
         if (error) throw error;
         return true;
-    } catch (err) { alert("Erro ao salvar: " + err.message); return false; }
-}
-
-async function atualizarMembro(id, dados) {
-    const user = verificarAcesso();
-    if (user.nivel !== 'Admin' && user.nivel !== 'Master') {
-        alert("⚠️ Apenas o Secretário (Admin) pode alterar dados de membros.");
-        return false;
-    }
-    try {
-        const { error } = await _supabase.from('membros').update({
-            nome: dados.nome, apelido: dados.apelido, funcao: dados.funcao,
-            situacao: dados.situacao, categoria: dados.categoria, sexo: dados.sexo,
-            grupo: dados.grupo, dia: parseInt(dados.niver_dia), mes: dados.niver_mes,
-            familia_id: dados.familia_vinculo
-        }).eq('id', id);
-        if (error) throw error;
-        return true;
-    } catch (err) { alert("Erro ao atualizar: " + err.message); return false; }
+    } catch (err) { alert("Erro: " + err.message); return false; }
 }
 
 function prepararEdicao(id) {
@@ -164,15 +138,13 @@ function prepararEdicao(id) {
 }
 
 async function excluirMembro(id) {
-    const user = verificarAcesso();
-    if (user.nivel !== 'Admin' && user.nivel !== 'Master') return alert("⚠️ Permissão negada.");
-    if (!confirm("Deseja realmente excluir este membro?")) return;
+    if (!confirm("Excluir membro?")) return;
     await _supabase.from('membros').delete().eq('id', id);
     renderizarListaMembros();
 }
 
 // ==========================================
-// 4. MÓDULO DE CHAMADA E ATA (PRESENÇA)
+// 4. MÓDULO DE CHAMADA (PRESENÇA)
 // ==========================================
 
 async function renderizarListaChamada() {
@@ -213,6 +185,9 @@ async function renderizarListaChamada() {
             document.getElementById('louvor_funcao').value = resumoExistente.louvor_funcao || "Membro";
             document.getElementById('portao_nome').value = resumoExistente.portao_nome || "";
             document.getElementById('portao_funcao').value = resumoExistente.portao_funcao || "Obreiro";
+            if (document.getElementById('observacoes_culto')) {
+                document.getElementById('observacoes_culto').value = resumoExistente.observacoes || "";
+            }
         }
 
         container.innerHTML = membros.map(m => {
@@ -222,16 +197,16 @@ async function renderizarListaChamada() {
             const nomeCurto = partesNome.length > 1 ? `${partesNome[0]} ${partesNome[1]}` : partesNome[0];
             const sit = (m.situacao || "").toLowerCase();
             const eVisitante = sit.includes('visitante');
-            const nomeExibicao = m.apelido ? `<strong>${m.apelido}</strong> <br><small style="color:#666">(${nomeCurto})</small>` : `<strong>${nomeCurto}</strong>`;
+            const nomeExibicao = m.apelido ? `<strong>${m.apelido}</strong> <br><small>(${nomeCurto})</small>` : `<strong>${nomeCurto}</strong>`;
 
             return `
                 <div class="card-chamada" style="display:flex; align-items:center; justify-content:space-between; padding:12px; border:1px solid #ddd; margin-bottom:8px; border-radius:8px; background:${estaPresente ? '#e8f5e9' : '#fff'};">
-                    <span>${nomeExibicao} <br><small style="color:#888; font-size: 0.8em;">${m.grupo}${eVisitante ? ' <span style="color:#d32f2f">(Vis)</span>' : ''}</small></span>
-                    <input type="checkbox" class="check-presenca" onchange="atualizarContadores()" data-id="${m.id}" data-categoria="${m.categoria || 'Adulto'}" data-situacao="${m.situacao || 'Membro'}" ${estaPresente ? 'checked' : ''} style="width:28px; height:28px; cursor:pointer;">
+                    <span>${nomeExibicao} <br><small>${m.grupo}${eVisitante ? ' (Vis)' : ''}</small></span>
+                    <input type="checkbox" class="check-presenca" onchange="atualizarContadores()" data-id="${m.id}" data-categoria="${m.categoria || 'Adulto'}" data-situacao="${m.situacao || 'Membro'}" ${estaPresente ? 'checked' : ''} style="width:28px; height:28px;">
                 </div>`;
         }).join('');
         atualizarContadores();
-    } catch (err) { console.error("Erro fatal:", err); }
+    } catch (err) { console.error(err); }
 }
 
 async function salvarChamada() {
@@ -239,7 +214,7 @@ async function salvarChamada() {
     const dataCulto = document.getElementById('data_chamada').value;
     const tipoEvento = document.getElementById('tipo_evento').value;
     const user = verificarAcesso();
-    if (!dataCulto) return alert("⚠️ Selecione a data!");
+    if (!dataCulto) return alert("Selecione a data!");
     btn.disabled = true;
 
     const presencasMembros = Array.from(document.querySelectorAll('.check-presenca')).map(cb => ({
@@ -253,7 +228,8 @@ async function salvarChamada() {
         pregador_nome: document.getElementById('pregador_nome').value, pregador_funcao: document.getElementById('pregador_funcao').value,
         texto_biblico: document.getElementById('texto_biblico').value, louvor_nome: document.getElementById('louvor_nome').value,
         louvor_funcao: document.getElementById('louvor_funcao').value, portao_nome: document.getElementById('portao_nome').value,
-        portao_funcao: document.getElementById('portao_funcao').value
+        portao_funcao: document.getElementById('portao_funcao').value,
+        observacoes: document.getElementById('observacoes_culto')?.value || ""
     };
 
     try {
@@ -261,11 +237,51 @@ async function salvarChamada() {
         await _supabase.from('resumo_culto').upsert([dadosAta], { onConflict: 'data_culto, tipo_evento, grupo' });
         alert(`✅ Salvo com sucesso!`);
         window.location.href = 'dashboard.html';
-    } catch (err) { alert("Erro ao salvar: " + err.message); btn.disabled = false; }
+    } catch (err) { alert("Erro: " + err.message); btn.disabled = false; }
 }
 
 // ==========================================
-// 5. UTILITÁRIOS E AUTOMAÇÃO (PLACAR E SUGESTÕES)
+// 5. MÓDULO DE AUTOMAÇÃO E WHATSAPP (Ajustado)
+// ==========================================
+
+function gerarResumoWhatsApp() {
+    const membrosAd = document.getElementById('cont_membros_adultos')?.innerText || 0;
+    const membrosCi = document.getElementById('cont_membros_cias')?.innerText || 0;
+    const totalVisAd = document.getElementById('cont_vis_adultos_display')?.innerText || 0;
+    const totalVisCi = document.getElementById('cont_vis_cias_display')?.innerText || 0;
+    const totalGeral = document.getElementById('cont_total')?.innerText || 0;
+
+    const pregador = document.getElementById('pregador_nome')?.value.trim() || "";
+    const louvor = document.getElementById('louvor_nome')?.value.trim() || "";
+    const portao = document.getElementById('portao_nome')?.value.trim() || "Não informado";
+    const texto = document.getElementById('texto_biblico')?.value.trim() || "Não informado";
+    const dataCulto = document.getElementById('data_chamada')?.value || "";
+    const obs = document.getElementById('observacoes_culto')?.value.trim() || "";
+
+    let blocoEscala = "";
+    if (pregador === louvor && pregador !== "") {
+        blocoEscala = `👤 *Dirigente:* ${pregador}\n`;
+    } else {
+        if (pregador) blocoEscala += `🎤 *Pregador:* ${pregador}\n`;
+        if (louvor)   blocoEscala += `🎶 *Louvor:* ${louvor}\n`;
+    }
+    blocoEscala += `🚪 *Portão:* ${portao}\n`;
+
+    let mensagem = `*📊 RESUMO DO CULTO - ${dataCulto}*\n\n`;
+    mensagem += `*PÚBLICO:*\n`;
+    mensagem += `• Membros (Ad/Cia): ${membrosAd} / ${membrosCi}\n`;
+    mensagem += `• Visitantes (Ad/Cia): ${totalVisAd} / ${totalVisCi}\n`;
+    mensagem += `*⭐ TOTAL GERAL: ${totalGeral}*\n\n`;
+    mensagem += `*ESCALA:*\n${blocoEscala}`;
+    mensagem += `📖 *Texto:* ${texto}\n`;
+    if (obs) mensagem += `\n📝 *Obs:* ${obs}\n`;
+    mensagem += `\n_Gerado via Sistema ICM_`;
+
+    window.open(`https://wa.me/?text=${encodeURIComponent(mensagem)}`, '_blank');
+}
+
+// ==========================================
+// 6. PLACAR E SUGESTÕES
 // ==========================================
 
 function atualizarContadores() {
@@ -283,8 +299,7 @@ function atualizarContadores() {
     if(document.getElementById('cont_membros_cias')) document.getElementById('cont_membros_cias').innerText = mCi;
     if(document.getElementById('cont_vis_adultos_display')) document.getElementById('cont_vis_adultos_display').innerText = vLAd + vDAd;
     if(document.getElementById('cont_vis_cias_display')) document.getElementById('cont_vis_cias_display').innerText = vLCi + vDCi;
-    const total = mAd + mCi + vLAd + vDAd + vLCi + vDCi;
-    if(document.getElementById('cont_total')) document.getElementById('cont_total').innerText = total;
+    if(document.getElementById('cont_total')) document.getElementById('cont_total').innerText = mAd + mCi + vLAd + vDAd + vLCi + vDCi;
 }
 
 async function carregarSugestoesMembros() {
@@ -310,70 +325,37 @@ function autoSelecionarFuncao(inputElement, selectId) {
 }
 
 // ==========================================
-// 6. MÓDULO ADMINISTRATIVO (TABELAS E SELECTS)
+// 7. MÓDULO ADMINISTRATIVO
 // ==========================================
 
 async function renderizarGrupos() {
     const corpo = document.getElementById('corpoTabelaGrupos');
     if (!corpo) return;
-    try {
-        const { data, error } = await _supabase.from('grupos').select('*').order('nome');
-        if (error) throw error;
-        corpo.innerHTML = data.map(g => `<tr><td>${g.nome}</td><td style="text-align:center;"><button onclick="deletarGrupo('${g.id}')" style="border:none; background:none; cursor:pointer;">🗑️</button></td></tr>`).join('');
-    } catch (err) { corpo.innerHTML = "<tr><td colspan='2'>Erro ao carregar dados.</td></tr>"; }
+    const { data } = await _supabase.from('grupos').select('*').order('nome');
+    corpo.innerHTML = data.map(g => `<tr><td>${g.nome}</td><td><button onclick="deletarGrupo('${g.id}')">🗑️</button></td></tr>`).join('');
 }
 
 async function renderizarUsuarios() {
     const corpo = document.getElementById('corpoTabelaUsuarios');
     if (!corpo) return;
-    try {
-        const { data, error } = await _supabase.from('usuarios').select('*').order('login');
-        if (error) throw error;
-        corpo.innerHTML = data.map(u => `<tr><td>${u.login}</td><td>${u.permissao}</td><td>${u.grupo_vinculado || 'Geral'}</td><td style="text-align:center;"><button onclick="deletarUsuario('${u.id}')" style="border:none; background:none; cursor:pointer;">🗑️</button></td></tr>`).join('');
-    } catch (err) { corpo.innerHTML = "<tr><td colspan='4'>Erro ao carregar dados.</td></tr>"; }
+    const { data } = await _supabase.from('usuarios').select('*').order('login');
+    corpo.innerHTML = data.map(u => `<tr><td>${u.login}</td><td>${u.permissao}</td><td>${u.grupo_vinculado}</td><td><button onclick="deletarUsuario('${u.id}')">🗑️</button></td></tr>`).join('');
 }
 
 async function carregarGruposNoSelect() {
     const select = document.getElementById('grupo_vinculado');
     if (!select) return;
-    const { data } = await _supabase.from('grupos').select('nome').order('nome');
-    if (data) select.innerHTML = '<option value="">Selecione um Grupo</option>' + data.map(g => `<option value="${g.nome}">${g.nome}</option>`).join('');
-}
-
-async function carregarMembrosParaVinculo() {
-    const select = document.getElementById('vinculo_familia');
-    if (!select) return;
-    const { data } = await _supabase.from('membros').select('id, nome, familia_id').order('nome');
-    if (data) select.innerHTML = '<option value="">Individual / Novo Responsável</option>' + data.map(m => `<option value="${m.familia_id || m.id}">${m.nome}</option>`).join('');
-}
-
-function voltarAoPainelCorrespondente() {
-    const u = JSON.parse(localStorage.getItem('usuarioLogado'));
-    window.location.href = u?.nivel === 'Livre' ? 'livre.html' : 'dashboard.html';
-}
-
-async function deletarGrupo(id) {
-    if (confirm("Deseja excluir este grupo?")) {
-        const { error } = await _supabase.from('grupos').delete().eq('id', id);
-        if (!error) renderizarGrupos();
-    }
-}
-
-async function deletarUsuario(id) {
-    if (confirm("Deseja excluir este usuário?")) {
-        const { error } = await _supabase.from('usuarios').delete().eq('id', id);
-        if (!error) renderizarUsuarios();
-    }
+    const { data } = await _supabase.from('grupos').select('nome');
+    if (data) select.innerHTML = '<option value="">Selecione</option>' + data.map(g => `<option value="${g.nome}">${g.nome}</option>`).join('');
 }
 
 // ==========================================
-// 7. GESTÃO DE INTERFACE E PERMISSÕES (NOVO)
+// 8. INTERFACE E PERMISSÕES
 // ==========================================
 
 function ajustarInterfacePorPerfil() {
     const user = JSON.parse(localStorage.getItem('usuarioLogado'));
     if (!user) return;
-
     const nivel = user.permissao || user.nivel; 
     const b = {
         chamada: document.getElementById('btnChamada'),
@@ -384,38 +366,65 @@ function ajustarInterfacePorPerfil() {
         relatorios: document.getElementById('btnRelatorios')
     };
 
-    // 1. ADMIN / MASTER: Vê tudo
     if (nivel === 'Admin' || nivel === 'Master') {
         Object.values(b).forEach(el => { if(el) el.style.display = 'flex'; });
-    }
-    // 2. USER (Responsável de Grupo): Vê Lista e Relatórios
-    else if (nivel === 'User') {
+    } else if (nivel === 'User') {
         if (b.lista) b.lista.style.display = 'flex';
         if (b.relatorios) b.relatorios.style.display = 'flex';
         [b.chamada, b.cadastro, b.grupos, b.usuarios].forEach(el => { if(el) el.style.display = 'none'; });
-    }
-    // 3. APOIO: Só faz chamada
-    else if (nivel === 'Apoio') {
+    } else if (nivel === 'Apoio') {
         if (b.chamada) b.chamada.style.display = 'flex';
         [b.cadastro, b.lista, b.relatorios, b.grupos, b.usuarios].forEach(el => { if(el) el.style.display = 'none'; });
-    }
-    // 4. LIVRE: Esconde tudo
-    else if (nivel === 'Livre') {
-        Object.values(b).forEach(el => { if(el) el.style.display = 'none'; });
     }
 }
 
 // ==========================================
-// 8. INICIALIZAÇÃO AUTOMÁTICA POR PÁGINA
+// 9. RELATÓRIOS E ACOMPANHAMENTO
+// ==========================================
+
+async function gerarRelatorio() {
+    const dataFiltro = document.getElementById('filtroData').value;
+    const corpoRelatorio = document.getElementById('corpoRelatorio');
+    const resumo = document.getElementById('resumoCards');
+    if (!dataFiltro || !corpoRelatorio) return;
+
+    try {
+        const user = verificarAcesso();
+        const { data: membros } = await _supabase.from('membros').select('id, nome, grupo, situacao');
+        const { data: presencas } = await _supabase.from('presencas').select('membro_id').eq('data_culto', dataFiltro).eq('presenca', true);
+
+        const idsPresentes = (presencas || []).map(p => p.membro_id);
+        let pres = 0, aus = 0;
+
+        corpoRelatorio.innerHTML = membros.map(m => {
+            const esta = idsPresentes.includes(m.id);
+            esta ? pres++ : aus++;
+            return `<tr style="border-left: 5px solid ${esta ? '#2ed573' : '#ff4757'}">
+                <td>${m.nome}</td>
+                <td>${esta ? '✅ Presente' : '⚠️ Ausente'}</td>
+                <td>${!esta ? `<button class="btn-whatsapp" onclick="contatarMembro('${m.nome}')">📱 Cuidar</button>` : '---'}</td>
+            </tr>`;
+        }).join('');
+
+        resumo.innerHTML = `<div class="card-resumo"><h3>${pres}</h3><p>Presentes</p></div><div class="card-resumo" style="color:#ff4757"><h3>${aus}</h3><p>Ausentes</p></div>`;
+    } catch (err) { console.error(err); }
+}
+
+function contatarMembro(nome) {
+    const msg = encodeURIComponent(`Paz do Senhor, irmão ${nome}! Sentimos sua falta. Está tudo bem?`);
+    window.open(`https://wa.me/?text=${msg}`, '_blank');
+}
+
+// ==========================================
+// 10. INICIALIZAÇÃO AUTOMÁTICA
 // ==========================================
 
 document.addEventListener('DOMContentLoaded', () => {
     const url = window.location.href;
     ajustarInterfacePorPerfil();
 
-    const formLogin = document.getElementById('loginForm');
-    if (formLogin) {
-        formLogin.addEventListener('submit', (e) => {
+    if (document.getElementById('loginForm')) {
+        document.getElementById('loginForm').addEventListener('submit', (e) => {
             e.preventDefault();
             realizarLogin(document.getElementById('usuario').value, document.getElementById('senha').value);
         });
@@ -424,106 +433,5 @@ document.addEventListener('DOMContentLoaded', () => {
     if (url.includes('admin-usuarios.html')) { renderizarUsuarios(); carregarGruposNoSelect(); }
     if (url.includes('admin-grupos.html')) { renderizarGrupos(); }
     if (url.includes('lista-membros.html')) { renderizarListaMembros(); }
-    
-    if (url.includes('chamada.html')) {
-        const u = verificarAcesso();
-        if (u && u.nivel === 'User') { window.location.href = 'dashboard.html'; } 
-        else { carregarSugestoesMembros(); }
-    }
-
-    if (url.includes('cadastro-membro.html')) {
-        const u = verificarAcesso();
-        if (u && u.nivel !== 'Admin' && u.nivel !== 'Master') { window.location.href = 'dashboard.html'; } 
-        else { carregarMembrosParaVinculo(); }
-    }
+    if (url.includes('chamada.html')) { carregarSugestoesMembros(); }
 });
-
-// ==========================================
-// 9. MÓDULO DE RELATÓRIOS E ACOMPANHAMENTO
-// ==========================================
-
-async function gerarRelatorio() {
-    const dataFiltro = document.getElementById('filtroData').value;
-    const corpoRelatorio = document.getElementById('corpoRelatorio');
-    const resumo = document.getElementById('resumoCards');
-    if (!dataFiltro || !corpoRelatorio) return alert("Selecione a data.");
-
-    try {
-        const user = verificarAcesso();
-        let queryMembros = _supabase.from('membros').select('id, nome, grupo, situacao');
-        if (user.nivel === 'User') { queryMembros = queryMembros.eq('grupo', user.grupo); }
-        const { data: membros, error: errM } = await queryMembros;
-
-        // Ajuste: Tabela presencas (conforme seu modulo 4)
-        const { data: presencas, error: errP } = await _supabase.from('presencas').select('membro_id').eq('data_culto', dataFiltro).eq('presenca', true);
-        if (errM || errP) throw (errM || errP);
-
-        const idsPresentes = presencas.map(p => p.membro_id);
-        let pres = 0, aus = 0;
-
-        corpoRelatorio.innerHTML = membros.map(m => {
-            const esta = idsPresentes.includes(m.id);
-            esta ? pres++ : aus++;
-            return `<tr style="border-left: 5px solid ${esta ? '#2ed573' : '#ff4757'}"><td>${m.nome}</td><td>${esta ? '✅ Presente' : '⚠️ Ausente'}</td><td>${!esta ? `<button class="btn-whatsapp" onclick="contatarMembro('${m.nome}')">📱 Cuidar</button>` : '---'}</td></tr>`;
-        }).join('');
-
-        resumo.innerHTML = `<div class="card-resumo"><h3>${pres}</h3><p>Presentes</p></div><div class="card-resumo" style="color: #ff4757"><h3>${aus}</h3><p>Ausentes</p></div>`;
-    } catch (err) { console.error(err); alert("Erro ao gerar relatório."); }
-}
-
-function contatarMembro(nome) {
-    const msg = encodeURIComponent(`Paz do Senhor, irmão ${nome}! Sentimos sua falta no culto. Está tudo bem?`);
-    window.open(`https://wa.me/?text=${msg}`, '_blank');
-}
-
-// ==========================================
-// 5. UTILITÁRIOS E AUTOMAÇÃO (Ajustado)
-// ==========================================
-
-function gerarResumoWhatsApp() {
-    // 1. Pegar os dados dos contadores (Membros e Visitantes)
-    const membrosAd = document.getElementById('cont_membros_adultos')?.innerText || 0;
-    const membrosCi = document.getElementById('cont_membros_cias')?.innerText || 0;
-    const totalVisAd = document.getElementById('cont_vis_adultos_display')?.innerText || 0;
-    const totalVisCi = document.getElementById('cont_vis_cias_display')?.innerText || 0;
-    const totalGeral = document.getElementById('cont_total')?.innerText || 0;
-
-    // 2. Pegar os dados da escala/resumo (Limpando espaços extras)
-    const pregador = document.getElementById('pregador_nome')?.value.trim() || "";
-    const louvor = document.getElementById('louvor_nome')?.value.trim() || "";
-    const texto = document.getElementById('texto_biblico')?.value.trim() || "Não informado";
-    const dataCulto = document.getElementById('data_chamada')?.value || "";
-    const obs = document.getElementById('observacoes_culto')?.value.trim() || ""; // Caso você adicione esse campo no HTML
-
-    // 3. LÓGICA DE ESCALA INTELIGENTE (Dirigente vs Pregador/Louvor)
-    let blocoEscala = "";
-    if (pregador === louvor && pregador !== "") {
-        blocoEscala = `👤 *Dirigente:* ${pregador}\n`;
-    } else {
-        if (pregador) blocoEscala += `🎤 *Pregador:* ${pregador}\n`;
-        if (louvor) blocoEscala += `🎶 *Louvor:* ${louvor}\n`;
-    }
-
-    // 4. Montar o texto formatado (Padrão ICM)
-    let mensagem = `*📊 RESUMO DO CULTO - ${dataCulto}*\n\n`;
-    
-    mensagem += `*PÚBLICO:*\n`;
-    mensagem += `• Membros (Ad/Cia): ${membrosAd} / ${membrosCi}\n`;
-    mensagem += `• Visitantes (Ad/Cia): ${totalVisAd} / ${totalVisCi}\n`;
-    mensagem += `*⭐ TOTAL GERAL: ${totalGeral}*\n\n`;
-    
-    mensagem += `*ESCALA:*\n`;
-    mensagem += blocoEscala; 
-    mensagem += `📖 *Texto:* ${texto}\n`;
-    
-    // Adiciona observações apenas se houver texto
-    if (obs) {
-        mensagem += `\n📝 *Obs:* ${obs}\n`;
-    }
-
-    mensagem += `\n_Enviado via Sistema de Gestão ICM_`;
-
-    // 5. Abrir o WhatsApp
-    const link = `https://wa.me/?text=${encodeURIComponent(mensagem)}`;
-    window.open(link, '_blank');
-}

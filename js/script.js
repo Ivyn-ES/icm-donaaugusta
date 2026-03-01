@@ -87,7 +87,7 @@ function logout() {
 }
 
 // ==========================================
-// 3. MÓDULO DE MEMBROS
+// 3. MÓDULO DE MEMBROS (Ajustado: Case Insensitive)
 // ==========================================
 
 async function renderizarListaMembros() {
@@ -95,18 +95,29 @@ async function renderizarListaMembros() {
     if (!corpoTabela) return;
 
     const user = verificarAcesso();
+    if (!user) return;
+
+    // Normaliza o nível para minúsculo
+    const nivel = (user.permissao || user.nivel || "").toLowerCase();
+    const ehAdmin = (nivel === 'admin' || nivel === 'master');
+
     try {
         let consulta = _supabase.from('membros').select('*');
-        if (user.nivel !== 'Admin' && user.nivel !== 'Master') {
+        
+        // Se não for admin/master, filtra apenas o grupo do usuário
+        if (!ehAdmin) {
             consulta = consulta.eq('grupo', user.grupo); 
         }
 
         const { data, error } = await consulta.order('nome', { ascending: true });
         if (error) throw error;
 
-        corpoTabela.innerHTML = data.map(m => {
-            const ehAdmin = (user.nivel === 'Admin' || user.nivel === 'Master');
-            return `
+        if (!data || data.length === 0) {
+            corpoTabela.innerHTML = "<tr><td colspan='5' style='text-align:center;'>Nenhum membro encontrado.</td></tr>";
+            return;
+        }
+
+        corpoTabela.innerHTML = data.map(m => `
             <tr>
                 <td>${m.nome} ${m.apelido ? `<br><small>(${m.apelido})</small>` : ''}</td> 
                 <td>${m.categoria}</td>
@@ -114,28 +125,49 @@ async function renderizarListaMembros() {
                 <td>${m.situacao}</td>
                 <td style="text-align:center;">
                     ${ehAdmin ? `
-                        <button onclick="prepararEdicao('${m.id}')" style="background:none; border:none; cursor:pointer;">✏️</button>
-                        <button onclick="excluirMembro('${m.id}')" style="background:none; border:none; cursor:pointer;">🗑️</button>
+                        <button onclick="prepararEdicao('${m.id}')" style="background:none; border:none; cursor:pointer;" title="Editar">✏️</button>
+                        <button onclick="excluirMembro('${m.id}')" style="background:none; border:none; cursor:pointer;" title="Excluir">🗑️</button>
                     ` : '🔒'}
                 </td>
-            </tr>`;
-        }).join('');
-    } catch (err) { corpoTabela.innerHTML = "<tr><td>Erro ao carregar.</td></tr>"; }
+            </tr>`).join('');
+            
+    } catch (err) { 
+        console.error("Erro ao renderizar lista:", err);
+        corpoTabela.innerHTML = "<tr><td colspan='5'>Erro ao carregar os dados.</td></tr>"; 
+    }
 }
 
 async function cadastrarMembro(dados) {
     const user = verificarAcesso();
-    if (user.nivel !== 'Admin' && user.nivel !== 'Master') return alert("Sem permissão");
+    const nivel = (user?.permissao || user?.nivel || "").toLowerCase();
+
+    if (nivel !== 'admin' && nivel !== 'master') {
+        alert("❌ Sem permissão para cadastrar membros.");
+        return false;
+    }
+
     try {
         const { error } = await _supabase.from('membros').insert([{
-            nome: dados.nome, apelido: dados.apelido, funcao: dados.funcao,
-            situacao: dados.situacao, categoria: dados.categoria, sexo: dados.sexo,
-            grupo: dados.grupo, dia: parseInt(dados.niver_dia) || 0, mes: dados.niver_mes,
-            familia_id: dados.familia_vinculo || crypto.randomUUID(), status_registro: 'Ativo'
+            nome: dados.nome, 
+            apelido: dados.apelido, 
+            funcao: dados.funcao,
+            situacao: dados.situacao, 
+            categoria: dados.categoria, 
+            sexo: dados.sexo,
+            grupo: dados.grupo, 
+            dia: parseInt(dados.niver_dia) || 0, 
+            mes: dados.niver_mes,
+            familia_id: dados.familia_vinculo || crypto.randomUUID(), 
+            status_registro: 'Ativo'
         }]);
+
         if (error) throw error;
+        alert("✅ Membro cadastrado com sucesso!");
         return true;
-    } catch (err) { alert("Erro: " + err.message); return false; }
+    } catch (err) { 
+        alert("Erro ao cadastrar: " + err.message); 
+        return false; 
+    }
 }
 
 function prepararEdicao(id) {
@@ -144,9 +176,24 @@ function prepararEdicao(id) {
 }
 
 async function excluirMembro(id) {
-    if (!confirm("Excluir membro?")) return;
-    await _supabase.from('membros').delete().eq('id', id);
-    renderizarListaMembros();
+    const user = verificarAcesso();
+    const nivel = (user?.permissao || user?.nivel || "").toLowerCase();
+
+    if (nivel !== 'admin' && nivel !== 'master') {
+        alert("❌ Apenas administradores podem excluir membros.");
+        return;
+    }
+
+    if (!confirm("Deseja realmente excluir este membro?")) return;
+
+    try {
+        const { error } = await _supabase.from('membros').delete().eq('id', id);
+        if (error) throw error;
+        alert("✅ Membro removido!");
+        renderizarListaMembros();
+    } catch (err) {
+        alert("Erro ao excluir: " + err.message);
+    }
 }
 
 // ==========================================
@@ -347,7 +394,7 @@ async function carregarSugestoesMembros() {
 }
 
 // ==========================================
-// 7. MÓDULO ADMINISTRATIVO (Ajustado: Permissões e Deletar)
+// 7. MÓDULO ADMINISTRATIVO (Ajustado: Permissões e Segurança Unificada)
 // ==========================================
 
 async function renderizarGrupos() {
@@ -371,7 +418,7 @@ async function deletarGrupo(id) {
     const nivel = (user?.permissao || user?.nivel || "").toLowerCase();
     
     if (nivel !== 'admin' && nivel !== 'master') {
-        alert("Ação restrita a Administradores.");
+        alert("❌ Ação restrita a Administradores.");
         return;
     }
 
@@ -388,6 +435,15 @@ async function deletarGrupo(id) {
 async function renderizarUsuarios() {
     const corpo = document.getElementById('corpoTabelaUsuarios');
     if (!corpo) return;
+
+    // Proteção na renderização da lista
+    const user = verificarAcesso();
+    const nivel = (user?.permissao || user?.nivel || "").toLowerCase();
+    if (nivel !== 'admin' && nivel !== 'master') {
+        corpo.innerHTML = '<tr><td colspan="4">Acesso Negado</td></tr>';
+        return;
+    }
+
     try {
         const { data, error } = await _supabase.from('usuarios').select('*').order('login');
         if (error) throw error;
@@ -408,7 +464,7 @@ async function deletarUsuario(id) {
     const nivel = (user?.permissao || user?.nivel || "").toLowerCase();
     
     if (nivel !== 'admin' && nivel !== 'master') {
-        alert("Ação restrita a Administradores.");
+        alert("❌ Ação restrita a Administradores.");
         return;
     }
 
@@ -435,6 +491,14 @@ async function carregarGruposNoSelect() {
 }
 
 async function criarUsuario(dados) {
+    const user = verificarAcesso();
+    const nivel = (user?.permissao || user?.nivel || "").toLowerCase();
+
+    if (nivel !== 'admin' && nivel !== 'master') {
+        alert("❌ Sem permissão para criar usuários.");
+        return false;
+    }
+
     try {
         const { error } = await _supabase.from('usuarios').insert([dados]);
         if (error) throw error;
@@ -448,6 +512,14 @@ async function criarUsuario(dados) {
 }
 
 async function criarGrupo(nome) {
+    const user = verificarAcesso();
+    const nivel = (user?.permissao || user?.nivel || "").toLowerCase();
+
+    if (nivel !== 'admin' && nivel !== 'master') {
+        alert("❌ Sem permissão para criar grupos.");
+        return false;
+    }
+
     try {
         const { error } = await _supabase.from('grupos').insert([{ nome }]);
         if (error) throw error;

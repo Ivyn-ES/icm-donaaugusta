@@ -87,7 +87,7 @@ function logout() {
 }
 
 // ==========================================
-// 3. MÓDULO DE MEMBROS (Ajustado: Case Insensitive & Coordenadora)
+// 3. MÓDULO DE MEMBROS (Ajustado: Edição, Vínculo e Permissões)
 // ==========================================
 
 async function renderizarListaMembros() {
@@ -98,14 +98,12 @@ async function renderizarListaMembros() {
     if (!user) return;
 
     const nivel = (user.permissao || user.nivel || "").toLowerCase();
-    // Admin, Master e Coordenadora podem ver a lista completa ou gerenciar
     const ehPrivilegiado = (nivel === 'admin' || nivel === 'master' || nivel === 'coordenadora');
     const ehAdminMaster = (nivel === 'admin' || nivel === 'master');
 
     try {
-        let consulta = _supabase.from('membros').select('*');
+        let consulta = _supabase.from('membros').select('*').eq('status_registro', 'Ativo');
         
-        // Se não for admin/master/coordenadora, filtra apenas o grupo do usuário
         if (!ehPrivilegiado) {
             consulta = consulta.eq('grupo', user.grupo); 
         }
@@ -142,7 +140,6 @@ async function cadastrarMembro(dados) {
     const user = verificarAcesso();
     const nivel = (user?.permissao || user?.nivel || "").toLowerCase();
 
-    // Permitir cadastro para Admin, Master e Coordenadora
     if (nivel !== 'admin' && nivel !== 'master' && nivel !== 'coordenadora') {
         alert("❌ Sem permissão para cadastrar membros.");
         return false;
@@ -164,12 +161,70 @@ async function cadastrarMembro(dados) {
         }]);
 
         if (error) throw error;
-        alert("✅ Membro cadastrado com sucesso!");
-        return true;
+        return true; // Sucesso (O alert já está no HTML)
     } catch (err) { 
         console.error("Erro no cadastro:", err);
         alert("Erro ao cadastrar: " + err.message); 
         return false; 
+    }
+}
+
+// NOVA FUNÇÃO: Atualizar membro existente
+async function atualizarMembro(id, dados) {
+    const user = verificarAcesso();
+    const nivel = (user?.permissao || user?.nivel || "").toLowerCase();
+
+    if (nivel !== 'admin' && nivel !== 'master' && nivel !== 'coordenadora') {
+        alert("❌ Sem permissão para editar.");
+        return false;
+    }
+
+    try {
+        const { error } = await _supabase.from('membros').update({
+            nome: dados.nome,
+            apelido: dados.apelido,
+            funcao: dados.funcao,
+            situacao: dados.situacao,
+            categoria: dados.categoria,
+            sexo: dados.sexo,
+            grupo: dados.grupo,
+            dia: parseInt(dados.niver_dia) || 0,
+            mes: dados.niver_mes,
+            familia_id: dados.familia_vinculo || crypto.randomUUID()
+        }).eq('id', id);
+
+        if (error) throw error;
+        return true;
+    } catch (err) {
+        console.error("Erro ao atualizar:", err);
+        alert("Erro ao atualizar: " + err.message);
+        return false;
+    }
+}
+
+// CORREÇÃO: Carregar membros para o campo de vínculo familiar
+async function carregarMembrosParaVinculo() {
+    const selectFamilia = document.getElementById('vinculo_familia');
+    if (!selectFamilia) return;
+
+    try {
+        const { data, error } = await _supabase
+            .from('membros')
+            .select('nome, familia_id')
+            .eq('status_registro', 'Ativo')
+            .order('nome', { ascending: true });
+
+        if (error) throw error;
+
+        let html = '<option value="">Ninguém (Membro Individual / Novo Responsável)</option>';
+        if (data && data.length > 0) {
+            // Remove duplicados de familia_id para não repetir nomes da mesma família se preferir, 
+            // mas aqui listamos todos para facilitar achar pelo nome.
+            html += data.map(m => `<option value="${m.familia_id}">${m.nome}</option>`).join('');
+        }
+        selectFamilia.innerHTML = html;
+    } catch (err) {
+        console.error("Erro ao carregar vínculos:", err);
     }
 }
 

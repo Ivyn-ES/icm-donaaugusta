@@ -301,21 +301,31 @@ function gerarResumoWhatsApp() {
     // 6. Enviar
     window.open(`https://wa.me/?text=${encodeURIComponent(mensagem)}`, '_blank');
 }
+
 // ==========================================
-// 6. PLACAR E SUGESTÕES
+// 6. PLACAR E SUGESTÕES (Ajustado: Case Insensitive)
 // ==========================================
 
 function atualizarContadores() {
     let mAd = 0, mCi = 0, vLAd = 0, vLCi = 0;
     document.querySelectorAll('.check-presenca:checked').forEach(cb => {
+        // Normaliza para ignorar acentos e maiúsculas
         let cat = (cb.getAttribute('data-categoria') || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
         let sit = (cb.getAttribute('data-situacao') || "").toLowerCase();
+        
+        // Verifica categorias de crianças/jovens
         const eCia = (cat.includes('crianca') || cat.includes('intermediario') || cat.includes('adolescente'));
-        if (sit.includes('visitante')) { if (eCia) vLCi++; else vLAd++; } 
-        else { if (eCia) mCi++; else mAd++; }
+        
+        if (sit.includes('visitante')) { 
+            if (eCia) vLCi++; else vLAd++; 
+        } else { 
+            if (eCia) mCi++; else mAd++; 
+        }
     });
+
     const vDAd = parseInt(document.getElementById('vis_adultos')?.value) || 0;
     const vDCi = parseInt(document.getElementById('vis_cias')?.value) || 0;
+
     if(document.getElementById('cont_membros_adultos')) document.getElementById('cont_membros_adultos').innerText = mAd;
     if(document.getElementById('cont_membros_cias')) document.getElementById('cont_membros_cias').innerText = mCi;
     if(document.getElementById('cont_vis_adultos_display')) document.getElementById('cont_vis_adultos_display').innerText = vLAd + vDAd;
@@ -327,47 +337,126 @@ async function carregarSugestoesMembros() {
     const listagem = document.getElementById('listaMembrosSugestao');
     if (!listagem) return;
     try {
+        // Busca apenas quem está com "Ativo" (A maiúsculo conforme seu banco)
         const { data } = await _supabase.from('membros').select('nome, funcao').eq('status_registro', 'Ativo');
-        listagem.innerHTML = data.map(m => `<option value="${m.nome}">${m.nome} (${m.funcao || 'Membro'})</option>`).join('');
-        window.membrosCache = data;
-    } catch (err) { console.error(err); }
-}
-
-function autoSelecionarFuncao(inputElement, selectId) {
-    const nome = inputElement.value;
-    const select = document.getElementById(selectId);
-    if (!window.membrosCache || !select) return;
-    const membro = window.membrosCache.find(m => m.nome === nome);
-    if (membro && membro.funcao) {
-        for (let i = 0; i < select.options.length; i++) {
-            if (select.options[i].value === membro.funcao) { select.selectedIndex = i; break; }
+        if (data) {
+            listagem.innerHTML = data.map(m => `<option value="${m.nome}">${m.nome} (${m.funcao || 'Membro'})</option>`).join('');
+            window.membrosCache = data;
         }
-    }
+    } catch (err) { console.error("Erro ao carregar sugestões:", err); }
 }
 
 // ==========================================
-// 7. MÓDULO ADMINISTRATIVO
+// 7. MÓDULO ADMINISTRATIVO (Ajustado: Permissões e Deletar)
 // ==========================================
 
 async function renderizarGrupos() {
     const corpo = document.getElementById('corpoTabelaGrupos');
     if (!corpo) return;
-    const { data } = await _supabase.from('grupos').select('*').order('nome');
-    corpo.innerHTML = data.map(g => `<tr><td>${g.nome}</td><td><button onclick="deletarGrupo('${g.id}')">🗑️</button></td></tr>`).join('');
+    try {
+        const { data, error } = await _supabase.from('grupos').select('*').order('nome');
+        if (error) throw error;
+        corpo.innerHTML = data.map(g => `
+            <tr>
+                <td>${g.nome}</td>
+                <td style="text-align:center;">
+                    <button onclick="deletarGrupo('${g.id}')" style="background:none; border:none; cursor:pointer;">🗑️</button>
+                </td>
+            </tr>`).join('');
+    } catch (err) { console.error(err); }
+}
+
+async function deletarGrupo(id) {
+    const user = verificarAcesso();
+    const nivel = (user?.permissao || user?.nivel || "").toLowerCase();
+    
+    if (nivel !== 'admin' && nivel !== 'master') {
+        alert("Ação restrita a Administradores.");
+        return;
+    }
+
+    if (!confirm("Excluir este grupo permanentemente?")) return;
+
+    try {
+        const { error } = await _supabase.from('grupos').delete().eq('id', id);
+        if (error) throw error;
+        alert("✅ Grupo excluído!");
+        renderizarGrupos();
+    } catch (err) { alert("Erro ao excluir grupo."); }
 }
 
 async function renderizarUsuarios() {
     const corpo = document.getElementById('corpoTabelaUsuarios');
     if (!corpo) return;
-    const { data } = await _supabase.from('usuarios').select('*').order('login');
-    corpo.innerHTML = data.map(u => `<tr><td>${u.login}</td><td>${u.permissao}</td><td>${u.grupo_vinculado}</td><td><button onclick="deletarUsuario('${u.id}')">🗑️</button></td></tr>`).join('');
+    try {
+        const { data, error } = await _supabase.from('usuarios').select('*').order('login');
+        if (error) throw error;
+        corpo.innerHTML = data.map(u => `
+            <tr>
+                <td>${u.login}</td>
+                <td>${u.permissao}</td>
+                <td>${u.grupo_vinculado || 'Todos'}</td>
+                <td style="text-align:center;">
+                    <button onclick="deletarUsuario('${u.id}')" style="background:none; border:none; cursor:pointer;">🗑️</button>
+                </td>
+            </tr>`).join('');
+    } catch (err) { console.error(err); }
+}
+
+async function deletarUsuario(id) {
+    const user = verificarAcesso();
+    const nivel = (user?.permissao || user?.nivel || "").toLowerCase();
+    
+    if (nivel !== 'admin' && nivel !== 'master') {
+        alert("Ação restrita a Administradores.");
+        return;
+    }
+
+    if (!confirm("Deseja realmente remover o acesso deste usuário?")) return;
+
+    try {
+        const { error } = await _supabase.from('usuarios').delete().eq('id', id);
+        if (error) throw error;
+        alert("✅ Usuário removido!");
+        renderizarUsuarios();
+    } catch (err) { alert("Erro ao remover usuário."); }
 }
 
 async function carregarGruposNoSelect() {
     const select = document.getElementById('grupo_vinculado');
     if (!select) return;
-    const { data } = await _supabase.from('grupos').select('nome');
-    if (data) select.innerHTML = '<option value="">Selecione</option>' + data.map(g => `<option value="${g.nome}">${g.nome}</option>`).join('');
+    try {
+        const { data } = await _supabase.from('grupos').select('nome');
+        if (data) {
+            select.innerHTML = '<option value="">Todos (Admin)</option>' + 
+                               data.map(g => `<option value="${g.nome}">${g.nome}</option>`).join('');
+        }
+    } catch (err) { console.error(err); }
+}
+
+async function criarUsuario(dados) {
+    try {
+        const { error } = await _supabase.from('usuarios').insert([dados]);
+        if (error) throw error;
+        alert("✅ Usuário criado com sucesso!");
+        return true;
+    } catch (err) {
+        console.error(err);
+        alert("❌ Erro ao criar usuário. Verifique se o login já existe.");
+        return false;
+    }
+}
+
+async function criarGrupo(nome) {
+    try {
+        const { error } = await _supabase.from('grupos').insert([{ nome }]);
+        if (error) throw error;
+        alert("✅ Grupo adicionado!");
+        return true;
+    } catch (err) {
+        alert("Erro ao adicionar grupo.");
+        return false;
+    }
 }
 
 // ==========================================

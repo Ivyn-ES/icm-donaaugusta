@@ -38,7 +38,6 @@
                         <option value="Obreiro">Obreiro</option>
                         <option value="Diácono">Diácono</option>
                         <option value="Pastor">Pastor</option>
-
                     </select>
                 </div>
                 <div class="campo">
@@ -122,6 +121,7 @@
         document.addEventListener('DOMContentLoaded', async () => {
             verificarAcesso(); 
             
+            // Carrega os grupos (A função no script.js agora limpa o "Todos Admin" se achar o id 'grupo_vinculado')
             if (typeof carregarGruposNoSelect === 'function') await carregarGruposNoSelect();
             if (typeof carregarMembrosParaVinculo === 'function') await carregarMembrosParaVinculo();
 
@@ -143,19 +143,19 @@
                 if (error) throw error;
 
                 if (data) {
-                    document.getElementById('nome_completo').value = data.nome;
+                    document.getElementById('nome_completo').value = data.nome || "";
                     document.getElementById('apelido').value = data.apelido || "";
                     document.getElementById('funcao').value = data.funcao || "Membro";
                     document.getElementById('vinculo_familia').value = data.familia_id || "";
-                    document.getElementById('situacao').value = data.situacao;
-                    document.getElementById('sexo').value = data.sexo;
-                    document.getElementById('categoria').value = data.categoria;
-                    document.getElementById('grupo_vinculado').value = data.grupo;
-                    document.getElementById('niver_dia').value = data.dia; 
-                    document.getElementById('niver_mes').value = data.mes; 
+                    document.getElementById('situacao').value = data.situacao || "Membro";
+                    document.getElementById('sexo').value = data.sexo || "Masculino";
+                    document.getElementById('categoria').value = data.categoria || "Adulto";
+                    document.getElementById('grupo_vinculado').value = data.grupo || "";
+                    document.getElementById('niver_dia').value = data.dia || ""; 
+                    document.getElementById('niver_mes').value = data.mes || "Janeiro"; 
                 }
             } catch (err) {
-                console.error("Erro ao carregar dados:", err);
+                console.error("Erro ao carregar dados para edição:", err);
             }
         }
 
@@ -165,12 +165,15 @@
             e.preventDefault(); 
             
             const btnSalvar = document.getElementById('btnSalvar');
+            const textoOriginal = idEdicao ? 'Atualizar Dados' : 'Salvar no Supabase';
+            
+            // Bloqueia o botão para evitar cliques duplos
             btnSalvar.disabled = true;
-            btnSalvar.innerText = 'Processando...';
+            btnSalvar.innerText = '⌛ Processando...';
 
             const dadosParaEnviar = {
-                nome: document.getElementById('nome_completo').value,
-                apelido: document.getElementById('apelido').value,
+                nome: document.getElementById('nome_completo').value.trim(),
+                apelido: document.getElementById('apelido').value.trim(),
                 funcao: document.getElementById('funcao').value,
                 familia_vinculo: document.getElementById('vinculo_familia').value,
                 situacao: document.getElementById('situacao').value,
@@ -181,36 +184,42 @@
                 niver_mes: document.getElementById('niver_mes').value
             };
 
-            let sucesso = false;
-
-            if (idEdicao) {
-                sucesso = await atualizarMembro(idEdicao, dadosParaEnviar);
-            } else {
-                sucesso = await cadastrarMembro(dadosParaEnviar);
-            }
-
-            if (sucesso) {
-                alert(idEdicao ? '✅ Dados atualizados!' : '✅ Membro cadastrado!');
-                localStorage.removeItem('idMembroEdicao');
+            try {
+                let sucesso = false;
                 if (idEdicao) {
-                    window.location.href = 'lista-membros.html';
+                    // Importante: Verifique se a função atualizarMembro existe no seu script.js
+                    if (typeof atualizarMembro === 'function') {
+                        sucesso = await atualizarMembro(idEdicao, dadosParaEnviar);
+                    } else {
+                        alert("Erro: Função atualizarMembro não encontrada no script.js");
+                    }
                 } else {
-                    form.reset();
-                    await carregarMembrosParaVinculo(); 
+                    sucesso = await cadastrarMembro(dadosParaEnviar);
                 }
-            }
 
-            btnSalvar.disabled = false;
-            btnSalvar.innerText = idEdicao ? 'Atualizar Dados' : 'Salvar no Supabase';
+                if (sucesso) {
+                    // O alert agora é dado dentro das funções do script.js, mas reforçamos aqui se necessário
+                    localStorage.removeItem('idMembroEdicao');
+                    if (idEdicao) {
+                        window.location.href = 'lista-membros.html';
+                    } else {
+                        form.reset();
+                        if (typeof carregarMembrosParaVinculo === 'function') await carregarMembrosParaVinculo(); 
+                    }
+                }
+            } catch (err) {
+                console.error("Erro no fluxo de salvamento:", err);
+                alert("Ocorreu um erro inesperado ao salvar.");
+            } finally {
+                // ISSO AQUI resolve o botão travado: ele sempre volta ao normal, dando erro ou não
+                btnSalvar.disabled = false;
+                btnSalvar.innerText = textoOriginal;
+            }
         });
 
         function voltarComLimpeza() {
             localStorage.removeItem('idMembroEdicao');
-            if (typeof voltarAoPainelCorrespondente === 'function') {
-                voltarAoPainelCorrespondente();
-            } else {
-                window.location.href = 'dashboard.html';
-            }
+            window.location.href = 'dashboard.html';
         }
     </script>
 </body>

@@ -87,7 +87,7 @@ function logout() {
 }
 
 // ==========================================
-// 3. MÓDULO DE MEMBROS (Ajustado: Case Insensitive)
+// 3. MÓDULO DE MEMBROS (Ajustado: Case Insensitive & Coordenadora)
 // ==========================================
 
 async function renderizarListaMembros() {
@@ -97,15 +97,16 @@ async function renderizarListaMembros() {
     const user = verificarAcesso();
     if (!user) return;
 
-    // Normaliza o nível para minúsculo
     const nivel = (user.permissao || user.nivel || "").toLowerCase();
-    const ehAdmin = (nivel === 'admin' || nivel === 'master');
+    // Admin, Master e Coordenadora podem ver a lista completa ou gerenciar
+    const ehPrivilegiado = (nivel === 'admin' || nivel === 'master' || nivel === 'coordenadora');
+    const ehAdminMaster = (nivel === 'admin' || nivel === 'master');
 
     try {
         let consulta = _supabase.from('membros').select('*');
         
-        // Se não for admin/master, filtra apenas o grupo do usuário
-        if (!ehAdmin) {
+        // Se não for admin/master/coordenadora, filtra apenas o grupo do usuário
+        if (!ehPrivilegiado) {
             consulta = consulta.eq('grupo', user.grupo); 
         }
 
@@ -124,10 +125,10 @@ async function renderizarListaMembros() {
                 <td>${m.grupo || 'Sem Grupo'}</td>
                 <td>${m.situacao}</td>
                 <td style="text-align:center;">
-                    ${ehAdmin ? `
+                    ${ehAdminMaster ? `
                         <button onclick="prepararEdicao('${m.id}')" style="background:none; border:none; cursor:pointer;" title="Editar">✏️</button>
                         <button onclick="excluirMembro('${m.id}')" style="background:none; border:none; cursor:pointer;" title="Excluir">🗑️</button>
-                    ` : '🔒'}
+                    ` : (ehPrivilegiado ? '👁️' : '🔒')}
                 </td>
             </tr>`).join('');
             
@@ -141,7 +142,8 @@ async function cadastrarMembro(dados) {
     const user = verificarAcesso();
     const nivel = (user?.permissao || user?.nivel || "").toLowerCase();
 
-    if (nivel !== 'admin' && nivel !== 'master') {
+    // Permitir cadastro para Admin, Master e Coordenadora
+    if (nivel !== 'admin' && nivel !== 'master' && nivel !== 'coordenadora') {
         alert("❌ Sem permissão para cadastrar membros.");
         return false;
     }
@@ -165,6 +167,7 @@ async function cadastrarMembro(dados) {
         alert("✅ Membro cadastrado com sucesso!");
         return true;
     } catch (err) { 
+        console.error("Erro no cadastro:", err);
         alert("Erro ao cadastrar: " + err.message); 
         return false; 
     }
@@ -394,7 +397,7 @@ async function carregarSugestoesMembros() {
 }
 
 // ==========================================
-// 7. MÓDULO ADMINISTRATIVO (Ajustado: Permissões e Segurança Unificada)
+// 7. MÓDULO ADMINISTRATIVO (Ajustado: Seletor Inteligente e Segurança)
 // ==========================================
 
 async function renderizarGrupos() {
@@ -436,7 +439,6 @@ async function renderizarUsuarios() {
     const corpo = document.getElementById('corpoTabelaUsuarios');
     if (!corpo) return;
 
-    // Proteção na renderização da lista
     const user = verificarAcesso();
     const nivel = (user?.permissao || user?.nivel || "").toLowerCase();
     if (nivel !== 'admin' && nivel !== 'master') {
@@ -479,15 +481,24 @@ async function deletarUsuario(id) {
 }
 
 async function carregarGruposNoSelect() {
-    const select = document.getElementById('grupo_vinculado');
-    if (!select) return;
+    const selectUsuarios = document.getElementById('grupo_vinculado'); // Select na tela de Usuários
+    const selectMembros = document.getElementById('grupo');           // Select na tela de Membros
+    
+    if (!selectUsuarios && !selectMembros) return;
+
     try {
-        const { data } = await _supabase.from('grupos').select('nome');
-        if (data) {
-            select.innerHTML = '<option value="">Todos (Admin)</option>' + 
-                               data.map(g => `<option value="${g.nome}">${g.nome}</option>`).join('');
+        const { data, error } = await _supabase.from('grupos').select('nome').order('nome');
+        if (error || !data) return;
+
+        const optionsHtml = data.map(g => `<option value="${g.nome}">${g.nome}</option>`).join('');
+
+        if (selectUsuarios) {
+            selectUsuarios.innerHTML = '<option value="">Todos (Admin)</option>' + optionsHtml;
         }
-    } catch (err) { console.error(err); }
+        if (selectMembros) {
+            selectMembros.innerHTML = '<option value="">Selecione o Grupo</option>' + optionsHtml;
+        }
+    } catch (err) { console.error("Erro ao carregar grupos:", err); }
 }
 
 async function criarUsuario(dados) {
@@ -506,7 +517,7 @@ async function criarUsuario(dados) {
         return true;
     } catch (err) {
         console.error(err);
-        alert("❌ Erro ao criar usuário. Verifique se o login já existe.");
+        alert("❌ Erro ao criar usuário.");
         return false;
     }
 }

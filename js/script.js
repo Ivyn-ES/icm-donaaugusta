@@ -352,32 +352,51 @@ async function salvarChamada() {
 }
 
 // ==========================================
-// 5. MÓDULO DE AUTOMAÇÃO E WHATSAPP (Finalizado)
+// 5. MÓDULO DE AUTOMAÇÃO E WHATSAPP (Ajustado: Nomes Curtos)
 // ==========================================
 
+// Função auxiliar para encurtar nomes (Ex: "João da Silva" -> "João S.")
+function encurtarNome(nomeCompleto) {
+    if (!nomeCompleto) return "";
+    const partes = nomeCompleto.trim().split(" ");
+    if (partes.length <= 1) return partes[0];
+    
+    const primeiroNome = partes[0];
+    // Pega a primeira letra do último sobrenome (ignorando "de", "da", "do")
+    let ultimoSobrenome = partes[partes.length - 1];
+    if (["de", "da", "do", "dos", "das"].includes(ultimoSobrenome.toLowerCase()) && partes.length > 2) {
+        ultimoSobrenome = partes[partes.length - 2];
+    }
+    
+    return `${primeiroNome} ${ultimoSobrenome[0]}.`;
+}
+
 function gerarResumoWhatsApp() {
-    // 1. Dados da Igreja e do Evento
     const nomeIgreja = "ICM - Dona Augusta";
     const tipoEvento = document.getElementById('tipo_evento')?.value || "Evento";
     const dataCulto = document.getElementById('data_chamada')?.value || "";
 
-    // 2. Dados de Público
+    // Dados de Público
     const membrosAd = document.getElementById('cont_membros_adultos')?.innerText || 0;
     const membrosCi = document.getElementById('cont_membros_cias')?.innerText || 0;
     const totalVisAd = document.getElementById('cont_vis_adultos_display')?.innerText || 0;
     const totalVisCi = document.getElementById('cont_vis_cias_display')?.innerText || 0;
     const totalGeral = document.getElementById('cont_total')?.innerText || 0;
 
-    // 3. Dados da Escala
-    const pregador = document.getElementById('pregador_nome')?.value.trim() || "";
-    const louvor = document.getElementById('louvor_nome')?.value.trim() || "";
-    const portao = document.getElementById('portao_nome')?.value.trim() || "Não informado";
+    // Dados da Escala com Nomes Encurtados
+    const pregadorRaw = document.getElementById('pregador_nome')?.value.trim() || "";
+    const louvorRaw   = document.getElementById('louvor_nome')?.value.trim() || "";
+    const portaoRaw   = document.getElementById('portao_nome')?.value.trim() || "Não informado";
+    
+    const pregador = encurtarNome(pregadorRaw);
+    const louvor   = encurtarNome(louvorRaw);
+    const portao   = encurtarNome(portaoRaw);
+    
     const texto = document.getElementById('texto_biblico')?.value.trim() || "Não informado";
     const obs = document.getElementById('observacoes_culto')?.value.trim() || "";
 
-    // 4. Lógica de Dirigente vs Pregador/Louvor
     let blocoEscala = "";
-    if (pregador === louvor && pregador !== "") {
+    if (pregadorRaw === louvorRaw && pregadorRaw !== "") {
         blocoEscala = `👤 *Dirigente:* ${pregador}\n`;
     } else {
         if (pregador) blocoEscala += `🎤 *Pregador:* ${pregador}\n`;
@@ -385,40 +404,40 @@ function gerarResumoWhatsApp() {
     }
     blocoEscala += `🚪 *Portão:* ${portao}\n`;
 
-    // 5. Montagem da Mensagem Personalizada
     let mensagem = `*⛪ ${nomeIgreja}*\n`;
     mensagem += `*📊 RESUMO: ${tipoEvento.toUpperCase()} - ${dataCulto}*\n\n`;
-    
-    mensagem += `*PÚBLICO:*\n`;
-    mensagem += `• Membros (Ad/Cia): ${membrosAd} / ${membrosCi}\n`;
-    mensagem += `• Visitantes (Ad/Cia): ${totalVisAd} / ${totalVisCi}\n`;
-    mensagem += `*⭐ TOTAL GERAL: ${totalGeral}*\n\n`;
-    
-    mensagem += `*ESCALA:*\n${blocoEscala}`;
-    mensagem += `📖 *Texto:* ${texto}\n`;
-    
-    if (obs) {
-        mensagem += `\n📝 *Obs:* ${obs}\n`;
-    }
-
+    mensagem += `*PÚBLICO:*\n• Membros (Ad/Cia): ${membrosAd} / ${membrosCi}\n• Visitantes (Ad/Cia): ${totalVisAd} / ${totalVisCi}\n*⭐ TOTAL GERAL: ${totalGeral}*\n\n`;
+    mensagem += `*ESCALA:*\n${blocoEscala}📖 *Texto:* ${texto}\n`;
+    if (obs) mensagem += `\n📝 *Obs:* ${obs}\n`;
     mensagem += `\n_Gerado via Sistema de Gestão ICM_`;
 
-    // 6. Enviar
     window.open(`https://wa.me/?text=${encodeURIComponent(mensagem)}`, '_blank');
 }
 
 // ==========================================
-// 6. PLACAR E SUGESTÕES (Ajustado: Case Insensitive)
+// 6. PLACAR E CONTADORES (Ajustado: Botões de + e - e Case Insensitive)
 // ==========================================
+
+// Função para os botões de + e - (Resolve o problema do celular)
+function ajustarVisitante(id, delta) {
+    const campo = document.getElementById(id);
+    if (!campo) return;
+    
+    let valorAtual = parseInt(campo.value) || 0;
+    let novoValor = valorAtual + delta;
+    if (novoValor < 0) novoValor = 0;
+    
+    campo.value = novoValor;
+    atualizarContadores(); // Sincroniza o placar imediatamente
+}
 
 function atualizarContadores() {
     let mAd = 0, mCi = 0, vLAd = 0, vLCi = 0;
+    
     document.querySelectorAll('.check-presenca:checked').forEach(cb => {
-        // Normaliza para ignorar acentos e maiúsculas
         let cat = (cb.getAttribute('data-categoria') || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
         let sit = (cb.getAttribute('data-situacao') || "").toLowerCase();
         
-        // Verifica categorias de crianças/jovens
         const eCia = (cat.includes('crianca') || cat.includes('intermediario') || cat.includes('adolescente'));
         
         if (sit.includes('visitante')) { 
@@ -428,21 +447,24 @@ function atualizarContadores() {
         }
     });
 
+    // Visitantes Digitados (via botões + e -)
     const vDAd = parseInt(document.getElementById('vis_adultos')?.value) || 0;
     const vDCi = parseInt(document.getElementById('vis_cias')?.value) || 0;
 
+    // Atualiza o Display do Placar
     if(document.getElementById('cont_membros_adultos')) document.getElementById('cont_membros_adultos').innerText = mAd;
     if(document.getElementById('cont_membros_cias')) document.getElementById('cont_membros_cias').innerText = mCi;
     if(document.getElementById('cont_vis_adultos_display')) document.getElementById('cont_vis_adultos_display').innerText = vLAd + vDAd;
     if(document.getElementById('cont_vis_cias_display')) document.getElementById('cont_vis_cias_display').innerText = vLCi + vDCi;
-    if(document.getElementById('cont_total')) document.getElementById('cont_total').innerText = mAd + mCi + vLAd + vDAd + vLCi + vDCi;
+    
+    const total = mAd + mCi + vLAd + vDAd + vLCi + vDCi;
+    if(document.getElementById('cont_total')) document.getElementById('cont_total').innerText = total;
 }
 
 async function carregarSugestoesMembros() {
     const listagem = document.getElementById('listaMembrosSugestao');
     if (!listagem) return;
     try {
-        // Busca apenas quem está com "Ativo" (A maiúsculo conforme seu banco)
         const { data } = await _supabase.from('membros').select('nome, funcao').eq('status_registro', 'Ativo');
         if (data) {
             listagem.innerHTML = data.map(m => `<option value="${m.nome}">${m.nome} (${m.funcao || 'Membro'})</option>`).join('');

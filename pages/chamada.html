@@ -5,6 +5,35 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chamada - ICM</title>
     <link rel="stylesheet" href="../css/style.css">
+    <style>
+        /* Estilo para os botões de ajuste de visitantes (Dedos de Marshmallow) */
+        .btn-ajuste {
+            width: 45px;
+            height: 45px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.2s;
+        }
+        .btn-menos { background-color: #e74c3c; }
+        .btn-mais { background-color: #2ecc71; }
+        .btn-ajuste:active { opacity: 0.7; }
+        .input-ajuste {
+            width: 60px;
+            text-align: center;
+            font-size: 1.2rem;
+            font-weight: bold;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background: #fdfdfd;
+        }
+    </style>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
@@ -58,13 +87,21 @@
             <h3 style="margin-top:0; color: #2ecc71; border-bottom: 2px solid #2ecc71; padding-bottom: 8px;">📊 Resumo do Culto</h3>
             
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 25px; margin-top: 20px;">
-                <div>
-                    <label style="display:block; font-weight:bold; margin-bottom:5px;">Visitantes Adultos</label>
-                    <input type="number" id="vis_adultos" value="0" min="0" onchange="atualizarContadores()" onkeyup="atualizarContadores()" style="width:100%; padding:10px; border-radius:8px; border:1px solid #ccc; font-size:1rem;">
+                <div style="text-align: center;">
+                    <label style="display:block; font-weight:bold; margin-bottom:8px;">Visitantes Adultos</label>
+                    <div style="display: flex; justify-content: center; align-items: center; gap: 10px;">
+                        <button type="button" onclick="ajustarVisitante('vis_adultos', -1)" class="btn-ajuste btn-menos">-</button>
+                        <input type="number" id="vis_adultos" value="0" readonly class="input-ajuste">
+                        <button type="button" onclick="ajustarVisitante('vis_adultos', 1)" class="btn-ajuste btn-mais">+</button>
+                    </div>
                 </div>
-                <div>
-                    <label style="display:block; font-weight:bold; margin-bottom:5px;">Visitantes CIAs</label>
-                    <input type="number" id="vis_cias" value="0" min="0" onchange="atualizarContadores()" onkeyup="atualizarContadores()" style="width:100%; padding:10px; border-radius:8px; border:1px solid #ccc; font-size:1rem;">
+                <div style="text-align: center;">
+                    <label style="display:block; font-weight:bold; margin-bottom:8px;">Visitantes CIAs</label>
+                    <div style="display: flex; justify-content: center; align-items: center; gap: 10px;">
+                        <button type="button" onclick="ajustarVisitante('vis_cias', -1)" class="btn-ajuste btn-menos">-</button>
+                        <input type="number" id="vis_cias" value="0" readonly class="input-ajuste">
+                        <button type="button" onclick="ajustarVisitante('vis_cias', 1)" class="btn-ajuste btn-mais">+</button>
+                    </div>
                 </div>
             </div>
 
@@ -138,20 +175,16 @@
             const user = verificarAcesso(); 
             
             if (user) {
-                // 1. Configura data de hoje
-                const hoje = new Date().toLocaleDateString('pt-CA'); // Formato YYYY-MM-DD
+                const hoje = new Date().toLocaleDateString('pt-CA'); 
                 document.getElementById('data_chamada').value = hoje;
                 document.getElementById('infoChamada').innerText = `Grupo: ${user.grupo || 'Geral'}`;
                 
-                // 2. Carrega lista de chamada
                 await renderizarListaChamada();
                 
-                // 3. Carrega sugestões de nomes para os inputs
                 if (typeof carregarSugestoesMembros === 'function') {
                     await carregarSugestoesMembros();
                 }
                 
-                // 4. Inicia contagem do placar
                 if (typeof atualizarContadores === 'function') {
                     atualizarContadores();
                 }

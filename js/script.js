@@ -406,7 +406,7 @@ function gerarResumoWhatsApp() {
 
     let mensagem = `*⛪ ${nomeIgreja}*\n`;
     mensagem += `*📊 RESUMO: ${tipoEvento.toUpperCase()} - ${dataCulto}*\n\n`;
-    mensagem += `*PÚBLICO:*\n• Membros (Ad/Cia): ${membrosAd} / ${membrosCi}\n• Visitantes (Ad/Cia): ${totalVisAd} / ${totalVisCi}\n*⭐ TOTAL GERAL: ${totalGeral}*\n\n`;
+    mensagem += `*PÚBLICO:*\n• Membros (Adulto/Cia): ${membrosAd} / ${membrosCi}\n• Visitantes (Adulto/Cia): ${totalVisAd} / ${totalVisCi}\n*⭐ TOTAL GERAL: ${totalGeral}*\n\n`;
     mensagem += `*ESCALA:*\n${blocoEscala}📖 *Texto:* ${texto}\n`;
     if (obs) mensagem += `\n📝 *Obs:* ${obs}\n`;
     mensagem += `\n_Gerado via Sistema de Gestão ICM_`;

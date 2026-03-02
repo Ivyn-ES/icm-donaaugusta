@@ -399,17 +399,17 @@ function gerarResumoWhatsApp() {
     if (pregadorRaw === louvorRaw && pregadorRaw !== "") {
         blocoEscala = `👤 *Dirigente:* ${pregador}\n`;
     } else {
-        if (pregador) blocoEscala += `🎤 *Pregador:* ${pregador}\n`;
+        if (pregador) blocoEscala += `📖 *Pregador:* ${pregador}\n`;
         if (louvor)   blocoEscala += `🎶 *Louvor:* ${louvor}\n`;
     }
     blocoEscala += `🚪 *Portão:* ${portao}\n`;
 
-    let mensagem = `*⛪ ${nomeIgreja}*\n`;
+    let mensagem = `*${nomeIgreja}*\n`;
     mensagem += `*📊 RESUMO: ${tipoEvento.toUpperCase()} - ${dataCulto}*\n\n`;
     mensagem += `*PÚBLICO:*\n• Membros (Adulto/Cia): ${membrosAd} / ${membrosCi}\n• Visitantes (Adulto/Cia): ${totalVisAd} / ${totalVisCi}\n*⭐ TOTAL GERAL: ${totalGeral}*\n\n`;
     mensagem += `*ESCALA:*\n${blocoEscala}📖 *Texto:* ${texto}\n`;
     if (obs) mensagem += `\n📝 *Obs:* ${obs}\n`;
-    mensagem += `\n_Gerado via Sistema de Gestão ICM_`;
+    mensagem += `\n_Gerado Sistema Local ICM-Dona Augusta_`;
 
     window.open(`https://wa.me/?text=${encodeURIComponent(mensagem)}`, '_blank');
 }

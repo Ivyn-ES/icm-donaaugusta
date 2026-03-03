@@ -396,7 +396,8 @@ function encurtarNome(nomeCompleto) {
     return `${primeiroNome} ${ultimoSobrenome[0]}.`;
 }
 
-function gerarResumoWhatsApp() {
+    // Função gerar Resumo para WhatsApp
+    function gerarResumoWhatsApp() {
     const nomeIgreja = "ICM - Dona Augusta";
     const tipoEvento = document.getElementById('tipo_evento')?.value || "Evento";
     const dataCulto = document.getElementById('data_chamada')?.value || "";
@@ -429,20 +430,18 @@ function gerarResumoWhatsApp() {
 
     let mensagem = `*${nomeIgreja}*\n`;
     mensagem += `*📊 RESUMO: ${tipoEvento.toUpperCase()} - ${dataCulto}*\n\n`;
-    mensagem += `*PÚBLICO:*\n• Membros (Adulto/Cia): ${membrosAd} / ${membrosCi}\n• Visitantes (Adulto/Cia): ${totalVisAd} / ${totalVisCi}\n*⭐ TOTAL GERAL: ${totalGeral}*\n\n`;
+    mensagem += `*PÚBLICO:*\n• Membros (Ad/Cia): ${membrosAd} / ${membrosCi}\n• Visitantes (Ad/Cia): ${totalVisAd} / ${totalVisCi}\n*⭐ TOTAL GERAL: ${totalGeral}*\n\n`;
     mensagem += `*ESCALA:*\n${blocoEscala}📖 *Texto:* ${texto}\n`;
     if (obs) mensagem += `\n📝 *Obs:* ${obs}\n`;
     mensagem += `\n_Gerado Sistema Local ICM-Dona Augusta_`;
 
-    // Disparo limpo sem exibir a URL codificada na página
-    const url = `https://wa.me/?text=${encodeURIComponent(mensagem)}`;
-    const win = window.open(url, '_blank');
-    if (win) {
-        win.focus();
-    } else {
-        // Fallback caso o popup seja bloqueado
-        location.href = url;
-    }
+    // A MÁGICA PARA CELULAR:
+    // Usamos o link direto para a API do WhatsApp. 
+    // Em celulares, isso abre o App direto. No PC, abre o WhatsApp Web.
+    const url = `https://api.whatsapp.com/send?text=${encodeURIComponent(mensagem)}`;
+    
+    // Em vez de window.open, usamos o location.href para evitar abas em branco
+    window.location.href = url;
 }
 
 // ==========================================

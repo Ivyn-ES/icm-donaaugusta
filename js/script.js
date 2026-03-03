@@ -379,7 +379,7 @@ async function salvarChamada() {
 }
 
 // ==========================================
-// 5. MÓDULO DE AUTOMAÇÃO E WHATSAPP (Ajustado: Data BR, % e Nomes Curtos)
+// 5. MÓDULO DE AUTOMAÇÃO E WHATSAPP (Ajustado: Data BR, % com Alerta e Nomes Curtos)
 // ==========================================
 
 // Função auxiliar para formatar data (Ex: 2024-02-25 -> 25/Fev)
@@ -407,7 +407,7 @@ function encurtarNome(nomeCompleto) {
     return `${primeiroNome} ${ultimoSobrenome[0]}.`;
 }
 
-// Função gerar Resumo para WhatsApp (Atualizada com % e Data BR)
+// Função gerar Resumo para WhatsApp
 async function gerarResumoWhatsApp() {
     const nomeIgreja = "ICM - Dona Augusta";
     const tipoEvento = document.getElementById('tipo_evento')?.value || "Evento";
@@ -420,7 +420,7 @@ async function gerarResumoWhatsApp() {
     const totalVisCi = document.getElementById('cont_vis_cias_display')?.innerText || 0;
     const totalGeral = document.getElementById('cont_total')?.innerText || 0;
 
-    // Cálculo da Porcentagem de Presença de Membros
+    // Cálculo da Porcentagem de Presença de Membros com Círculos Coloridos
     let porcentagemTexto = "";
     try {
         const { count, error } = await _supabase
@@ -431,8 +431,12 @@ async function gerarResumoWhatsApp() {
         if (!error && count > 0) {
             const totalPresentes = membrosAd + membrosCi;
             const percentual = Math.round((totalPresentes / count) * 100);
+            
+            // Lógica do Círculo: < 50% Vermelho, >= 50% Verde
             let iconeAlerta = percentual < 50 ? "🔴" : "🟢";
-            porcentagemTexto = ` - *${percentual}%*`;
+            
+            // Agora incluímos o ícone na montagem do texto
+            porcentagemTexto = ` - ${iconeAlerta} *${percentual}%*`;
         }
     } catch (err) {
         console.error("Erro ao calcular %:", err);

@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chamada Especial / CIAs</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        .contador-group {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #eee;
+        }
+        .controls {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .btn-ctrl {
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            border: none;
+            background: #007bff;
+            color: white;
+            font-size: 20px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .btn-minus { background: #e74c3c; }
+        .count-val { font-size: 18px; font-weight: bold; min-width: 30px; text-align: center; }
+        .section-title { 
+            background: #f8f9fa; 
+            padding: 10px; 
+            border-radius: 8px; 
+            margin-top: 20px;
+            border-left: 5px solid #007bff;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header style="text-align: center; margin-bottom: 20px;">
+            <h1>📊 Eventos e CIAs</h1>
+            <a href="dashboard.html" style="text-decoration: none; color: #666;">⬅ Voltar</a>
+        </header>
+
+        <section class="card">
+            <label>Data do Evento</label>
+            <input type="date" id="data_especial" style="width: 100%; padding: 10px; margin-bottom: 10px;">
+            
+            <label>Descrição do Evento</label>
+            <input type="text" id="desc_evento" placeholder="Ex: Encontro de CIAs, Batismo..." style="width: 100%; padding: 10px;">
+        </section>
+
+        <h3 class="section-title">👥 MEMBROS</h3>
+        <div class="card" id="grupoMembros">
+            </div>
+
+        <h3 class="section-title">🌟 VISITANTES</h3>
+        <div class="card" id="grupoVisitantes">
+            </div>
+
+        <section style="margin-top: 20px; gap: 10px; display: flex; flex-direction: column;">
+            <button onclick="salvarEventoEspecial()" class="btn-acao" style="background: #2ecc71;">💾 Salvar Dados</button>
+            <button onclick="gerarWhatsEspecial()" class="btn-acao" style="background: #25d366;">📱 Resumo WhatsApp</button>
+        </section>
+    </div>
+
+    <script src="../js/script.js"></script>
+    <script>
+        // Inicialização rápida para carregar os campos
+        window.onload = () => {
+            const categorias = ["Varões", "Senhoras", "Jovens", "Adolescentes", "Intermediários", "Crianças", "Crianças de Colo"];
+            
+            const renderContadores = (containerId, prefixo) => {
+                const container = document.getElementById(containerId);
+                container.innerHTML = categorias.map(cat => `
+                    <div class="contador-group">
+                        <span>${cat}</span>
+                        <div class="controls">
+                            <button class="btn-ctrl btn-minus" onclick="alterarContador('${prefixo}_${cat}', -1)">-</button>
+                            <span class="count-val" id="val_${prefixo}_${cat}">0</span>
+                            <button class="btn-ctrl" onclick="alterarContador('${prefixo}_${cat}', 1)">+</button>
+                        </div>
+                    </div>
+                `).join('');
+            };
+
+            renderContadores('grupoMembros', 'membro');
+            renderContadores('grupoVisitantes', 'vis');
+            document.getElementById('data_especial').valueAsDate = new Date();
+        };
+
+        function alterarContador(id, delta) {
+            const el = document.getElementById(`val_${id}`);
+            let atual = parseInt(el.innerText);
+            atual = Math.max(0, atual + delta); // Não deixa ser menor que zero
+            el.innerText = atual;
+        }
+    </script>
+</body>
+</html>

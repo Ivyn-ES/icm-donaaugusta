@@ -862,3 +862,84 @@ document.addEventListener('DOMContentLoaded', () => {
         console.log("Módulo de Aniversariantes carregado.");
     }
 });
+
+// ==========================================
+// 11. MÓDULO DE EVENTOS ESPECIAIS E CIAs
+// ==========================================
+
+async function salvarEventoEspecial() {
+    const data_evento = document.getElementById('data_especial').value;
+    const descricao = document.getElementById('desc_evento').value.trim();
+
+    if (!data_evento || !descricao) {
+        alert("⚠️ Por favor, preencha a data e a descrição do evento.");
+        return;
+    }
+
+    // Capturando os valores de Membros e Visitantes
+    // Nota: Os IDs devem ser exatamente iguais aos gerados no HTML
+    const dados = {
+        data_evento,
+        descricao,
+        m_varoes: parseInt(document.getElementById('val_membro_Varões').innerText) || 0,
+        m_senhoras: parseInt(document.getElementById('val_membro_Senhoras').innerText) || 0,
+        m_jovens: parseInt(document.getElementById('val_membro_Jovens').innerText) || 0,
+        m_adolescentes: parseInt(document.getElementById('val_membro_Adolescentes').innerText) || 0,
+        m_intermediarios: parseInt(document.getElementById('val_membro_Intermediários').innerText) || 0,
+        m_criancas: parseInt(document.getElementById('val_membro_Crianças').innerText) || 0,
+        m_colo: parseInt(document.getElementById('val_membro_Crianças de Colo').innerText) || 0,
+        
+        v_varoes: parseInt(document.getElementById('val_vis_Varões').innerText) || 0,
+        v_senhoras: parseInt(document.getElementById('val_vis_Senhoras').innerText) || 0,
+        v_jovens: parseInt(document.getElementById('val_vis_Jovens').innerText) || 0,
+        v_adolescentes: parseInt(document.getElementById('val_vis_Adolescentes').innerText) || 0,
+        v_intermediarios: parseInt(document.getElementById('val_vis_Intermediários').innerText) || 0,
+        v_criancas: parseInt(document.getElementById('val_vis_Crianças').innerText) || 0,
+        v_colo: parseInt(document.getElementById('val_vis_Crianças de Colo').innerText) || 0
+    };
+
+    try {
+        const { error } = await _supabase.from('eventos_especiais').insert([dados]);
+        if (error) throw error;
+        alert("✅ Evento salvo com sucesso!");
+    } catch (err) {
+        console.error(err);
+        alert("❌ Erro ao salvar evento especial.");
+    }
+}
+
+function gerarWhatsEspecial() {
+    const nomeIgreja = "ICM - Dona Augusta";
+    const desc = document.getElementById('desc_evento').value || "Evento Especial";
+    const dataRaw = document.getElementById('data_especial').value;
+    const dataFmt = typeof formatarDataBR === "function" ? formatarDataBR(dataRaw) : dataRaw;
+
+    // Função interna para montar a lista COMPLETA (incluindo zeros)
+    const obterListaCompleta = (prefixo) => {
+        const cats = ["Varões", "Senhoras", "Jovens", "Adolescentes", "Intermediários", "Crianças", "Crianças de Colo"];
+        let lista = "";
+        let total = 0;
+        cats.forEach(c => {
+            const val = parseInt(document.getElementById(`val_${prefixo}_${c}`).innerText) || 0;
+            lista += `   • ${c}: ${val}\n`;
+            total += val;
+        });
+        return { lista, total };
+    };
+
+    const membros = obterListaCompleta('membro');
+    const visitantes = obterListaCompleta('vis');
+    const totalGeral = membros.total + visitantes.total;
+
+    let msg = `*${nomeIgreja}*\n`;
+    msg += `*📌 ${desc.toUpperCase()} - ${dataFmt}*\n\n`;
+    
+    msg += `*👥 MEMBROS:* (Total: ${membros.total})\n${membros.lista}\n`;
+    msg += `*🌟 VISITANTES:* (Total: ${visitantes.total})\n${visitantes.lista}\n`;
+    
+    msg += `*⭐ TOTAL GERAL: ${totalGeral}*\n\n`;
+    msg += `_Gerado Sistema Local ICM-Dona Augusta_`;
+
+    const url = `https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`;
+    window.location.href = url;
+}

@@ -2,40 +2,126 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Relatório de Presença - ICM</title>
     <link rel="stylesheet" href="../css/style.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        /* Estilos específicos para a área de pastoreio */
+        .secao-cuidado {
+            margin-top: 20px;
+            margin-bottom: 30px;
+            border-top: 5px solid #e74c3c;
+            background: #fff;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .badge-alerta {
+            background-color: #ffeaa7;
+            color: #d63031;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-weight: bold;
+            font-size: 0.85rem;
+        }
+        .btn-acao-mini {
+            border: none;
+            padding: 8px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            color: white;
+            font-size: 1.1rem;
+            transition: opacity 0.2s;
+        }
+        .btn-acao-mini:hover { opacity: 0.8; }
+        
+        .tabela-responsiva {
+            width: 100%;
+            overflow-x: auto;
+            margin-top: 10px;
+        }
+        
+        .classe-texto { color: #888; font-size: 0.8rem; }
+        
+        /* Ajuste para esconder seções por padrão */
+        #secaoCuidado { display: none; }
+    </style>
 </head>
 <body>
     <div class="container">
-        <header>
+        <header style="text-align: center; margin-bottom: 20px;">
             <h1>Relatório de Frequência</h1>
-            <button onclick="window.location.href='dashboard.html'" class="btn-voltar">⬅ Voltar</button>
+            <button onclick="window.location.href='dashboard.html'" class="btn-voltar">⬅ Voltar para Painel</button>
         </header>
 
-        <section class="filtros-relatorio">
-            <input type="date" id="filtroData">
-            <select id="filtroGrupoRelatorio">
+        <section class="filtros-relatorio card">
+            <h3 style="margin-top:0">🔍 Consulta por Culto</h3>
+            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                <input type="date" id="filtroData" style="flex: 1; min-width: 150px;">
+                <select id="filtroGrupoRelatorio" style="flex: 1; min-width: 150px;">
+                    <option value="">Todos os Grupos</option>
                 </select>
-            <button onclick="gerarRelatorio()" class="btn-primario">Gerar Relatório</button>
+                <button onclick="gerarRelatorio()" class="btn-primario" style="flex: 1;">Gerar Relatório</button>
+            </div>
         </section>
 
-        <div id="resumoCards" class="grid-resumo">
+        <div id="resumoCards" class="grid-resumo" style="margin-top: 20px;">
             </div>
 
-        <table id="tabelaRelatorio">
-            <thead>
-                <tr>
-                    <th>Nome</th>
-                    <th>Status</th>
-                    <th>Ação</th>
-                </tr>
-            </thead>
-            <tbody id="corpoRelatorio">
-                </tbody>
-        </table>
+        <section id="secaoCuidado" class="secao-cuidado">
+            <h3 style="color: #c0392b; margin: 0;">⚠️ Atenção: Membros Ausentes</h3>
+            <p style="font-size: 0.85rem; color: #666; margin-bottom: 15px;">
+                Regra: Membros > 7 dias | Idosos > 30 dias de ausência.
+            </p>
+            <div class="tabela-responsiva">
+                <table style="width: 100%; border-collapse: collapse;">
+                    <thead>
+                        <tr style="text-align: left; border-bottom: 2px solid #eee;">
+                            <th style="padding: 10px;">Membro</th>
+                            <th style="padding: 10px;">Última Vez</th>
+                            <th style="padding: 10px;">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="corpoCuidado">
+                        </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section class="card" style="margin-top: 20px;">
+            <h3>📋 Detalhamento da Chamada</h3>
+            <table id="tabelaRelatorio" style="width: 100%;">
+                <thead>
+                    <tr style="text-align: left; border-bottom: 2px solid #eee;">
+                        <th style="padding: 10px;">Nome</th>
+                        <th style="padding: 10px;">Status</th>
+                        <th style="padding: 10px;">Ação</th>
+                    </tr>
+                </thead>
+                <tbody id="corpoRelatorio">
+                    </tbody>
+            </table>
+        </section>
     </div>
 
     <script src="../js/script.js"></script>
+    <script>
+        // Ao carregar a página, inicia os módulos necessários
+        document.addEventListener('DOMContentLoaded', () => {
+            // Define data de hoje no filtro por padrão
+            document.getElementById('filtroData').valueAsDate = new Date();
+            
+            // Tenta carregar a lista de cuidado (Módulo 12)
+            if (typeof carregarListaCuidado === "function") {
+                carregarListaCuidado();
+            }
+
+            // Carregar grupos no select (se a função existir no script.js)
+            if (typeof popularGruposRelatorio === "function") {
+                popularGruposRelatorio();
+            }
+        });
+    </script>
 </body>
 </html>

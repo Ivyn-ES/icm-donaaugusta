@@ -140,7 +140,8 @@ async function cadastrarMembro(dados) {
     const user = verificarAcesso();
     const nivel = (user?.permissao || user?.nivel || "").toLowerCase();
 
-    if (nivel !== 'admin' && nivel !== 'master' && nivel !== 'coordenadora') {
+    // Mantendo sua regra de permissão
+    if (nivel !== 'admin' && nivel !== 'master' && nivel !== 'coordenadora' && nivel !== 'pastor') {
         alert("❌ Sem permissão para cadastrar membros.");
         return false;
     }
@@ -149,19 +150,24 @@ async function cadastrarMembro(dados) {
         const { error } = await _supabase.from('membros').insert([{
             nome: dados.nome, 
             apelido: dados.apelido, 
+            telefone: dados.telefone, // NOVO CAMPO
             funcao: dados.funcao,
             situacao: dados.situacao, 
             categoria: dados.categoria, 
             sexo: dados.sexo,
+            eh_idoso: dados.eh_idoso,   // NOVO CAMPO (Boolean)
             grupo: dados.grupo, 
             dia: parseInt(dados.niver_dia) || 0, 
             mes: dados.niver_mes,
+            // Mantém sua lógica: se não vier ID de família, gera um novo UUID
             familia_id: dados.familia_vinculo || crypto.randomUUID(), 
             status_registro: 'Ativo'
         }]);
 
         if (error) throw error;
-        return true; // Sucesso (O alert já está no HTML)
+        
+        alert("✅ Membro cadastrado com sucesso!");
+        return true; 
     } catch (err) { 
         console.error("Erro no cadastro:", err);
         alert("Erro ao cadastrar: " + err.message); 
@@ -169,12 +175,13 @@ async function cadastrarMembro(dados) {
     }
 }
 
-// NOVA FUNÇÃO: Atualizar membro existente
+// NOVA FUNÇÃO: Atualizar membro existente (Versão Final)
 async function atualizarMembro(id, dados) {
     const user = verificarAcesso();
     const nivel = (user?.permissao || user?.nivel || "").toLowerCase();
 
-    if (nivel !== 'admin' && nivel !== 'master' && nivel !== 'coordenadora') {
+    // Mantendo seu padrão de permissões
+    if (nivel !== 'admin' && nivel !== 'master' && nivel !== 'coordenadora' && nivel !== 'pastor') {
         alert("❌ Sem permissão para editar.");
         return false;
     }
@@ -183,17 +190,22 @@ async function atualizarMembro(id, dados) {
         const { error } = await _supabase.from('membros').update({
             nome: dados.nome,
             apelido: dados.apelido,
+            telefone: dados.telefone, // NOVO CAMPO
             funcao: dados.funcao,
             situacao: dados.situacao,
             categoria: dados.categoria,
             sexo: dados.sexo,
+            eh_idoso: dados.eh_idoso,   // NOVO CAMPO
             grupo: dados.grupo,
             dia: parseInt(dados.niver_dia) || 0,
             mes: dados.niver_mes,
+            // Mantém a lógica de família existente ou gera novo ID
             familia_id: dados.familia_vinculo || crypto.randomUUID()
         }).eq('id', id);
 
         if (error) throw error;
+        
+        alert("✅ Dados atualizados com sucesso!");
         return true;
     } catch (err) {
         console.error("Erro ao atualizar:", err);
@@ -942,4 +954,126 @@ function gerarWhatsEspecial() {
 
     const url = `https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`;
     window.location.href = url;
+}
+
+// ==========================================
+// 12. MÓDULO DE ACOMPANHAMENTO E CUIDADO (PASTOREIO)
+// ==========================================
+
+async function carregarListaCuidado() {
+    const listaCorpo = document.getElementById('corpoCuidado');
+    const secaoCuidado = document.getElementById('secaoCuidado');
+    if (!listaCorpo) return;
+
+    // 0. Verificação de Perfil (Somente Pastor e Admin acessam a lógica)
+    const user = JSON.parse(localStorage.getItem('user_icm'));
+    if (!user || (user.nivel !== 'Pastor' && user.nivel !== 'Admin')) {
+        if (secaoCuidado) secaoCuidado.style.display = 'none';
+        return;
+    }
+
+    listaCorpo.innerHTML = "<tr><td colspan='3' style='text-align:center;'>Analisando frequências...</td></tr>";
+
+    try {
+        // 1. Busca todos os membros ativos
+        const { data: membros, error: errM } = await _supabase
+            .from('membros')
+            .select('id, nome, categoria, telefone, ultimo_cuidado');
+
+        // 2. Busca a última presença de cada um na tabela de frequencia_membros (individual)
+        // Nota: Certifique-se que o nome da tabela no Supabase é 'frequencia_membros' ou ajuste abaixo
+        const { data: presencas, error: errP } = await _supabase
+            .from('frequencia_membros') 
+            .select('membro_id, data_presenca')
+            .order('data_presenca', { ascending: false });
+
+        if (errM) throw errM;
+
+        const hoje = new Date();
+        hoje.setHours(0, 0, 0, 0); // Zera as horas para cálculo de dias exatos
+        let html = "";
+        let encontrouAusentes = false;
+
+        membros.forEach(m => {
+            // Filtra a última presença deste membro específico
+            const ultimaPresencaObj = presencas ? presencas.find(p => p.membro_id === m.id) : null;
+            
+            // Define data de referência inicial (se nunca veio, usamos uma data bem antiga)
+            let dataRef = ultimaPresencaObj ? new Date(ultimaPresencaObj.data_presenca) : new Date(2000, 0, 1);
+            
+            // Se ele teve um cuidado registrado (Botão Resolvido), comparamos qual data é mais recente
+            if (m.ultimo_cuidado) {
+                const dataCuidado = new Date(m.ultimo_cuidado);
+                if (dataCuidado > dataRef) dataRef = dataCuidado;
+            }
+
+            // Cálculo da diferença em dias
+            const diffTime = Math.abs(hoje - dataRef);
+            const diffDias = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+            // REGRAS DE CATEGORIA: 30 dias para Idosos, 7 dias para os demais
+            // O .toLowerCase() e .includes() evita erros se escrever "idoso" ou "Idosa"
+            const cat = m.categoria ? m.categoria.toLowerCase() : "";
+            const limite = (cat.includes('idoso') || cat.includes('idosa')) ? 30 : 7;
+
+            if (diffDias > limite) {
+                encontrouAusentes = true;
+                html += `
+                <tr style="border-bottom: 1px solid #eee;">
+                    <td style="padding: 10px;">
+                        <strong>${m.nome}</strong><br>
+                        <span class="classe-texto">${m.categoria || 'Membro'}</span>
+                    </td>
+                    <td style="padding: 10px;">
+                        <span class="badge-alerta">${diffDias} dias</span>
+                    </td>
+                    <td style="padding: 10px; display: flex; gap: 8px;">
+                        <button onclick="enviarWhatsCuidado('${m.telefone}', '${m.nome}')" class="btn-acao-mini" style="background:#25d366" title="Enviar Mensagem">💬</button>
+                        <button onclick="marcarComoResolvido('${m.id}')" class="btn-acao-mini" style="background:#3498db" title="Marcar como Resolvido">✅</button>
+                    </td>
+                </tr>`;
+            }
+        });
+
+        if (secaoCuidado) secaoCuidado.style.display = 'block';
+        listaCorpo.innerHTML = html || "<tr><td colspan='3' style='text-align:center; padding: 15px;'>✅ Todos os membros estão em dia!</td></tr>";
+
+    } catch (error) {
+        console.error("Erro no Módulo 12:", error);
+        listaCorpo.innerHTML = "<tr><td colspan='3' style='text-align:center; color: red;'>Erro ao processar dados.</td></tr>";
+    }
+}
+
+async function marcarComoResolvido(idMembro) {
+    if (!confirm("Confirmar que este membro foi assistido/visitado?")) return;
+
+    // Pega a data de hoje no formato YYYY-MM-DD
+    const hoje = new Date().toISOString().split('T')[0];
+
+    try {
+        const { error } = await _supabase
+            .from('membros')
+            .update({ ultimo_cuidado: hoje })
+            .eq('id', idMembro);
+
+        if (error) throw error;
+
+        alert("📖 Cuidado registrado! O nome sairá da lista temporariamente.");
+        carregarListaCuidado(); // Recarrega a lista para remover o irmão atendido
+    } catch (err) {
+        console.error(err);
+        alert("Erro ao salvar o atendimento.");
+    }
+}
+
+function enviarWhatsCuidado(tel, nome) {
+    if (!tel) {
+        alert("Este membro não possui telefone cadastrado.");
+        return;
+    }
+    // Remove qualquer caractere que não seja número (evita erros no link)
+    const telLimpo = tel.replace(/\D/g, '');
+    const msg = `A paz do Senhor, irmão(ã) ${nome}! Sentimos sua falta nos últimos dias. Está tudo bem? Como podemos orar por você?`;
+    
+    window.open(`https://api.whatsapp.com/send?phone=55${telLimpo}&text=${encodeURIComponent(msg)}`, '_blank');
 }

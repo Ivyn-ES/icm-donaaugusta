@@ -6,12 +6,51 @@
     <title>Cadastro - ICM Dona Augusta</title>
     <link rel="stylesheet" href="../css/style.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        /* Estilo para o seletor de Idoso */
+        .switch-container {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: #fff3e0;
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid #ffe0b2;
+            margin-bottom: 20px;
+        }
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 24px;
+        }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 24px;
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 16px; width: 16px;
+            left: 4px; bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        input:checked + .slider { background-color: #ff9800; }
+        input:checked + .slider:before { transform: translateX(26px); }
+    </style>
 </head>
 <body>
 
     <div class="container">
         <header style="text-align: center; margin-bottom: 20px;">
-            <h1>📝 Cadastro de Membros</h1>
+            <h1 id="tituloPagina">📝 Cadastro de Membros</h1>
             <p>Preencha os dados para salvar no sistema</p>
         </header>
 
@@ -25,9 +64,13 @@
 
                 <div class="campo" style="margin-top: 10px;">
                     <label for="apelido">Nome de Preferência (Apelido):</label>
-                    <input type="text" id="apelido" placeholder="Como a pessoa gosta de ser chamada?">
-                    <small style="color: #666;">Aparecerá na lista de chamada.</small>
+                    <input type="text" id="apelido" placeholder="Como gosta de ser chamado?">
                 </div>
+            </div>
+
+            <div class="campo" style="margin-bottom: 20px;">
+                <label for="telefone">WhatsApp (com DDD):</label>
+                <input type="tel" id="telefone" placeholder="27999998888" maxlength="11">
             </div>
 
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
@@ -49,16 +92,9 @@
                 </div>
             </div>
 
-            <div class="campo" style="margin-bottom: 20px;">
-                <label for="vinculo_familia">Vincular a uma Família existente? (Opcional)</label>
-                <select id="vinculo_familia">
-                    <option value="">Ninguém (Membro Individual / Novo Responsável)</option>
-                </select>
-            </div>
-
             <div class="linha-dupla">
                 <div class="campo">
-                    <label for="categoria">Categoria:</label>
+                    <label for="categoria">Classe/Categoria:</label>
                     <select id="categoria">
                         <option value="Adulto">Adulto</option>
                         <option value="Jovem">Jovem</option>
@@ -76,6 +112,24 @@
                 </div>
             </div>
 
+            <div class="switch-container">
+                <div>
+                    <span style="font-weight: bold; display: block;">👴 Membro Idoso?</span>
+                    <small style="color: #666;">Ativa regra de 30 dias de ausência</small>
+                </div>
+                <label class="switch">
+                    <input type="checkbox" id="eh_idoso">
+                    <span class="slider"></span>
+                </label>
+            </div>
+
+            <div class="campo" style="margin-bottom: 20px;">
+                <label for="vinculo_familia">Vincular a uma Família? (Opcional)</label>
+                <select id="vinculo_familia">
+                    <option value="">Ninguém (Membro Individual)</option>
+                </select>
+            </div>
+
             <div class="linha-dupla">
                 <div class="campo">
                     <label for="grupo_vinculado">Grupo:</label>
@@ -87,20 +141,14 @@
                 <div class="campo">
                     <label>Aniversário:</label>
                     <div style="display: flex; gap: 5px;">
-                        <input type="number" id="niver_dia" placeholder="Dia" min="1" max="31">
+                        <input type="number" id="niver_dia" placeholder="Dia" min="1" max="31" style="width: 60px;">
                         <select id="niver_mes">
-                            <option value="Janeiro">Jan</option>
-                            <option value="Fevereiro">Fev</option>
-                            <option value="Março">Mar</option>
-                            <option value="Abril">Abr</option>
-                            <option value="Maio">Mai</option>
-                            <option value="Junho">Jun</option>
-                            <option value="Julho">Jul</option>
-                            <option value="Agosto">Ago</option>
-                            <option value="Setembro">Set</option>
-                            <option value="Outubro">Out</option>
-                            <option value="Novembro">Nov</option>
-                            <option value="Dezembro">Dez</option>
+                            <option value="Janeiro">Jan</option><option value="Fevereiro">Fev</option>
+                            <option value="Março">Mar</option><option value="Abril">Abr</option>
+                            <option value="Maio">Mai</option><option value="Junho">Jun</option>
+                            <option value="Julho">Jul</option><option value="Agosto">Ago</option>
+                            <option value="Setembro">Set</option><option value="Outubro">Out</option>
+                            <option value="Novembro">Nov</option><option value="Dezembro">Dez</option>
                         </select>
                     </div>
                 </div>
@@ -120,13 +168,11 @@
 
         document.addEventListener('DOMContentLoaded', async () => {
             verificarAcesso(); 
-            
-            // Carrega os grupos (A função no script.js agora limpa o "Todos Admin" se achar o id 'grupo_vinculado')
             if (typeof carregarGruposNoSelect === 'function') await carregarGruposNoSelect();
             if (typeof carregarMembrosParaVinculo === 'function') await carregarMembrosParaVinculo();
 
             if (idEdicao) {
-                document.querySelector('h1').innerText = "✏️ Editar Membro";
+                document.getElementById('tituloPagina').innerText = "✏️ Editar Membro";
                 document.getElementById('btnSalvar').innerText = "Atualizar Dados";
                 await carregarDadosParaEdicao(idEdicao);
             }
@@ -134,17 +180,12 @@
 
         async function carregarDadosParaEdicao(id) {
             try {
-                const { data, error } = await _supabase
-                    .from('membros')
-                    .select('*')
-                    .eq('id', id)
-                    .single();
-
+                const { data, error } = await _supabase.from('membros').select('*').eq('id', id).single();
                 if (error) throw error;
-
                 if (data) {
                     document.getElementById('nome_completo').value = data.nome || "";
                     document.getElementById('apelido').value = data.apelido || "";
+                    document.getElementById('telefone').value = data.telefone || "";
                     document.getElementById('funcao').value = data.funcao || "Membro";
                     document.getElementById('vinculo_familia').value = data.familia_id || "";
                     document.getElementById('situacao').value = data.situacao || "Membro";
@@ -152,28 +193,22 @@
                     document.getElementById('categoria').value = data.categoria || "Adulto";
                     document.getElementById('grupo_vinculado').value = data.grupo || "";
                     document.getElementById('niver_dia').value = data.dia || ""; 
-                    document.getElementById('niver_mes').value = data.mes || "Janeiro"; 
+                    document.getElementById('niver_mes').value = data.mes || "Janeiro";
+                    document.getElementById('eh_idoso').checked = data.eh_idoso || false;
                 }
-            } catch (err) {
-                console.error("Erro ao carregar dados para edição:", err);
-            }
+            } catch (err) { console.error("Erro ao carregar edição:", err); }
         }
 
-        const form = document.getElementById('formCadastro');
-
-        form.addEventListener('submit', async (e) => {
+        document.getElementById('formCadastro').addEventListener('submit', async (e) => {
             e.preventDefault(); 
-            
-            const btnSalvar = document.getElementById('btnSalvar');
-            const textoOriginal = idEdicao ? 'Atualizar Dados' : 'Salvar no Supabase';
-            
-            // Bloqueia o botão para evitar cliques duplos
-            btnSalvar.disabled = true;
-            btnSalvar.innerText = '⌛ Processando...';
+            const btn = document.getElementById('btnSalvar');
+            btn.disabled = true;
+            btn.innerText = '⌛ Processando...';
 
-            const dadosParaEnviar = {
+            const dados = {
                 nome: document.getElementById('nome_completo').value.trim(),
                 apelido: document.getElementById('apelido').value.trim(),
+                telefone: document.getElementById('telefone').value.trim(),
                 funcao: document.getElementById('funcao').value,
                 familia_vinculo: document.getElementById('vinculo_familia').value,
                 situacao: document.getElementById('situacao').value,
@@ -181,40 +216,22 @@
                 categoria: document.getElementById('categoria').value,
                 grupo: document.getElementById('grupo_vinculado').value,
                 niver_dia: document.getElementById('niver_dia').value,
-                niver_mes: document.getElementById('niver_mes').value
+                niver_mes: document.getElementById('niver_mes').value,
+                eh_idoso: document.getElementById('eh_idoso').checked
             };
 
             try {
-                let sucesso = false;
-                if (idEdicao) {
-                    // Importante: Verifique se a função atualizarMembro existe no seu script.js
-                    if (typeof atualizarMembro === 'function') {
-                        sucesso = await atualizarMembro(idEdicao, dadosParaEnviar);
-                    } else {
-                        alert("Erro: Função atualizarMembro não encontrada no script.js");
-                    }
-                } else {
-                    sucesso = await cadastrarMembro(dadosParaEnviar);
-                }
-
+                let sucesso = idEdicao ? await atualizarMembro(idEdicao, dados) : await cadastrarMembro(dados);
                 if (sucesso) {
-                    // O alert agora é dado dentro das funções do script.js, mas reforçamos aqui se necessário
                     localStorage.removeItem('idMembroEdicao');
-                    if (idEdicao) {
-                        window.location.href = 'lista-membros.html';
-                    } else {
-                        form.reset();
-                        if (typeof carregarMembrosParaVinculo === 'function') await carregarMembrosParaVinculo(); 
+                    if (idEdicao) window.location.href = 'lista-membros.html';
+                    else {
+                        document.getElementById('formCadastro').reset();
+                        await carregarMembrosParaVinculo();
                     }
                 }
-            } catch (err) {
-                console.error("Erro no fluxo de salvamento:", err);
-                alert("Ocorreu um erro inesperado ao salvar.");
-            } finally {
-                // ISSO AQUI resolve o botão travado: ele sempre volta ao normal, dando erro ou não
-                btnSalvar.disabled = false;
-                btnSalvar.innerText = textoOriginal;
-            }
+            } catch (err) { alert("Erro ao salvar."); }
+            finally { btn.disabled = false; btn.innerText = idEdicao ? 'Atualizar Dados' : 'Salvar no Supabase'; }
         });
 
         function voltarComLimpeza() {

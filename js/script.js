@@ -379,35 +379,29 @@ async function salvarChamada() {
 }
 
 // ==========================================
-// 5. MÓDULO DE AUTOMAÇÃO E WHATSAPP (Ajustado: Data BR, % com Alerta e Nomes Curtos)
+// 5. MÓDULO DE AUTOMAÇÃO E WHATSAPP
 // ==========================================
 
-// Função auxiliar para formatar data (Ex: 2024-02-25 -> 25/Fev)
 function formatarDataBR(dataString) {
     if (!dataString) return "";
     const meses = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
     const partes = dataString.split("-");
     if (partes.length < 3) return dataString;
-    const dia = partes[2];
-    const mesIndex = parseInt(partes[1]) - 1;
-    return `${dia}/${meses[mesIndex]}`;
+    return `${partes[2]}/${meses[parseInt(partes[1]) - 1]}`;
 }
 
 function encurtarNome(nomeCompleto) {
     if (!nomeCompleto) return "";
     const partes = nomeCompleto.trim().split(" ");
     if (partes.length <= 1) return partes[0];
-    
     const primeiroNome = partes[0];
     let ultimoSobrenome = partes[partes.length - 1];
     if (["de", "da", "do", "dos", "das"].includes(ultimoSobrenome.toLowerCase()) && partes.length > 2) {
         ultimoSobrenome = partes[partes.length - 2];
     }
-    
     return `${primeiroNome} ${ultimoSobrenome[0]}.`;
 }
 
-// Função gerar Resumo para WhatsApp
 async function gerarResumoWhatsApp() {
     const nomeIgreja = "ICM - Dona Augusta";
     const tipoEvento = document.getElementById('tipo_evento')?.value || "Evento";
@@ -420,26 +414,27 @@ async function gerarResumoWhatsApp() {
     const totalVisCi = document.getElementById('cont_vis_cias_display')?.innerText || 0;
     const totalGeral = document.getElementById('cont_total')?.innerText || 0;
 
-    // Cálculo da Porcentagem de Presença de Membros com Círculos Coloridos
     let porcentagemTexto = "";
+    
     try {
+        // Busca total de ativos
         const { count, error } = await _supabase
             .from('membros')
             .select('*', { count: 'exact', head: true })
             .eq('status_registro', 'Ativo');
 
         if (!error && count > 0) {
-            const totalPresentes = membrosAd + membrosCi;
-            const percentual = Math.round((totalPresentes / count) * 100);
+            const totalPres = membrosAd + membrosCi;
+            const percentual = Math.round((totalPres / count) * 100);
             
-            // Lógica do Círculo: < 50% Vermelho, >= 50% Verde
-            let iconeAlerta = percentual < 50 ? "🔴" : "🟢";
+            // Forçamos a definição do ícone aqui
+            let icone = (percentual < 50) ? "🔴" : "🟢";
             
-            // Agora incluímos o ícone na montagem do texto
-            porcentagemTexto = ` - ${iconeAlerta} *${percentual}%*`;
+            // Montamos a string garantindo que o ícone venha ANTES do asterisco
+            porcentagemTexto = " - " + icone + " *" + percentual + "%*";
         }
     } catch (err) {
-        console.error("Erro ao calcular %:", err);
+        console.error("Erro na %:", err);
     }
 
     const pregadorRaw = document.getElementById('pregador_nome')?.value.trim() || "";
@@ -464,6 +459,7 @@ async function gerarResumoWhatsApp() {
 
     let mensagem = `*${nomeIgreja}*\n`;
     mensagem += `*📊 RESUMO ${tipoEvento.toUpperCase()} - ${dataFormatada}*\n\n`;
+    // Aqui injetamos a porcentagemTexto que já contém o círculo
     mensagem += `*PÚBLICO:*\n• Membros (Adulto/CIAs): ${membrosAd} / ${membrosCi}${porcentagemTexto}\n`;
     mensagem += `• Visitantes (Adulto/CIAs): ${totalVisAd} / ${totalVisCi}\n`;
     mensagem += `*⭐ TOTAL GERAL: ${totalGeral}*\n\n`;
@@ -472,6 +468,7 @@ async function gerarResumoWhatsApp() {
     if (obs) mensagem += `\n📝 *Obs:* ${obs}\n`;
     mensagem += `\n_Gerado Sistema Local ICM-Dona Augusta_`;
 
+    // Usando api.whatsapp.com para melhor compatibilidade com emojis no mobile
     const url = `https://api.whatsapp.com/send?text=${encodeURIComponent(mensagem)}`;
     window.location.href = url;
 }

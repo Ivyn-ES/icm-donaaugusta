@@ -20,6 +20,11 @@
                 Fazer Chamada
             </button>
 
+            <button id="btnEventos" onclick="window.location.href='chamada-especial.html'" class="btn-menu" style="background-color: #e67e22;">
+                <span style="font-size: 2rem; display: block;">⭐</span>
+                Eventos / CIAs
+            </button>
+
             <button id="idBtnCadastro" onclick="window.location.href='cadastro-membro.html'" class="btn-menu" style="background-color: #57606f;">
                 <span style="font-size: 2rem; display: block;">👤</span>
                 Cadastrar Membro
@@ -64,7 +69,6 @@
                 saudacao.innerText = `Logado como: ${user.nome} | Nível: ${user.nivel}`;
 
                 // Chama a função global de permissões que está no script.js
-                // Isso garante que os botões sumam/apareçam conforme o perfil logado
                 if (typeof ajustarInterfacePorPerfil === "function") {
                     ajustarInterfacePorPerfil();
                 }

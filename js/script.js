@@ -379,8 +379,19 @@ async function salvarChamada() {
 }
 
 // ==========================================
-// 5. MÓDULO DE AUTOMAÇÃO E WHATSAPP (Ajustado: Link limpo e Nomes Curtos)
+// 5. MÓDULO DE AUTOMAÇÃO E WHATSAPP (Ajustado: Data BR, % e Nomes Curtos)
 // ==========================================
+
+// Função auxiliar para formatar data (Ex: 2024-02-25 -> 25/Fev)
+function formatarDataBR(dataString) {
+    if (!dataString) return "";
+    const meses = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
+    const partes = dataString.split("-");
+    if (partes.length < 3) return dataString;
+    const dia = partes[2];
+    const mesIndex = parseInt(partes[1]) - 1;
+    return `${dia}/${meses[mesIndex]}`;
+}
 
 function encurtarNome(nomeCompleto) {
     if (!nomeCompleto) return "";
@@ -396,17 +407,35 @@ function encurtarNome(nomeCompleto) {
     return `${primeiroNome} ${ultimoSobrenome[0]}.`;
 }
 
-    // Função gerar Resumo para WhatsApp
-    function gerarResumoWhatsApp() {
+// Função gerar Resumo para WhatsApp (Atualizada com % e Data BR)
+async function gerarResumoWhatsApp() {
     const nomeIgreja = "ICM - Dona Augusta";
     const tipoEvento = document.getElementById('tipo_evento')?.value || "Evento";
-    const dataCulto = document.getElementById('data_chamada')?.value || "";
+    const dataRaw = document.getElementById('data_chamada')?.value || "";
+    const dataFormatada = formatarDataBR(dataRaw);
 
-    const membrosAd = document.getElementById('cont_membros_adultos')?.innerText || 0;
-    const membrosCi = document.getElementById('cont_membros_cias')?.innerText || 0;
+    const membrosAd = parseInt(document.getElementById('cont_membros_adultos')?.innerText) || 0;
+    const membrosCi = parseInt(document.getElementById('cont_membros_cias')?.innerText) || 0;
     const totalVisAd = document.getElementById('cont_vis_adultos_display')?.innerText || 0;
     const totalVisCi = document.getElementById('cont_vis_cias_display')?.innerText || 0;
     const totalGeral = document.getElementById('cont_total')?.innerText || 0;
+
+    // Cálculo da Porcentagem de Presença de Membros
+    let porcentagemTexto = "";
+    try {
+        const { count, error } = await _supabase
+            .from('membros')
+            .select('*', { count: 'exact', head: true })
+            .eq('status_registro', 'Ativo');
+
+        if (!error && count > 0) {
+            const totalPresentes = membrosAd + membrosCi;
+            const percentual = Math.round((totalPresentes / count) * 100);
+            porcentagemTexto = ` - ${percentual}%`;
+        }
+    } catch (err) {
+        console.error("Erro ao calcular %:", err);
+    }
 
     const pregadorRaw = document.getElementById('pregador_nome')?.value.trim() || "";
     const louvorRaw   = document.getElementById('louvor_nome')?.value.trim() || "";
@@ -429,18 +458,16 @@ function encurtarNome(nomeCompleto) {
     blocoEscala += `🚪 *Portão:* ${portao}\n`;
 
     let mensagem = `*${nomeIgreja}*\n`;
-    mensagem += `*📊 RESUMO: ${tipoEvento.toUpperCase()} - ${dataCulto}*\n\n`;
-    mensagem += `*PÚBLICO:*\n• Membros (Ad/Cia): ${membrosAd} / ${membrosCi}\n• Visitantes (Ad/Cia): ${totalVisAd} / ${totalVisCi}\n*⭐ TOTAL GERAL: ${totalGeral}*\n\n`;
+    mensagem += `*📊 RESUMO ${tipoEvento.toUpperCase()} - ${dataFormatada}*\n\n`;
+    mensagem += `*PÚBLICO:*\n• Membros (Adulto/CIAs): ${membrosAd} / ${membrosCi}${porcentagemTexto}\n`;
+    mensagem += `• Visitantes (Adulto/CIAs): ${totalVisAd} / ${totalVisCi}\n`;
+    mensagem += `*⭐ TOTAL GERAL: ${totalGeral}*\n\n`;
     mensagem += `*ESCALA:*\n${blocoEscala}📖 *Texto:* ${texto}\n`;
+    
     if (obs) mensagem += `\n📝 *Obs:* ${obs}\n`;
     mensagem += `\n_Gerado Sistema Local ICM-Dona Augusta_`;
 
-    // A MÁGICA PARA CELULAR:
-    // Usamos o link direto para a API do WhatsApp. 
-    // Em celulares, isso abre o App direto. No PC, abre o WhatsApp Web.
     const url = `https://api.whatsapp.com/send?text=${encodeURIComponent(mensagem)}`;
-    
-    // Em vez de window.open, usamos o location.href para evitar abas em branco
     window.location.href = url;
 }
 

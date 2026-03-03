@@ -431,6 +431,7 @@ async function gerarResumoWhatsApp() {
         if (!error && count > 0) {
             const totalPresentes = membrosAd + membrosCi;
             const percentual = Math.round((totalPresentes / count) * 100);
+            let iconeAlerta = percentual < 50 ? "🔴" : "🟢";
             porcentagemTexto = ` - *${percentual}%*`;
         }
     } catch (err) {

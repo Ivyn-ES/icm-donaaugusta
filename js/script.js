@@ -255,7 +255,7 @@ async function excluirMembro(id) {
 }
 
 // ==========================================
-// 4. MÓDULO DE CHAMADA (PRESENÇA)
+// 4. MÓDULO DE CHAMADA (PRESENÇA) - Ajustado para não fechar
 // ==========================================
 
 async function renderizarListaChamada() {
@@ -325,44 +325,69 @@ async function salvarChamada() {
     const dataCulto = document.getElementById('data_chamada').value;
     const tipoEvento = document.getElementById('tipo_evento').value;
     const user = verificarAcesso();
+    
     if (!dataCulto) return alert("Selecione a data!");
+    
+    const textoOriginal = btn.innerText;
     btn.disabled = true;
+    btn.innerText = "⌛ Salvando...";
 
     const presencasMembros = Array.from(document.querySelectorAll('.check-presenca')).map(cb => ({
-        membro_id: cb.getAttribute('data-id'), data_culto: dataCulto, tipo_evento: tipoEvento, presenca: cb.checked
+        membro_id: cb.getAttribute('data-id'), 
+        data_culto: dataCulto, 
+        tipo_evento: tipoEvento, 
+        presenca: cb.checked
     }));
 
     const dadosAta = {
-        data_culto: dataCulto, tipo_evento: tipoEvento, grupo: user.grupo || 'Geral',
+        data_culto: dataCulto, 
+        tipo_evento: tipoEvento, 
+        grupo: user.grupo || 'Geral',
         vis_adultos: parseInt(document.getElementById('vis_adultos').value) || 0,
         vis_cias: parseInt(document.getElementById('vis_cias').value) || 0,
-        pregador_nome: document.getElementById('pregador_nome').value, pregador_funcao: document.getElementById('pregador_funcao').value,
-        texto_biblico: document.getElementById('texto_biblico').value, louvor_nome: document.getElementById('louvor_nome').value,
-        louvor_funcao: document.getElementById('louvor_funcao').value, portao_nome: document.getElementById('portao_nome').value,
+        pregador_nome: document.getElementById('pregador_nome').value, 
+        pregador_funcao: document.getElementById('pregador_funcao').value,
+        texto_biblico: document.getElementById('texto_biblico').value, 
+        louvor_nome: document.getElementById('louvor_nome').value,
+        louvor_funcao: document.getElementById('louvor_funcao').value, 
+        portao_nome: document.getElementById('portao_nome').value,
         portao_funcao: document.getElementById('portao_funcao').value,
         observacoes: document.getElementById('observacoes_culto')?.value || ""
     };
 
     try {
-        await _supabase.from('presencas').upsert(presencasMembros, { onConflict: 'membro_id, data_culto, tipo_evento' });
-        await _supabase.from('resumo_culto').upsert([dadosAta], { onConflict: 'data_culto, tipo_evento, grupo' });
-        alert(`✅ Salvo com sucesso!`);
-        window.location.href = 'dashboard.html';
-    } catch (err) { alert("Erro: " + err.message); btn.disabled = false; }
+        const { error: errP } = await _supabase.from('presencas').upsert(presencasMembros, { onConflict: 'membro_id, data_culto, tipo_evento' });
+        if (errP) throw errP;
+
+        const { error: errR } = await _supabase.from('resumo_culto').upsert([dadosAta], { onConflict: 'data_culto, tipo_evento, grupo' });
+        if (errR) throw errR;
+
+        alert(`✅ Dados salvos com sucesso no sistema!`);
+        
+        // Mantém na tela e altera o texto do botão temporariamente
+        btn.innerText = "✅ Atualizado";
+        setTimeout(() => { 
+            btn.disabled = false;
+            btn.innerText = textoOriginal; 
+        }, 3000);
+
+    } catch (err) { 
+        alert("Erro ao salvar: " + err.message); 
+        btn.disabled = false; 
+        btn.innerText = textoOriginal;
+    }
 }
 
 // ==========================================
-// 5. MÓDULO DE AUTOMAÇÃO E WHATSAPP (Ajustado: Nomes Curtos)
+// 5. MÓDULO DE AUTOMAÇÃO E WHATSAPP (Ajustado: Link limpo e Nomes Curtos)
 // ==========================================
 
-// Função auxiliar para encurtar nomes (Ex: "João da Silva" -> "João S.")
 function encurtarNome(nomeCompleto) {
     if (!nomeCompleto) return "";
     const partes = nomeCompleto.trim().split(" ");
     if (partes.length <= 1) return partes[0];
     
     const primeiroNome = partes[0];
-    // Pega a primeira letra do último sobrenome (ignorando "de", "da", "do")
     let ultimoSobrenome = partes[partes.length - 1];
     if (["de", "da", "do", "dos", "das"].includes(ultimoSobrenome.toLowerCase()) && partes.length > 2) {
         ultimoSobrenome = partes[partes.length - 2];
@@ -376,14 +401,12 @@ function gerarResumoWhatsApp() {
     const tipoEvento = document.getElementById('tipo_evento')?.value || "Evento";
     const dataCulto = document.getElementById('data_chamada')?.value || "";
 
-    // Dados de Público
     const membrosAd = document.getElementById('cont_membros_adultos')?.innerText || 0;
     const membrosCi = document.getElementById('cont_membros_cias')?.innerText || 0;
     const totalVisAd = document.getElementById('cont_vis_adultos_display')?.innerText || 0;
     const totalVisCi = document.getElementById('cont_vis_cias_display')?.innerText || 0;
     const totalGeral = document.getElementById('cont_total')?.innerText || 0;
 
-    // Dados da Escala com Nomes Encurtados
     const pregadorRaw = document.getElementById('pregador_nome')?.value.trim() || "";
     const louvorRaw   = document.getElementById('louvor_nome')?.value.trim() || "";
     const portaoRaw   = document.getElementById('portao_nome')?.value.trim() || "Não informado";
@@ -399,7 +422,7 @@ function gerarResumoWhatsApp() {
     if (pregadorRaw === louvorRaw && pregadorRaw !== "") {
         blocoEscala = `👤 *Dirigente:* ${pregador}\n`;
     } else {
-        if (pregador) blocoEscala += `📖 *Pregador:* ${pregador}\n`;
+        if (pregador) blocoEscala += `🎤 *Pregador:* ${pregador}\n`;
         if (louvor)   blocoEscala += `🎶 *Louvor:* ${louvor}\n`;
     }
     blocoEscala += `🚪 *Portão:* ${portao}\n`;
@@ -411,7 +434,15 @@ function gerarResumoWhatsApp() {
     if (obs) mensagem += `\n📝 *Obs:* ${obs}\n`;
     mensagem += `\n_Gerado Sistema Local ICM-Dona Augusta_`;
 
-    window.open(`https://wa.me/?text=${encodeURIComponent(mensagem)}`, '_blank');
+    // Disparo limpo sem exibir a URL codificada na página
+    const url = `https://wa.me/?text=${encodeURIComponent(mensagem)}`;
+    const win = window.open(url, '_blank');
+    if (win) {
+        win.focus();
+    } else {
+        // Fallback caso o popup seja bloqueado
+        location.href = url;
+    }
 }
 
 // ==========================================
@@ -557,9 +588,10 @@ async function deletarUsuario(id) {
     } catch (err) { alert("Erro ao remover usuário."); }
 }
 
+// AJUSTADO: Agora oculta o "Todos" na tela de cadastro de membros
 async function carregarGruposNoSelect() {
-    const selectUsuarios = document.getElementById('grupo_vinculado'); // Select na tela de Usuários
-    const selectMembros = document.getElementById('grupo');           // Select na tela de Membros
+    const selectUsuarios = document.getElementById('grupo_vinculado'); // Select na tela de Criar Usuários
+    const selectMembros = document.getElementById('grupo');           // Select na tela de Cadastro de Membros
     
     if (!selectUsuarios && !selectMembros) return;
 
@@ -569,9 +601,12 @@ async function carregarGruposNoSelect() {
 
         const optionsHtml = data.map(g => `<option value="${g.nome}">${g.nome}</option>`).join('');
 
+        // Para usuários (Configurações): Permite "Todos" para quem é Admin Geral
         if (selectUsuarios) {
             selectUsuarios.innerHTML = '<option value="">Todos (Admin)</option>' + optionsHtml;
         }
+        
+        // Para membros (Cadastro): Apenas grupos reais, sem a opção "Todos"
         if (selectMembros) {
             selectMembros.innerHTML = '<option value="">Selecione o Grupo</option>' + optionsHtml;
         }

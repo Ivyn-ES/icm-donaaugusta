@@ -6,10 +6,10 @@
     <title>Chamada - ICM</title>
     <link rel="stylesheet" href="../css/style.css">
     <style>
-        /* Estilo para os botões de ajuste de visitantes (Dedos de Marshmallow) */
+        /* Estilo para os botões de ajuste de visitantes */
         .btn-ajuste {
-            width: 30px;
-            height: 30px;
+            width: 35px;
+            height: 35px;
             border: none;
             border-radius: 8px;
             font-size: 1.2rem;
@@ -32,6 +32,21 @@
             border: 1px solid #ddd;
             border-radius: 8px;
             background: #fdfdfd;
+        }
+        /* Destaque para o campo de busca */
+        .busca-container {
+            margin-bottom: 15px;
+            position: sticky;
+            top: 10px;
+            z-index: 100;
+        }
+        #inputBusca {
+            width: 100%;
+            padding: 15px;
+            border-radius: 12px;
+            border: 2px solid #007bff;
+            font-size: 1.1rem;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
         }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -57,21 +72,22 @@
         </header>
 
         <div id="placar-chamada" style="font-size: 0.9rem; background: #f8f9fa; padding: 15px; border-radius: 12px; margin-bottom: 20px; display: flex; justify-content: space-around; flex-wrap: wrap; border: 1px solid #dee2e6; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
-            
             <div style="text-align: center; margin: 5px;">
                 <span style="display: block; font-weight: bold; color: #2c3e50; margin-bottom: 5px;">👥 Membros</span>
-                <small>Adulto: <span id="cont_membros_adultos" style="font-weight: bold;">0</span> | CIAs: <span id="cont_membros_cias" style="font-weight: bold;">0</span></small>
+                <small>Ad: <span id="cont_membros_adultos">0</span> | CIAs: <span id="cont_membros_cias">0</span></small>
             </div>
-
             <div style="text-align: center; margin: 5px;">
                 <span style="display: block; font-weight: bold; color: #2c3e50; margin-bottom: 5px;">🌟 Visitantes</span>
-                <small>Adulto: <span id="cont_vis_adultos_display" style="font-weight: bold;">0</span> | CIAs: <span id="cont_vis_cias_display" style="font-weight: bold;">0</span></small>
+                <small>Ad: <span id="cont_vis_adultos_display">0</span> | CIAs: <span id="cont_vis_cias_display">0</span></small>
             </div>
-
             <div style="text-align: center; margin: 5px; border-left: 2px solid #eee; padding-left: 15px;">
                 <span style="display: block; font-weight: bold; color: #d32f2f; margin-bottom: 5px;">Total Geral</span>
                 <span id="cont_total" style="font-size: 1.2rem; font-weight: 900;">0</span>
             </div>
+        </div>
+
+        <div class="busca-container">
+            <input type="text" id="inputBusca" placeholder="🔍 Digite o nome ou apelido..." oninput="filtrarListaMembros()">
         </div>
 
         <section style="margin-bottom: 30px;">
@@ -88,7 +104,7 @@
             
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 25px; margin-top: 20px;">
                 <div style="text-align: center;">
-                    <label style="display:block; font-weight:bold; margin-bottom:8px;">Visitantes Adultos</label>
+                    <label style="display:block; font-weight:bold; margin-bottom:8px;">Vis. Adultos</label>
                     <div style="display: flex; justify-content: center; align-items: center; gap: 10px;">
                         <button type="button" onclick="ajustarVisitante('vis_adultos', -1)" class="btn-ajuste btn-menos">-</button>
                         <input type="number" id="vis_adultos" value="0" readonly class="input-ajuste">
@@ -96,7 +112,7 @@
                     </div>
                 </div>
                 <div style="text-align: center;">
-                    <label style="display:block; font-weight:bold; margin-bottom:8px;">Visitantes CIAs</label>
+                    <label style="display:block; font-weight:bold; margin-bottom:8px;">Vis. CIAs</label>
                     <div style="display: flex; justify-content: center; align-items: center; gap: 10px;">
                         <button type="button" onclick="ajustarVisitante('vis_cias', -1)" class="btn-ajuste btn-menos">-</button>
                         <input type="number" id="vis_cias" value="0" readonly class="input-ajuste">
@@ -107,8 +123,8 @@
 
             <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 10px; margin-bottom: 15px;">
                 <div>
-                    <label style="display:block; font-weight:bold; margin-bottom:5px;">Pregador (Nome)</label>
-                    <input type="text" id="pregador_nome" list="listaMembrosSugestao" oninput="autoSelecionarFuncao(this, 'pregador_funcao')" placeholder="Quem pregou?" style="width:100%; padding:10px; border-radius:8px; border:1px solid #ccc;">
+                    <label style="display:block; font-weight:bold; margin-bottom:5px;">Pregador</label>
+                    <input type="text" id="pregador_nome" list="listaMembrosSugestao" oninput="autoSelecionarFuncao(this, 'pregador_funcao')" placeholder="Nome..." style="width:100%; padding:10px; border-radius:8px; border:1px solid #ccc;">
                 </div>
                 <div>
                     <label style="display:block; font-weight:bold; margin-bottom:5px;">Função</label>
@@ -123,14 +139,14 @@
             </div>
 
             <div style="margin-bottom: 20px;">
-                <label style="display:block; font-weight:bold; margin-bottom:5px;">Mensagem (Texto Bíblico)</label>
+                <label style="display:block; font-weight:bold; margin-bottom:5px;">📖 Texto Bíblico</label>
                 <input type="text" id="texto_biblico" placeholder="Ex: Efésios 2:8" style="width:100%; padding:10px; border-radius:8px; border:1px solid #ccc;">
             </div>
 
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
                 <div>
-                    <label style="display:block; font-weight:bold; margin-bottom:5px;">Louvor</label>
-                    <input type="text" id="louvor_nome" list="listaMembrosSugestao" oninput="autoSelecionarFuncao(this, 'louvor_funcao')" placeholder="Dirigiu o louvor?" style="width:100%; padding:10px; margin-bottom:5px; border-radius:8px; border:1px solid #ccc;">
+                    <label style="display:block; font-weight:bold; margin-bottom:5px;">🎶 Louvor</label>
+                    <input type="text" id="louvor_nome" list="listaMembrosSugestao" oninput="autoSelecionarFuncao(this, 'louvor_funcao')" placeholder="Nome..." style="width:100%; padding:10px; border-radius:8px; border:1px solid #ccc; margin-bottom:5px;">
                     <select id="louvor_funcao" style="width:100%; padding:10px; border-radius:8px; border:1px solid #ccc;">
                         <option value="Membro">Membro</option>
                         <option value="Obreiro">Obreiro</option>
@@ -139,8 +155,8 @@
                     </select>
                 </div>
                 <div>
-                    <label style="display:block; font-weight:bold; margin-bottom:5px;">Portão</label>
-                    <input type="text" id="portao_nome" list="listaMembrosSugestao" oninput="autoSelecionarFuncao(this, 'portao_funcao')" placeholder="Ficou no portão?" style="width:100%; padding:10px; margin-bottom:5px; border-radius:8px; border:1px solid #ccc;">
+                    <label style="display:block; font-weight:bold; margin-bottom:5px;">🚪 Portão</label>
+                    <input type="text" id="portao_nome" list="listaMembrosSugestao" oninput="autoSelecionarFuncao(this, 'portao_funcao')" placeholder="Nome..." style="width:100%; padding:10px; border-radius:8px; border:1px solid #ccc; margin-bottom:5px;">
                     <select id="portao_funcao" style="width:100%; padding:10px; border-radius:8px; border:1px solid #ccc;">
                         <option value="Obreiro">Obreiro</option>
                         <option value="Diácono">Diácono</option>
@@ -150,15 +166,15 @@
             </div>
 
             <div style="margin-bottom: 10px;">
-                <label style="display:block; font-weight:bold; margin-bottom:5px;">📝 Observações/Anotações</label>
-                <textarea id="observacoes_culto" rows="3" placeholder="Algo especial aconteceu no culto?" style="width:100%; padding:10px; border-radius:8px; border:1px solid #ccc; font-family:inherit;"></textarea>
+                <label style="display:block; font-weight:bold; margin-bottom:5px;">📝 Observações</label>
+                <textarea id="observacoes_culto" rows="3" placeholder="Anotações especiais..." style="width:100%; padding:10px; border-radius:8px; border:1px solid #ccc; font-family:inherit;"></textarea>
             </div>
         </section>
 
         <div style="margin-top: 30px; display: flex; flex-direction: column; gap: 12px;">
-            <button onclick="salvarChamada()" class="btn-salvar" id="btnFinalizar" style="padding: 18px; font-size: 1.2rem; font-weight: bold; cursor: pointer; border: none; border-radius: 10px; background-color: #007bff; color: white;">Atualizar dados</button>
+            <button onclick="salvarChamada()" class="btn-salvar" id="btnFinalizar" style="padding: 18px; font-size: 1.2rem; font-weight: bold; background-color: #007bff; color: white; border: none; border-radius: 10px;">Atualizar dados</button>
             
-            <button onclick="gerarResumoWhatsApp()" class="btn-menu" style="background-color: #25d366; width: 100%; padding: 15px; color: white; border: none; border-radius: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px;">
+            <button onclick="gerarResumoWhatsApp()" style="background-color: #25d366; width: 100%; padding: 15px; color: white; border: none; border-radius: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px;">
                 <span style="font-size: 1.5rem;">📱</span> 
                 <span style="font-weight: bold;">Gerar Resumo para WhatsApp</span>
             </button>
@@ -173,23 +189,33 @@
     <script>
         document.addEventListener('DOMContentLoaded', async () => {
             const user = verificarAcesso(); 
-            
             if (user) {
                 const hoje = new Date().toLocaleDateString('pt-CA'); 
                 document.getElementById('data_chamada').value = hoje;
                 document.getElementById('infoChamada').innerText = `Grupo: ${user.grupo || 'Geral'}`;
                 
                 await renderizarListaChamada();
-                
-                if (typeof carregarSugestoesMembros === 'function') {
-                    await carregarSugestoesMembros();
-                }
-                
-                if (typeof atualizarContadores === 'function') {
-                    atualizarContadores();
-                }
+                if (typeof carregarSugestoesMembros === 'function') await carregarSugestoesMembros();
+                if (typeof atualizarContadores === 'function') atualizarContadores();
             }
         });
+
+        // Função de filtro para celular (Busca por nome ou apelido)
+        function filtrarListaMembros() {
+            const termo = document.getElementById('inputBusca').value.toLowerCase();
+            const blocos = document.querySelectorAll('.membro-card'); // Ajuste o seletor conforme seu card de membro
+
+            blocos.forEach(bloco => {
+                const nome = bloco.querySelector('.nome-membro')?.innerText.toLowerCase() || "";
+                const apelido = bloco.querySelector('.apelido-membro')?.innerText.toLowerCase() || "";
+                
+                if (nome.includes(termo) || apelido.includes(termo)) {
+                    bloco.style.display = "flex";
+                } else {
+                    bloco.style.display = "none";
+                }
+            });
+        }
     </script>
 </body>
 </html>

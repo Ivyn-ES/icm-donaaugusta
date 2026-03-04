@@ -1069,3 +1069,21 @@ function enviarWhatsCuidado(tel, nome) {
     
     window.open(`https://api.whatsapp.com/send?phone=55${telLimpo}&text=${encodeURIComponent(msg)}`, '_blank');
 }
+
+// Função para filtrar os membros na tela de chamada (Busca dinâmica)
+function filtrarListaMembros() {
+    const termo = document.getElementById('inputBusca').value.toLowerCase();
+    // Aqui pegamos todos os itens dentro da div listaChamada
+    const membros = document.querySelectorAll('#listaChamada > div');
+
+    membros.forEach(bloco => {
+        // Pega o texto do nome/apelido que está dentro do bloco
+        const textoMembro = bloco.innerText.toLowerCase();
+        
+        if (textoMembro.includes(termo)) {
+            bloco.style.display = "flex"; // Mostra o bloco (flex para manter o alinhamento)
+        } else {
+            bloco.style.display = "none"; // Esconde o bloco
+        }
+    });
+}

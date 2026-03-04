@@ -53,6 +53,8 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
+    <datalist id="listaMembrosSugestao"></datalist>
+
     <div class="container">
         
         <header style="text-align: center; margin-bottom: 10px;">
@@ -71,6 +73,10 @@
                 <input type="date" id="data_chamada" onchange="renderizarListaChamada()" style="padding: 12px; border-radius: 8px; border: 1px solid #ccc; font-size: 1rem;">
             </div>
         </header>
+
+        <div class="busca-container">
+            <input type="text" id="inputBusca" placeholder="🔍 Buscar membro na lista..." onkeyup="filtrarListaMembros()">
+        </div>
 
         <div id="placar-chamada" style="font-size: 0.9rem; background: #f8f9fa; padding: 15px; border-radius: 12px; margin-bottom: 20px; display: flex; justify-content: space-around; flex-wrap: wrap; border: 1px solid #dee2e6; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
             <div style="text-align: center; margin: 5px;">
@@ -121,7 +127,7 @@
             <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 10px; margin-bottom: 15px;">
                 <div>
                     <label style="display:block; font-weight:bold; margin-bottom:5px;">Pregador</label>
-                    <input type="text" id="pregador_nome" list="listaMembrosSugestao" oninput="autoSelecionarFuncao(this, 'pregador_funcao')" placeholder="Nome..." autocomplete="off" spellcheck="false" style="width:100%; padding:10px; border-radius:8px; border:1px solid #ccc;">
+                    <input type="search" id="pregador_nome" list="listaMembrosSugestao" oninput="autoSelecionarFuncao(this, 'pregador_funcao')" placeholder="Nome..." autocomplete="off" spellcheck="false" style="width:100%; padding:10px; border-radius:8px; border:1px solid #ccc;">
                 </div>
                 <div>
                     <label style="display:block; font-weight:bold; margin-bottom:5px;">Função</label>
@@ -143,7 +149,7 @@
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
                 <div>
                     <label style="display:block; font-weight:bold; margin-bottom:5px;">🎶 Louvor</label>
-                    <input type="text" id="louvor_nome" list="listaMembrosSugestao" oninput="autoSelecionarFuncao(this, 'louvor_funcao')" placeholder="Nome..." autocomplete="off" style="width:100%; padding:10px; border-radius:8px; border:1px solid #ccc; margin-bottom:5px;">
+                    <input type="search" id="louvor_nome" list="listaMembrosSugestao" oninput="autoSelecionarFuncao(this, 'louvor_funcao')" placeholder="Nome..." autocomplete="off" style="width:100%; padding:10px; border-radius:8px; border:1px solid #ccc; margin-bottom:5px;">
                     <select id="louvor_funcao" style="width:100%; padding:10px; border-radius:8px; border:1px solid #ccc;">
                         <option value="Membro">Membro</option>
                         <option value="Obreiro">Obreiro</option>
@@ -153,7 +159,7 @@
                 </div>
                 <div>
                     <label style="display:block; font-weight:bold; margin-bottom:5px;">🚪 Portão</label>
-                    <input type="text" id="portao_nome" list="listaMembrosSugestao" oninput="autoSelecionarFuncao(this, 'portao_funcao')" placeholder="Nome..." autocomplete="off" style="width:100%; padding:10px; border-radius:8px; border:1px solid #ccc; margin-bottom:5px;">
+                    <input type="search" id="portao_nome" list="listaMembrosSugestao" oninput="autoSelecionarFuncao(this, 'portao_funcao')" placeholder="Nome..." autocomplete="off" style="width:100%; padding:10px; border-radius:8px; border:1px solid #ccc; margin-bottom:5px;">
                     <select id="portao_funcao" style="width:100%; padding:10px; border-radius:8px; border:1px solid #ccc;">
                         <option value="Obreiro">Obreiro</option>
                         <option value="Diácono">Diácono</option>
@@ -180,47 +186,43 @@
         </div>
     </div>
 
-    <datalist id="listaMembrosSugestao"></datalist>
-
     <script src="../js/script.js"></script>
-<script>
-    document.addEventListener('DOMContentLoaded', async () => {
-        const user = JSON.parse(localStorage.getItem('usuarioLogado'));
-        if (user) {
-            // 1. Configurações Iniciais
-            const hoje = new Date().toISOString().split('T')[0]; 
-            document.getElementById('data_chamada').value = hoje;
-            document.getElementById('infoChamada').innerText = `Grupo: ${user.grupo_vinculado || 'Geral'}`;
-            
-            // 2. Renderiza a lista de presença primeiro
-            await renderizarListaChamada();
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            const user = JSON.parse(localStorage.getItem('usuarioLogado'));
+            if (user) {
+                const hoje = new Date().toISOString().split('T')[0]; 
+                document.getElementById('data_chamada').value = hoje;
+                document.getElementById('infoChamada').innerText = `Grupo: ${user.grupo_vinculado || 'Geral'}`;
+                
+                // Primeiro renderiza os cards
+                await renderizarListaChamada();
 
-            // 3. Aguarda um momento antes de carregar as sugestões (Essencial para Firefox Mobile)
-            setTimeout(async () => {
-                if (typeof carregarSugestoesMembros === 'function') {
-                    await carregarSugestoesMembros();
-                    console.log("Sugestões de membros carregadas.");
-                }
-                if (typeof atualizarContadores === 'function') {
-                    atualizarContadores();
-                }
-            }, 800); // 800 milissegundos é o tempo ideal
+                // Damos um tempo extra (1 segundo) para o Firefox Mobile reconhecer o datalist
+                setTimeout(async () => {
+                    if (typeof carregarSugestoesMembros === 'function') {
+                        await carregarSugestoesMembros();
+                        console.log("Sugestões carregadas com sucesso.");
+                    }
+                    if (typeof atualizarContadores === 'function') {
+                        atualizarContadores();
+                    }
+                }, 1000);
 
-        } else {
-            window.location.href = '../index.html';
-        }
-    });
-
-    // Filtro da lista de presença (cards)
-    function filtrarListaMembros() {
-        const termo = document.getElementById('inputBusca').value.toLowerCase().trim();
-        const cards = document.querySelectorAll('.card-chamada');
-
-        cards.forEach(card => {
-            const texto = card.innerText.toLowerCase();
-            card.style.display = texto.includes(termo) ? "flex" : "none";
+            } else {
+                window.location.href = '../index.html';
+            }
         });
-    }
-</script>
+
+        function filtrarListaMembros() {
+            const termo = document.getElementById('inputBusca').value.toLowerCase().trim();
+            const cards = document.querySelectorAll('.card-chamada');
+
+            cards.forEach(card => {
+                const texto = card.innerText.toLowerCase();
+                card.style.display = texto.includes(termo) ? "flex" : "none";
+            });
+        }
+    </script>
 </body>
 </html>

@@ -33,13 +33,13 @@
             border-radius: 8px;
             background: #fdfdfd;
         }
-        /* Destaque para o campo de busca fixo no topo */
+        /* Destaque para o campo de busca fixo no topo
         .busca-container {
             margin-bottom: 15px;
             position: sticky;
             top: 10px;
             z-index: 100;
-        }
+        }*/
         #inputBusca {
             width: 100%;
             padding: 15px;
@@ -73,10 +73,6 @@
                 <input type="date" id="data_chamada" onchange="renderizarListaChamada()" style="padding: 12px; border-radius: 8px; border: 1px solid #ccc; font-size: 1rem;">
             </div>
         </header>
-
-        <div class="busca-container">
-            <input type="text" id="inputBusca" placeholder="🔍 Buscar membro na lista..." onkeyup="filtrarListaMembros()">
-        </div>
 
         <div id="placar-chamada" style="font-size: 0.9rem; background: #f8f9fa; padding: 15px; border-radius: 12px; margin-bottom: 20px; display: flex; justify-content: space-around; flex-wrap: wrap; border: 1px solid #dee2e6; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
             <div style="text-align: center; margin: 5px;">

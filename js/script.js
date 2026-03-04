@@ -458,6 +458,9 @@ async function carregarSugestoesMembros() {
         
         window.membrosCache = data;
 
+        console.log("DEBUG: Nomes carregados no cache: ", window.membrosCache.length);
+        alert("O sistema carregou " + data.length + " nomes."); // Isso vai forçar um aviso na tela do seu celular
+
     } catch (err) {
         console.error("Erro ao carregar sugestões:", err);
     }

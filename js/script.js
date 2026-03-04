@@ -423,7 +423,6 @@ async function gerarResumoWhatsApp() {
     let porcentagemTexto = "";
     
     try {
-        // Busca total de ativos
         const { count, error } = await _supabase
             .from('membros')
             .select('*', { count: 'exact', head: true })
@@ -432,11 +431,7 @@ async function gerarResumoWhatsApp() {
         if (!error && count > 0) {
             const totalPres = membrosAd + membrosCi;
             const percentual = Math.round((totalPres / count) * 100);
-            
-            // Forçamos a definição do ícone aqui
             let icone = (percentual < 50) ? "🔴" : "🟢";
-            
-            // Montamos a string garantindo que o ícone venha ANTES do asterisco
             porcentagemTexto = " - " + icone + " *" + percentual + "%*";
         }
     } catch (err) {
@@ -454,18 +449,22 @@ async function gerarResumoWhatsApp() {
     const texto = document.getElementById('texto_biblico')?.value.trim() || "Não informado";
     const obs = document.getElementById('observacoes_culto')?.value.trim() || "";
 
+    // --- LÓGICA DE ESCALA AJUSTADA ---
     let blocoEscala = "";
-    if (pregadorRaw === louvorRaw && pregadorRaw !== "") {
+    
+    if (pregadorRaw !== "" && louvorRaw !== "" && pregadorRaw === louvorRaw) {
+        // Se ambos estão preenchidos e são iguais, vira Dirigente
         blocoEscala = `👤 *Dirigente:* ${pregador}\n`;
     } else {
-        if (pregador) blocoEscala += `🎤 *Pregador:* ${pregador}\n`;
-        if (louvor)   blocoEscala += `🎶 *Louvor:* ${louvor}\n`;
+        // Se são diferentes ou se um deles está vazio, mostra cada um no seu lugar
+        if (pregadorRaw !== "") blocoEscala += `🎤 *Pregador:* ${pregador}\n`;
+        if (louvorRaw !== "")   blocoEscala += `🎶 *Louvor:* ${louvor}\n`;
     }
     blocoEscala += `🚪 *Portão:* ${portao}\n`;
+    // --------------------------------
 
     let mensagem = `*${nomeIgreja}*\n`;
     mensagem += `*📊 RESUMO ${tipoEvento.toUpperCase()} - ${dataFormatada}*\n\n`;
-    // Aqui injetamos a porcentagemTexto que já contém o círculo
     mensagem += `*PÚBLICO:*\n• Membros (Adulto/CIAs): ${membrosAd} / ${membrosCi}${porcentagemTexto}\n`;
     mensagem += `• Visitantes (Adulto/CIAs): ${totalVisAd} / ${totalVisCi}\n`;
     mensagem += `*⭐ TOTAL GERAL: ${totalGeral}*\n\n`;
@@ -474,7 +473,6 @@ async function gerarResumoWhatsApp() {
     if (obs) mensagem += `\n📝 *Obs:* ${obs}\n`;
     mensagem += `\n_Gerado Sistema Local ICM-Dona Augusta_`;
 
-    // Usando api.whatsapp.com para melhor compatibilidade com emojis no mobile
     const url = `https://api.whatsapp.com/send?text=${encodeURIComponent(mensagem)}`;
     window.location.href = url;
 }

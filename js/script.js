@@ -449,19 +449,19 @@ async function gerarResumoWhatsApp() {
     const texto = document.getElementById('texto_biblico')?.value.trim() || "Não informado";
     const obs = document.getElementById('observacoes_culto')?.value.trim() || "";
 
-    // --- LÓGICA DE ESCALA AJUSTADA ---
+// --- LÓGICA DE ESCALA AJUSTADA (VERSÃO DEFINITIVA) ---
     let blocoEscala = "";
     
-    if (pregadorRaw !== "" && louvorRaw !== "" && pregadorRaw === louvorRaw) {
-        // Se ambos estão preenchidos e são iguais, vira Dirigente
+    // Se o Pregador estiver preenchido E (o Louvor estiver vazio OU for a mesma pessoa)
+    if (pregadorRaw !== "" && (louvorRaw === "" || pregadorRaw === louvorRaw)) {
         blocoEscala = `👤 *Dirigente:* ${pregador}\n`;
     } else {
-        // Se são diferentes ou se um deles está vazio, mostra cada um no seu lugar
+        // Caso contrário, mostra cada um na sua função
         if (pregadorRaw !== "") blocoEscala += `🎤 *Pregador:* ${pregador}\n`;
         if (louvorRaw !== "")   blocoEscala += `🎶 *Louvor:* ${louvor}\n`;
     }
     blocoEscala += `🚪 *Portão:* ${portao}\n`;
-    // --------------------------------
+    //---------------------------------------------------------------------
 
     let mensagem = `*${nomeIgreja}*\n`;
     mensagem += `*📊 RESUMO ${tipoEvento.toUpperCase()} - ${dataFormatada}*\n\n`;
@@ -1070,20 +1070,26 @@ function enviarWhatsCuidado(tel, nome) {
     window.open(`https://api.whatsapp.com/send?phone=55${telLimpo}&text=${encodeURIComponent(msg)}`, '_blank');
 }
 
-// Função para filtrar os membros na tela de chamada (Busca dinâmica)
+// Nova funcções Calular -------
 function filtrarListaMembros() {
-    const termo = document.getElementById('inputBusca').value.toLowerCase();
-    // Aqui pegamos todos os itens dentro da div listaChamada
-    const membros = document.querySelectorAll('#listaChamada > div');
+    const busca = document.getElementById('inputBusca');
+    if (!busca) return; // Segurança caso o campo não exista
 
-    membros.forEach(bloco => {
-        // Pega o texto do nome/apelido que está dentro do bloco
+    const termo = busca.value.toLowerCase().trim();
+    const listaChamada = document.getElementById('listaChamada');
+    
+    // Pega todos os elementos que representam um membro na lista
+    const membros = listaChamada.children;
+
+    for (let i = 0; i < membros.length; i++) {
+        const bloco = membros[i];
         const textoMembro = bloco.innerText.toLowerCase();
         
-        if (textoMembro.includes(termo)) {
-            bloco.style.display = "flex"; // Mostra o bloco (flex para manter o alinhamento)
+        // Se o termo estiver vazio, mostra tudo. Se não, filtra.
+        if (termo === "" || textoMembro.includes(termo)) {
+            bloco.style.setProperty('display', 'flex', 'important');
         } else {
-            bloco.style.display = "none"; // Esconde o bloco
+            bloco.style.setProperty('display', 'none', 'important');
         }
-    });
+    }
 }

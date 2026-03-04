@@ -187,31 +187,35 @@
     document.addEventListener('DOMContentLoaded', async () => {
         const user = JSON.parse(localStorage.getItem('usuarioLogado'));
         if (user) {
+            // 1. Configurações Iniciais
             const hoje = new Date().toISOString().split('T')[0]; 
             document.getElementById('data_chamada').value = hoje;
             document.getElementById('infoChamada').innerText = `Grupo: ${user.grupo_vinculado || 'Geral'}`;
             
+            // 2. Renderiza a lista de presença primeiro
             await renderizarListaChamada();
 
-            // --- AQUI ESTÁ A MUDANÇA ---
-            // Damos 800ms para o Firefox Mobile estabilizar antes de buscar os nomes
+            // 3. Aguarda um momento antes de carregar as sugestões (Essencial para Firefox Mobile)
             setTimeout(async () => {
                 if (typeof carregarSugestoesMembros === 'function') {
                     await carregarSugestoesMembros();
-                    console.log("Sugestões carregadas com delay para mobile.");
+                    console.log("Sugestões de membros carregadas.");
                 }
-                if (typeof atualizarContadores === 'function') atualizarContadores();
-            }, 800); 
-            // ---------------------------
+                if (typeof atualizarContadores === 'function') {
+                    atualizarContadores();
+                }
+            }, 800); // 800 milissegundos é o tempo ideal
 
         } else {
             window.location.href = '../index.html';
         }
     });
 
+    // Filtro da lista de presença (cards)
     function filtrarListaMembros() {
         const termo = document.getElementById('inputBusca').value.toLowerCase().trim();
         const cards = document.querySelectorAll('.card-chamada');
+
         cards.forEach(card => {
             const texto = card.innerText.toLowerCase();
             card.style.display = texto.includes(termo) ? "flex" : "none";

@@ -140,7 +140,6 @@ async function cadastrarMembro(dados) {
     const user = verificarAcesso();
     const nivel = (user?.permissao || user?.nivel || "").toLowerCase();
 
-    // Mantendo sua regra de permissão
     if (nivel !== 'admin' && nivel !== 'master' && nivel !== 'coordenadora' && nivel !== 'pastor') {
         alert("❌ Sem permissão para cadastrar membros.");
         return false;
@@ -150,22 +149,20 @@ async function cadastrarMembro(dados) {
         const { error } = await _supabase.from('membros').insert([{
             nome: dados.nome, 
             apelido: dados.apelido, 
-            telefone: dados.telefone, // NOVO CAMPO
             funcao: dados.funcao,
             situacao: dados.situacao, 
             categoria: dados.categoria, 
             sexo: dados.sexo,
-            eh_idoso: dados.eh_idoso,   // NOVO CAMPO (Boolean)
+            eh_idoso: dados.eh_idoso, // Existe no seu banco (bool)
             grupo: dados.grupo, 
             dia: parseInt(dados.niver_dia) || 0, 
             mes: dados.niver_mes,
-            // Mantém sua lógica: se não vier ID de família, gera um novo UUID
             familia_id: dados.familia_vinculo || crypto.randomUUID(), 
             status_registro: 'Ativo'
+            
         }]);
 
         if (error) throw error;
-        
         alert("✅ Membro cadastrado com sucesso!");
         return true; 
     } catch (err) { 
@@ -180,7 +177,6 @@ async function atualizarMembro(id, dados) {
     const user = verificarAcesso();
     const nivel = (user?.permissao || user?.nivel || "").toLowerCase();
 
-    // Mantendo seu padrão de permissões
     if (nivel !== 'admin' && nivel !== 'master' && nivel !== 'coordenadora' && nivel !== 'pastor') {
         alert("❌ Sem permissão para editar.");
         return false;
@@ -190,21 +186,19 @@ async function atualizarMembro(id, dados) {
         const { error } = await _supabase.from('membros').update({
             nome: dados.nome,
             apelido: dados.apelido,
-            telefone: dados.telefone, // NOVO CAMPO
             funcao: dados.funcao,
             situacao: dados.situacao,
             categoria: dados.categoria,
             sexo: dados.sexo,
-            eh_idoso: dados.eh_idoso,   // NOVO CAMPO
+            eh_idoso: dados.eh_idoso, // Existe no seu banco (bool)
             grupo: dados.grupo,
             dia: parseInt(dados.niver_dia) || 0,
             mes: dados.niver_mes,
-            // Mantém a lógica de família existente ou gera novo ID
             familia_id: dados.familia_vinculo || crypto.randomUUID()
+            // telefone removido daqui
         }).eq('id', id);
 
         if (error) throw error;
-        
         alert("✅ Dados atualizados com sucesso!");
         return true;
     } catch (err) {

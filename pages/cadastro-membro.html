@@ -44,6 +44,14 @@
         }
         input:checked + .slider { background-color: #ff9800; }
         input:checked + .slider:before { transform: translateX(26px); }
+
+        /* Ajuste para que Grupo e Aniversário ocupem linhas inteiras */
+        .campo-full {
+            margin-bottom: 20px;
+        }
+        .campo-full select, .campo-full input {
+            width: 100%;
+        }
     </style>
 </head>
 <body>
@@ -66,11 +74,6 @@
                     <label for="apelido">Nome de Preferência (Apelido):</label>
                     <input type="text" id="apelido" placeholder="Como gosta de ser chamado?">
                 </div>
-            </div>
-
-            <div class="campo" style="margin-bottom: 20px;">
-                <label for="telefone">WhatsApp (com DDD):</label>
-                <input type="tel" id="telefone" placeholder="27999998888" maxlength="11">
             </div>
 
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
@@ -130,27 +133,25 @@
                 </select>
             </div>
 
-            <div class="linha-dupla">
-                <div class="campo">
-                    <label for="grupo_vinculado">Grupo:</label>
-                    <select id="grupo_vinculado" required>
-                        <option value="">Carregando grupos...</option>
-                    </select>
-                </div>
+            <div class="campo-full">
+                <label for="grupo_vinculado">Grupo:</label>
+                <select id="grupo_vinculado" required>
+                    <option value="">Carregando grupos...</option>
+                </select>
+            </div>
                 
-                <div class="campo">
-                    <label>Aniversário:</label>
-                    <div style="display: flex; gap: 5px;">
-                        <input type="number" id="niver_dia" placeholder="Dia" min="1" max="31" style="width: 60px;">
-                        <select id="niver_mes">
-                            <option value="Janeiro">Jan</option><option value="Fevereiro">Fev</option>
-                            <option value="Março">Mar</option><option value="Abril">Abr</option>
-                            <option value="Maio">Mai</option><option value="Junho">Jun</option>
-                            <option value="Julho">Jul</option><option value="Agosto">Ago</option>
-                            <option value="Setembro">Set</option><option value="Outubro">Out</option>
-                            <option value="Novembro">Nov</option><option value="Dezembro">Dez</option>
-                        </select>
-                    </div>
+            <div class="campo-full">
+                <label>Aniversário:</label>
+                <div style="display: flex; gap: 10px; margin-top: 5px;">
+                    <input type="number" id="niver_dia" placeholder="Dia" min="1" max="31" style="width: 80px;">
+                    <select id="niver_mes" style="flex: 1;">
+                        <option value="Janeiro">Janeiro</option><option value="Fevereiro">Fevereiro</option>
+                        <option value="Março">Março</option><option value="Abril">Abril</option>
+                        <option value="Maio">Maio</option><option value="Junho">Junho</option>
+                        <option value="Julho">Julho</option><option value="Agosto">Agosto</option>
+                        <option value="Setembro">Setembro</option><option value="Outubro">Outubro</option>
+                        <option value="Novembro">Novembro</option><option value="Dezembro">Dezembro</option>
+                    </select>
                 </div>
             </div>
 
@@ -185,7 +186,7 @@
                 if (data) {
                     document.getElementById('nome_completo').value = data.nome || "";
                     document.getElementById('apelido').value = data.apelido || "";
-                    document.getElementById('telefone').value = data.telefone || "";
+                    // Campo telefone removido da carga de dados
                     document.getElementById('funcao').value = data.funcao || "Membro";
                     document.getElementById('vinculo_familia').value = data.familia_id || "";
                     document.getElementById('situacao').value = data.situacao || "Membro";
@@ -208,7 +209,7 @@
             const dados = {
                 nome: document.getElementById('nome_completo').value.trim(),
                 apelido: document.getElementById('apelido').value.trim(),
-                telefone: document.getElementById('telefone').value.trim(),
+                // telefone removido do objeto de envio
                 funcao: document.getElementById('funcao').value,
                 familia_vinculo: document.getElementById('vinculo_familia').value,
                 situacao: document.getElementById('situacao').value,

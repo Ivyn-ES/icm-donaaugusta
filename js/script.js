@@ -255,7 +255,6 @@ async function renderizarListaChamada() {
     } catch (err) { console.error(err); }
 }
 
-// FUNÇÃO DE FILTRO ADICIONADA
 function filtrarListaMembros() {
     const termo = document.getElementById('inputBusca')?.value.toLowerCase().trim() || "";
     const cards = document.querySelectorAll('.card-chamada');
@@ -328,6 +327,28 @@ function encurtarNome(nomeCompleto) {
     return `${primeiroNome} ${ultimoSobrenome[0]}.`;
 }
 
+// NOVA FUNÇÃO: AUTO SELECIONAR FUNÇÃO (PASTOR, OBREIRO, ETC)
+function autoSelecionarFuncao(input, idSelectFuncao) {
+    const nomeDigitado = input.value.trim();
+    if (!window.membrosCache || nomeDigitado === "") return;
+
+    const membro = window.membrosCache.find(m => 
+        m.nome.toLowerCase() === nomeDigitado.toLowerCase()
+    );
+
+    if (membro) {
+        const select = document.getElementById(idSelectFuncao);
+        if (select) {
+            const opcoes = Array.from(select.options).map(opt => opt.value);
+            if (opcoes.includes(membro.funcao)) {
+                select.value = membro.funcao;
+            } else {
+                select.value = "Membro";
+            }
+        }
+    }
+}
+
 async function gerarResumoWhatsApp() {
     const nomeIgreja = "ICM - Dona Augusta";
     const tipoEvento = document.getElementById('tipo_evento')?.value || "Evento";
@@ -362,7 +383,6 @@ async function gerarResumoWhatsApp() {
     const texto = document.getElementById('texto_biblico')?.value.trim() || "Não informado";
     const obs = document.getElementById('observacoes_culto')?.value.trim() || "";
 
-    // LÓGICA KARL DIRIGENTE (CORRIGIDA)
     let blocoEscala = "";
     if (pregadorRaw !== "" && (louvorRaw === "" || pregadorRaw === louvorRaw)) {
         blocoEscala = `👤 *Dirigente:* ${pregador}\n`;
@@ -419,22 +439,27 @@ function atualizarContadores() {
 async function carregarSugestoesMembros() {
     const listagem = document.getElementById('listaMembrosSugestao');
     if (!listagem) return;
+    
     try {
-        const { data } = await _supabase.from('membros').select('nome, funcao').eq('status_registro', 'Ativo');
+        const { data, error } = await _supabase
+            .from('membros')
+            .select('nome, funcao')
+            .eq('status_registro', 'Ativo')
+            .order('nome', { ascending: true });
+
+        if (error) throw error;
+
         if (data) {
-            listagem.innerHTML = data.map(m => `<option value="${m.nome}">${m.nome} (${m.funcao || 'Membro'})</option>`).join('');
+            // Ajuste para celular: Nome limpo no value
+            listagem.innerHTML = data.map(m => 
+                `<option value="${m.nome}">${m.funcao || 'Membro'}</option>`
+            ).join('');
+            
+            // Ativa o cache global para o autoSelecionarFuncao funcionar
             window.membrosCache = data;
         }
-    } catch (err) { console.error(err); }
-}
-
-function autoSelecionarFuncao(input, idSelectFuncao) {
-    const nomeDigitado = input.value.trim();
-    if (!window.membrosCache) return;
-    const membro = window.membrosCache.find(m => m.nome === nomeDigitado);
-    if (membro) {
-        const select = document.getElementById(idSelectFuncao);
-        if (select) select.value = membro.funcao || "Membro";
+    } catch (err) { 
+        console.error("Erro ao carregar sugestões:", err); 
     }
 }
 
@@ -559,7 +584,7 @@ function ajustarInterfacePorPerfil() {
         aniversariantes: document.getElementById('btnAniversariantes')
     };
 
-    if (nivel === 'admin' || nivel === 'master' || nivel === 'pastor') { // ADICIONADO PASTOR
+    if (nivel === 'admin' || nivel === 'master' || nivel === 'pastor') { 
         Object.values(b).forEach(el => { if(el) el.style.display = 'flex'; });
     } 
     else if (nivel === 'coordenadora') {
@@ -711,7 +736,7 @@ function gerarWhatsEspecial() {
 async function carregarListaCuidado() {
     const listaCorpo = document.getElementById('corpoCuidado');
     if (!listaCorpo) return;
-    const user = JSON.parse(localStorage.getItem('usuarioLogado')); // AJUSTADO KEY
+    const user = JSON.parse(localStorage.getItem('usuarioLogado')); 
     const nivel = (user?.permissao || "").toLowerCase();
     
     if (nivel !== 'pastor' && nivel !== 'admin' && nivel !== 'master') {

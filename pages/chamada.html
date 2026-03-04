@@ -33,7 +33,7 @@
             border-radius: 8px;
             background: #fdfdfd;
         }
-        /* Destaque para o campo de busca */
+        /* Destaque para o campo de busca fixo no topo */
         .busca-container {
             margin-bottom: 15px;
             position: sticky;
@@ -47,6 +47,7 @@
             border: 2px solid #007bff;
             font-size: 1.1rem;
             box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            outline: none;
         }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -87,7 +88,7 @@
         </div>
 
         <div class="busca-container">
-            <input type="text" id="inputBusca" placeholder="🔍 Digite o nome ou apelido..." oninput="filtrarListaMembros()">
+            <input type="text" id="inputBusca" placeholder="🔍 Digite o nome ou apelido..." oninput="filtrarListaMembros()" autocomplete="off">
         </div>
 
         <section style="margin-bottom: 30px;">
@@ -124,7 +125,7 @@
             <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 10px; margin-bottom: 15px;">
                 <div>
                     <label style="display:block; font-weight:bold; margin-bottom:5px;">Pregador</label>
-                    <input type="text" id="pregador_nome" list="listaMembrosSugestao" oninput="autoSelecionarFuncao(this, 'pregador_funcao')" placeholder="Nome..." style="width:100%; padding:10px; border-radius:8px; border:1px solid #ccc;">
+                    <input type="text" id="pregador_nome" list="listaMembrosSugestao" oninput="autoSelecionarFuncao(this, 'pregador_funcao')" placeholder="Nome..." autocomplete="off" style="width:100%; padding:10px; border-radius:8px; border:1px solid #ccc;">
                 </div>
                 <div>
                     <label style="display:block; font-weight:bold; margin-bottom:5px;">Função</label>
@@ -146,7 +147,7 @@
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
                 <div>
                     <label style="display:block; font-weight:bold; margin-bottom:5px;">🎶 Louvor</label>
-                    <input type="text" id="louvor_nome" list="listaMembrosSugestao" oninput="autoSelecionarFuncao(this, 'louvor_funcao')" placeholder="Nome..." style="width:100%; padding:10px; border-radius:8px; border:1px solid #ccc; margin-bottom:5px;">
+                    <input type="text" id="louvor_nome" list="listaMembrosSugestao" oninput="autoSelecionarFuncao(this, 'louvor_funcao')" placeholder="Nome..." autocomplete="off" style="width:100%; padding:10px; border-radius:8px; border:1px solid #ccc; margin-bottom:5px;">
                     <select id="louvor_funcao" style="width:100%; padding:10px; border-radius:8px; border:1px solid #ccc;">
                         <option value="Membro">Membro</option>
                         <option value="Obreiro">Obreiro</option>
@@ -156,7 +157,7 @@
                 </div>
                 <div>
                     <label style="display:block; font-weight:bold; margin-bottom:5px;">🚪 Portão</label>
-                    <input type="text" id="portao_nome" list="listaMembrosSugestao" oninput="autoSelecionarFuncao(this, 'portao_funcao')" placeholder="Nome..." style="width:100%; padding:10px; border-radius:8px; border:1px solid #ccc; margin-bottom:5px;">
+                    <input type="text" id="portao_nome" list="listaMembrosSugestao" oninput="autoSelecionarFuncao(this, 'portao_funcao')" placeholder="Nome..." autocomplete="off" style="width:100%; padding:10px; border-radius:8px; border:1px solid #ccc; margin-bottom:5px;">
                     <select id="portao_funcao" style="width:100%; padding:10px; border-radius:8px; border:1px solid #ccc;">
                         <option value="Obreiro">Obreiro</option>
                         <option value="Diácono">Diácono</option>
@@ -172,7 +173,7 @@
         </section>
 
         <div style="margin-top: 30px; display: flex; flex-direction: column; gap: 12px;">
-            <button onclick="salvarChamada()" class="btn-salvar" id="btnFinalizar" style="padding: 18px; font-size: 1.2rem; font-weight: bold; background-color: #007bff; color: white; border: none; border-radius: 10px;">Atualizar dados</button>
+            <button onclick="salvarChamada()" class="btn-salvar" id="btnFinalizar" style="padding: 18px; font-size: 1.2rem; font-weight: bold; background-color: #007bff; color: white; border: none; border-radius: 10px; cursor: pointer;">Atualizar dados</button>
             
             <button onclick="gerarResumoWhatsApp()" style="background-color: #25d366; width: 100%; padding: 15px; color: white; border: none; border-radius: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px;">
                 <span style="font-size: 1.5rem;">📱</span> 
@@ -188,32 +189,29 @@
     <script src="../js/script.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', async () => {
-            const user = verificarAcesso(); 
+            // O código agora usa a função verificarAcesso() global do script.js
+            const user = JSON.parse(localStorage.getItem('usuarioLogado'));
             if (user) {
-                const hoje = new Date().toLocaleDateString('pt-CA'); 
+                const hoje = new Date().toISOString().split('T')[0]; 
                 document.getElementById('data_chamada').value = hoje;
-                document.getElementById('infoChamada').innerText = `Grupo: ${user.grupo || 'Geral'}`;
+                document.getElementById('infoChamada').innerText = `Grupo: ${user.grupo_vinculado || 'Geral'}`;
                 
                 await renderizarListaChamada();
                 if (typeof carregarSugestoesMembros === 'function') await carregarSugestoesMembros();
                 if (typeof atualizarContadores === 'function') atualizarContadores();
+            } else {
+                window.location.href = '../index.html';
             }
         });
 
-        // Função de filtro para celular (Busca por nome ou apelido)
+        // Filtro otimizado para os cards da chamada
         function filtrarListaMembros() {
-            const termo = document.getElementById('inputBusca').value.toLowerCase();
-            const blocos = document.querySelectorAll('.membro-card'); // Ajuste o seletor conforme seu card de membro
+            const termo = document.getElementById('inputBusca').value.toLowerCase().trim();
+            const cards = document.querySelectorAll('.card-chamada');
 
-            blocos.forEach(bloco => {
-                const nome = bloco.querySelector('.nome-membro')?.innerText.toLowerCase() || "";
-                const apelido = bloco.querySelector('.apelido-membro')?.innerText.toLowerCase() || "";
-                
-                if (nome.includes(termo) || apelido.includes(termo)) {
-                    bloco.style.display = "flex";
-                } else {
-                    bloco.style.display = "none";
-                }
+            cards.forEach(card => {
+                const texto = card.innerText.toLowerCase();
+                card.style.display = texto.includes(termo) ? "flex" : "none";
             });
         }
     </script>

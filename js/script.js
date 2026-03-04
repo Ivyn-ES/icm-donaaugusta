@@ -436,30 +436,52 @@ function atualizarContadores() {
     if(document.getElementById('cont_total')) document.getElementById('cont_total').innerText = total;
 }
 
+// Era o modulo 8 antes
+
 async function carregarSugestoesMembros() {
     const listagem = document.getElementById('listaMembrosSugestao');
     if (!listagem) return;
-    
+
     try {
+        // Mudamos de 'cargo' para 'funcao' na consulta
         const { data, error } = await _supabase
             .from('membros')
-            .select('nome, funcao')
-            .eq('status_registro', 'Ativo')
-            .order('nome', { ascending: true });
+            .select('nome, funcao') 
+            .eq('status_registro', 'Ativo');
 
         if (error) throw error;
 
-        if (data) {
-            // Ajuste para celular: Nome limpo no value
-            listagem.innerHTML = data.map(m => 
-                `<option value="${m.nome}">${m.funcao || 'Membro'}</option>`
-            ).join('');
-            
-            // Ativa o cache global para o autoSelecionarFuncao funcionar
-            window.membrosCache = data;
+        // Criamos as opções usando a propriedade 'funcao'
+        listagem.innerHTML = data.map(m => 
+            `<option value="${m.nome}">${m.nome} (${m.funcao || 'Membro'})</option>`
+        ).join('');
+        
+        window.membrosCache = data;
+
+    } catch (err) {
+        console.error("Erro ao carregar sugestões:", err);
+    }
+}
+
+function autoSelecionarFuncao(inputElement, selectId) {
+    const nomeDigitado = inputElement.value;
+    const selectDestino = document.getElementById(selectId);
+    
+    if (!window.membrosCache || !selectDestino) return;
+
+    // Procura o membro no cache
+    const membroEncontrado = window.membrosCache.find(m => m.nome === nomeDigitado);
+
+    if (membroEncontrado) {
+        const funcaoDoBanco = membroEncontrado.funcao; // Aqui também mudamos para funcao
+        
+        // Percorre as opções do select (Pastor, Diácono, etc) para marcar a correta
+        for (let i = 0; i < selectDestino.options.length; i++) {
+            if (selectDestino.options[i].value === funcaoDoBanco) {
+                selectDestino.selectedIndex = i;
+                break;
+            }
         }
-    } catch (err) { 
-        console.error("Erro ao carregar sugestões:", err); 
     }
 }
 

@@ -436,7 +436,7 @@ function atualizarContadores() {
     if(document.getElementById('cont_total')) document.getElementById('cont_total').innerText = total;
 }
 
-// Era o modulo 8 antes
+// Antes ficava no modulo 8 antes
 
 async function carregarSugestoesMembros() {
     const listagem = document.getElementById('listaMembrosSugestao');

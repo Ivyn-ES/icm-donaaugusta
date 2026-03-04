@@ -404,7 +404,7 @@ async function gerarResumoWhatsApp() {
 }
 
 // ==========================================
-// 6. PLACAR E CONTADORES
+// 6. PLACAR, CONTADORES E SUGESTÕES
 // ==========================================
 function ajustarVisitante(id, delta) {
     const campo = document.getElementById(id);
@@ -436,30 +436,31 @@ function atualizarContadores() {
     if(document.getElementById('cont_total')) document.getElementById('cont_total').innerText = total;
 }
 
-// Antes ficava no modulo 8 antes
-
 async function carregarSugestoesMembros() {
     const listagem = document.getElementById('listaMembrosSugestao');
     if (!listagem) return;
 
     try {
-        // Mudamos de 'cargo' para 'funcao' na consulta
         const { data, error } = await _supabase
             .from('membros')
             .select('nome, funcao') 
-            .eq('status_registro', 'Ativo');
+            .eq('status_registro', 'Ativo')
+            .order('nome', { ascending: true }); // Ordem alfabética ajuda o filtro mobile
 
         if (error) throw error;
 
-        // Criamos as opções usando a propriedade 'funcao'
-        listagem.innerHTML = data.map(m => 
-            `<option value="${m.nome}">${m.nome} (${m.funcao || 'Membro'})</option>`
-        ).join('');
-        
-        window.membrosCache = data;
-
-        console.log("DEBUG: Nomes carregados no cache: ", window.membrosCache.length);
-        alert("O sistema carregou " + data.length + " nomes."); // Isso vai forçar um aviso na tela do seu celular
+        if (data) {
+            // Limpa o datalist para garantir que o Firefox perceba a atualização
+            listagem.innerHTML = ""; 
+            
+            // Injeta as opções. O value é o Nome para o filtro do navegador funcionar.
+            listagem.innerHTML = data.map(m => 
+                `<option value="${m.nome}">${m.nome} (${m.funcao || 'Membro'})</option>`
+            ).join('');
+            
+            window.membrosCache = data;
+            console.log("Sugestões carregadas com sucesso: " + data.length);
+        }
 
     } catch (err) {
         console.error("Erro ao carregar sugestões:", err);
@@ -472,13 +473,12 @@ function autoSelecionarFuncao(inputElement, selectId) {
     
     if (!window.membrosCache || !selectDestino) return;
 
-    // Procura o membro no cache
+    // Busca exata no cache pelo nome selecionado
     const membroEncontrado = window.membrosCache.find(m => m.nome === nomeDigitado);
 
     if (membroEncontrado) {
-        const funcaoDoBanco = membroEncontrado.funcao; // Aqui também mudamos para funcao
+        const funcaoDoBanco = membroEncontrado.funcao;
         
-        // Percorre as opções do select (Pastor, Diácono, etc) para marcar a correta
         for (let i = 0; i < selectDestino.options.length; i++) {
             if (selectDestino.options[i].value === funcaoDoBanco) {
                 selectDestino.selectedIndex = i;
@@ -688,7 +688,10 @@ async function gerarRelatorioAniversariantes() {
 // ==========================================
 document.addEventListener('DOMContentLoaded', () => {
     const url = window.location.href;
-    ajustarInterfacePorPerfil();
+    
+    // Ajusta interface se a função existir
+    if (typeof ajustarInterfacePorPerfil === 'function') ajustarInterfacePorPerfil();
+
     const formLogin = document.getElementById('loginForm');
     if (formLogin) {
         formLogin.addEventListener('submit', (e) => {
@@ -696,10 +699,17 @@ document.addEventListener('DOMContentLoaded', () => {
             realizarLogin(document.getElementById('usuario').value, document.getElementById('senha').value);
         });
     }
+
+    // Gerenciamento de rotas
     if (url.includes('admin-usuarios.html')) { renderizarUsuarios(); carregarGruposNoSelect(); }
     if (url.includes('admin-grupos.html')) { renderizarGrupos(); }
     if (url.includes('lista-membros.html')) { renderizarListaMembros(); }
-    if (url.includes('chamada.html')) { carregarSugestoesMembros(); renderizarListaChamada(); }
+    
+    // Na chamada.html, deixamos o carregarSugestoesMembros apenas para o delay do HTML
+    if (url.includes('chamada.html')) { 
+        renderizarListaChamada(); 
+    }
+    
     if (url.includes('cadastro-membro.html')) { carregarGruposNoSelect(); carregarMembrosParaVinculo(); }
 });
 

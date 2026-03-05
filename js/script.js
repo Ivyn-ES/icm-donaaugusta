@@ -450,18 +450,17 @@ async function carregarSugestoesMembros() {
         if (error) throw error;
 
         if (data) {
-            // Limpa o conteúdo atual
             listagem.innerHTML = ""; 
             
-            // Geramos as opções de forma otimizada para Mobile
-            // O 'value' é o que vai para o input (Nome)
-            // O texto interno é o que aparece como dica (Função)
+            // CORREÇÃO AQUI: 
+            // O value deve ser o NOME (para preencher o campo)
+            // O texto interno deve ser NOME + FUNÇÃO para você saber quem é quem
             listagem.innerHTML = data.map(m => 
-                `<option value="${m.nome}">${m.funcao || 'Membro'}</option>`
+                `<option value="${m.nome}">${m.nome} — ${m.funcao || 'Membro'}</option>`
             ).join('');
             
             window.membrosCache = data;
-            console.log("Sugestões carregadas com sucesso: " + data.length);
+            console.log("Sugestões corrigidas: " + data.length);
         }
 
     } catch (err) {

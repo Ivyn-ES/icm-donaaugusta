@@ -453,7 +453,7 @@ async function carregarSugestoesMembros() {
             // Limpa o conteúdo atual
             listagem.innerHTML = ""; 
             
-            // Geramos as opções de forma otimizada para Mobiles
+            // Geramos as opções de forma otimizada para Mobile
             // O 'value' é o que vai para o input (Nome)
             // O texto interno é o que aparece como dica (Função)
             listagem.innerHTML = data.map(m => 

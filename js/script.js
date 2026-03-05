@@ -445,17 +445,19 @@ async function carregarSugestoesMembros() {
             .from('membros')
             .select('nome, funcao') 
             .eq('status_registro', 'Ativo')
-            .order('nome', { ascending: true }); // Ordem alfabética ajuda o filtro mobile
+            .order('nome', { ascending: true });
 
         if (error) throw error;
 
         if (data) {
-            // Limpa o datalist para garantir que o Firefox perceba a atualização
+            // Limpa o conteúdo atual
             listagem.innerHTML = ""; 
             
-            // Injeta as opções. O value é o Nome para o filtro do navegador funcionar.
+            // Geramos as opções de forma otimizada para Mobiles
+            // O 'value' é o que vai para o input (Nome)
+            // O texto interno é o que aparece como dica (Função)
             listagem.innerHTML = data.map(m => 
-                `<option value="${m.nome}">${m.nome} (${m.funcao || 'Membro'})</option>`
+                `<option value="${m.nome}">${m.funcao || 'Membro'}</option>`
             ).join('');
             
             window.membrosCache = data;

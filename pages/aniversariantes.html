@@ -8,6 +8,23 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
    
    <style>
+    /* Reset básico para evitar conflitos com o style.css global */
+    header {
+        background-color: #2c3e50; /* Cor padrão da ICM */
+        color: white;
+        padding: 15px;
+        display: flex;
+        align-items: center;
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    .container {
+        padding: 15px;
+        max-width: 1000px;
+        margin: 0 auto;
+    }
+
     /* Container dos Filtros */
     .filtros-aniversario {
         display: flex;
@@ -16,18 +33,17 @@
         background: #ffffff;
         padding: 20px;
         border-radius: 12px;
+        margin-top: 20px;
         margin-bottom: 25px;
-        align-items: flex-end;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         border: 1px solid #eee;
     }
 
-    /* Cada campo (Mês e Público) */
     .campo-filtro {
         display: flex;
         flex-direction: column;
-        flex: 1; /* Faz os campos crescerem por igual */
-        min-width: 150px; /* Impede que fiquem muito estreitos */
+        flex: 1; 
+        min-width: 140px;
     }
 
     .campo-filtro label {
@@ -38,18 +54,18 @@
     }
 
     .campo-filtro select {
-        padding: 12px; /* Aumenta a área de toque */
+        padding: 12px;
         border-radius: 8px;
         border: 1px solid #ccc;
         font-size: 1rem;
         background-color: #fff;
+        width: 100%;
     }
 
-    /* Botões */
     .area-botoes {
         display: flex;
         gap: 10px;
-        width: 100%; /* No celular, os botões ficam embaixo dos campos */
+        width: 100%;
         margin-top: 10px;
     }
 
@@ -62,7 +78,6 @@
         font-weight: bold;
         font-size: 1rem;
         color: white;
-        transition: opacity 0.2s;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -72,15 +87,16 @@
     .btn-gerar { background-color: #27ae60; }
     .btn-whatsapp { background-color: #25d366; }
 
-    .btn-gerar:active, .btn-whatsapp:active { opacity: 0.8; }
-
     /* Tabela */
+    .lista-resultados {
+        overflow-x: auto; /* Permite rolar pro lado no celular se a tabela for grande */
+    }
+
     #tabelaAniversariantes {
         width: 100%;
         border-collapse: collapse;
         background: white;
-        border-radius: 8px;
-        overflow: hidden;
+        margin-top: 10px;
     }
 
     #tabelaAniversariantes th {
@@ -88,24 +104,25 @@
         padding: 15px 10px;
         text-align: left;
         border-bottom: 2px solid #dee2e6;
-        color: #495057;
     }
 
     #tabelaAniversariantes td {
         padding: 15px 10px;
         border-bottom: 1px solid #eee;
-        font-size: 1rem;
     }
 
-    /* Ajuste para telas grandes (PC) */
+    /* Ajuste para PC */
     @media (min-width: 600px) {
         .area-botoes {
-            width: auto; /* No PC, os botões não ocupam a linha toda */
+            width: auto;
             margin-top: 0;
         }
         .btn-gerar, .btn-whatsapp {
             padding: 12px 25px;
             flex: none;
+        }
+        .filtros-aniversario {
+            align-items: flex-end;
         }
     }
 </style>
@@ -114,40 +131,48 @@
 <body>
 
     <header>
-        <button onclick="window.location.href='../painel.html'" class="btn-voltar" style="background:none; border:none; color:white; font-size:1.2rem; cursor:pointer;">← Voltar</button>
-        <h1 style="display:inline-block; margin-left:10px;">🎂 Aniversariantes</h1>
+        <button onclick="window.location.href='../dashboard.html'" class="btn-voltar" style="background:none; border:none; color:white; font-size:1.2rem; cursor:pointer;">← Voltar</button>
+        <h2 style="margin: 0 0 0 15px;">🎂 Aniversariantes</h2>
     </header>
 
     <main class="container">
-<section class="filtros-aniversario">
-    <div class="campo-filtro">
-        <label for="filtroMes">📅 Mês:</label>
-        <select id="filtroMes">
-            <option value="1">Janeiro</option>
-            <option value="2">Fevereiro</option>
-            </select>
-    </div>
+        <section class="filtros-aniversario">
+            <div class="campo-filtro">
+                <label for="filtroMes">📅 Mês:</label>
+                <select id="filtroMes">
+                    <option value="1">Janeiro</option>
+                    <option value="2">Fevereiro</option>
+                    <option value="3">Março</option>
+                    <option value="4">Abril</option>
+                    <option value="5">Maio</option>
+                    <option value="6">Junho</option>
+                    <option value="7">Julho</option>
+                    <option value="8">Agosto</option>
+                    <option value="9">Setembro</option>
+                    <option value="10">Outubro</option>
+                    <option value="11">Novembro</option>
+                    <option value="12">Dezembro</option>
+                </select>
+            </div>
 
-    <div class="campo-filtro">
-        <label for="filtroSexo">👥 Opção:</label>
-        <select id="filtroSexo">
-            <option value="Todos">Todos</option>
-            <option value="Masculino">Irmãos</option>
-            <option value="Feminino">Irmãs</option>
-        </select>
-    </div>
+            <div class="campo-filtro">
+                <label for="filtroSexo">👥 Opção:</label>
+                <select id="filtroSexo">
+                    <option value="Todos">Todos</option>
+                    <option value="Masculino">Irmãos</option>
+                    <option value="Feminino">Irmãs</option>
+                </select>
+            </div>
 
-    <div class="area-botoes">
-        <button onclick="gerarRelatorioAniversariantes()" class="btn-gerar">
-            🔍 Consultar
-        </button>
-        <button onclick="enviarAniversariantesZap()" class="btn-whatsapp">
-            📲 WhatsApp
-        </button>
-    </div>
-</section>
-
-        <hr>
+            <div class="area-botoes">
+                <button onclick="gerarRelatorioAniversariantes()" class="btn-gerar">
+                    🔍 Consultar
+                </button>
+                <button onclick="enviarAniversariantesZap()" class="btn-whatsapp">
+                    📲 WhatsApp
+                </button>
+            </div>
+        </section>
 
         <section class="lista-resultados">
             <table id="tabelaAniversariantes">
@@ -162,23 +187,22 @@
                     </tbody>
             </table>
             <div id="msgVazia" style="display:none; text-align:center; padding: 20px; color: #666;">
-                Nenhum aniversariante encontrado para este mês.
+                Nenhum aniversariante encontrado.
             </div>
         </section>
     </main>
 
-<script src="../js/script.js"></script>
+    <script src="../js/script.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
+            // Define o mês atual automaticamente
             const mesAtual = new Date().getMonth() + 1;
-            document.getElementById('filtroMes').value = mesAtual;
+            const selectMes = document.getElementById('filtroMes');
+            selectMes.value = mesAtual;
             
-            // Pequeno atraso para garantir que o script.js e o Supabase carreguem antes
             setTimeout(() => {
                 if(typeof gerarRelatorioAniversariantes === 'function') {
                     gerarRelatorioAniversariantes();
-                } else {
-                    console.error("Erro: A função gerarRelatorioAniversariantes não foi carregada. Verifique o caminho do script.js");
                 }
             }, 500);
         });

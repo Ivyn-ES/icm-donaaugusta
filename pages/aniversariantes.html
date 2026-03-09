@@ -5,9 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Aniversariantes - ICM</title>
     <link rel="stylesheet" href="../css/style.css">
-    <script src="https://cdn.npmmirror.com/package/@supabase/supabase-js/2.39.7/dist/umd/supabase.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
     <style>
-        /* Ajuste para anular o 'display: flex' do body apenas nesta página */
         body { display: block !important; }
 
         .container-aniversarios {
@@ -17,7 +17,7 @@
             box-shadow: 0 15px 35px rgba(0,0,0,0.2);
             width: 100%;
             max-width: 800px;
-            margin: 20px auto; /* Centraliza na tela */
+            margin: 20px auto;
         }
 
         .filtros-aniversario {
@@ -73,7 +73,8 @@
         <header style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; border-bottom: 2px solid #eee; padding-bottom: 10px;">
             <a href="dashboard.html" class="btn-voltar">← Voltar</a>
             <h1 style="margin: 0; flex-grow: 1; text-align: center;">🎂 Aniversariantes</h1>
-            <div style="width: 80px;"></div> </header>
+            <div style="width: 80px;"></div>
+        </header>
 
         <section class="filtros-aniversario">
             <div class="campo-filtro">
@@ -118,8 +119,7 @@
                         <th style="text-align: center; width: 80px;">Opção</th>
                     </tr>
                 </thead>
-                <tbody id="corpoTabelaAniversarios">
-                    </tbody>
+                <tbody id="corpoTabelaAniversarios"></tbody>
             </table>
         </div>
         
@@ -128,29 +128,23 @@
         </div>
     </div>
 
-<script src="../js/script.js"></script>
+    <script src="../js/script.js"></script>
     <script>
-        // Função para tentar carregar os dados apenas quando o Supabase estiver pronto
         function inicializarPagina() {
-            // Verifica se a função existe E se o objeto _supabase já foi criado no script.js
-            if (typeof gerarRelatorioAniversariantes === 'function' && typeof _supabase !== 'undefined') {
+            // Verifica se o objeto global 'supabase' (da biblioteca) e o seu '_supabase' (do script.js) existem
+            if (typeof supabase !== 'undefined' && typeof _supabase !== 'undefined') {
                 gerarRelatorioAniversariantes();
             } else {
-                // Se ainda não estiver pronto, tenta de novo em 200ms
                 setTimeout(inicializarPagina, 200);
             }
         }
 
         document.addEventListener('DOMContentLoaded', () => {
-            // Define o mês atual automaticamente
             const mesAtual = new Date().getMonth() + 1;
             const selectMes = document.getElementById('filtroMes');
             if(selectMes) selectMes.value = mesAtual;
-            
-            // Inicia a tentativa de carregamento
             inicializarPagina();
         });
     </script>
-    
 </body>
 </html>

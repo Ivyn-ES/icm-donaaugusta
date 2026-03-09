@@ -3,15 +3,67 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Relatório de Aniversariantes - ICM</title>
-    <link rel="stylesheet" href="style.css">
+    <title>Aniversariantes - ICM</title>
+    <link rel="stylesheet" href="../style.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        .filtros-aniversario {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            align-items: flex-end;
+        }
+        .campo-filtro {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+            min-width: 120px;
+        }
+        .campo-filtro label {
+            font-size: 0.8rem;
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: #555;
+        }
+        .campo-filtro select {
+            padding: 8px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+        .btn-gerar {
+            background-color: #27ae60;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        #tabelaAniversariantes {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        #tabelaAniversariantes th {
+            background-color: #f2f2f2;
+            padding: 10px;
+            text-align: left;
+            border-bottom: 2px solid #ddd;
+        }
+        #tabelaAniversariantes td {
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+        }
+    </style>
 </head>
 <body>
 
     <header>
-        <button onclick="window.location.href='painel.html'" class="btn-voltar">← Voltar</button>
-        <h1>🎂 Aniversariantes</h1>
+        <button onclick="window.location.href='../painel.html'" class="btn-voltar" style="background:none; border:none; color:white; font-size:1.2rem; cursor:pointer;">← Voltar</button>
+        <h1 style="display:inline-block; margin-left:10px;">🎂 Aniversariantes</h1>
     </header>
 
     <main class="container">
@@ -52,27 +104,34 @@
             <table id="tabelaAniversariantes">
                 <thead>
                     <tr>
-                        <th>Dia</th>
+                        <th style="width: 60px; text-align: center;">Dia</th>
                         <th>Nome</th>
-                        <th>Sexo</th>
+                        <th style="width: 80px; text-align: center;">Sexo</th>
                     </tr>
                 </thead>
                 <tbody id="corpoTabelaAniversarios">
                     </tbody>
             </table>
-            <div id="msgVazia" style="display:none; text-align:center; padding: 20px;">
-                Nenhum aniversariante encontrado para estes filtros.
+            <div id="msgVazia" style="display:none; text-align:center; padding: 20px; color: #666;">
+                Nenhum aniversariante encontrado para este mês.
             </div>
         </section>
     </main>
 
-    <script src="script.js"></script>
+    <script src="../script.js"></script>
     <script>
-        // Ao carregar, define o mês atual no select automaticamente
         document.addEventListener('DOMContentLoaded', () => {
             const mesAtual = new Date().getMonth() + 1;
             document.getElementById('filtroMes').value = mesAtual;
-            gerarRelatorioAniversariantes(); // Já carrega o mês atual
+            
+            // Pequeno atraso para garantir que o script.js e o Supabase carreguem antes
+            setTimeout(() => {
+                if(typeof gerarRelatorioAniversariantes === 'function') {
+                    gerarRelatorioAniversariantes();
+                } else {
+                    console.error("Erro: A função gerarRelatorioAniversariantes não foi carregada. Verifique o caminho do script.js");
+                }
+            }, 500);
         });
     </script>
 </body>

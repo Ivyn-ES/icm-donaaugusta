@@ -20,6 +20,11 @@
                 Fazer Chamada
             </button>
 
+            <button id="btnAniversariantes" onclick="window.location.href='aniversariantes.html'" class="btn-menu" style="background-color: #3498db;">
+                <span style="font-size: 2rem; display: block;">🎂</span>
+                Aniversariantes
+            </button>
+
             <button id="btnEventos" onclick="window.location.href='chamada-especial.html'" class="btn-menu" style="background-color: #e67e22;">
                 <span style="font-size: 2rem; display: block;">⭐</span>
                 Eventos / CIAs
@@ -40,7 +45,7 @@
                 Acompanhamento
             </button>
 
-            <button id="btnGrupos" onclick="window.location.href='admin-grupos.html'" class="btn-menu" style="display: none; background-color: #5765f2;">
+            <button id="btnGrupos" onclick="window.location.href='admin-groups.html'" class="btn-menu" style="display: none; background-color: #5765f2;">
                 <span style="font-size: 2rem; display: block;">📂</span>
                 Gerenciar Grupos
             </button>
@@ -59,16 +64,13 @@
 
     <script src="../js/script.js"></script>
     <script>
-        // Inicialização do Dashboard
         document.addEventListener('DOMContentLoaded', () => {
             const user = verificarAcesso(); 
             
             if (user) {
-                // Personaliza a saudação
                 const saudacao = document.getElementById('boasVindas');
                 saudacao.innerText = `Logado como: ${user.nome} | Nível: ${user.nivel}`;
 
-                // Chama a função global de permissões que está no script.js
                 if (typeof ajustarInterfacePorPerfil === "function") {
                     ajustarInterfacePorPerfil();
                 }

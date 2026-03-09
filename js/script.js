@@ -593,7 +593,7 @@ async function criarUsuario(dados) {
 }
 
 // ==========================================
-// 8. INTERFACE E PERMISSÕES
+// 8. INTERFACE E PERMISSÕES (ATUALIZADO)
 // ==========================================
 function ajustarInterfacePorPerfil() {
     const user = JSON.parse(localStorage.getItem('usuarioLogado'));
@@ -610,23 +610,30 @@ function ajustarInterfacePorPerfil() {
         aniversariantes: document.getElementById('btnAniversariantes')
     };
 
+    // 1. ADMIN / MASTER / PASTOR (Vê tudo)
     if (nivel === 'admin' || nivel === 'master' || nivel === 'pastor') { 
         Object.values(b).forEach(el => { if(el) el.style.display = 'flex'; });
     } 
+    // 2. COORDENADORA (Vê Lista e Aniversariantes)
     else if (nivel === 'coordenadora') {
         if (b.lista) b.lista.style.display = 'flex';
         if (b.aniversariantes) b.aniversariantes.style.display = 'flex';
         [b.chamada, b.cadastro, b.grupos, b.usuarios, b.relatorios].forEach(el => { if(el) el.style.display = 'none'; });
     }
+    // 3. APOIO (Vê Chamada e Aniversariantes) - Ajustado conforme sua ideia
     else if (nivel === 'apoio') {
         if (b.chamada) b.chamada.style.display = 'flex';
-        [b.cadastro, b.lista, b.relatorios, b.grupos, b.usuarios, b.aniversariantes].forEach(el => { if(el) el.style.display = 'none'; });
+        if (b.aniversariantes) b.aniversariantes.style.display = 'flex'; // Liberado para Apoio
+        [b.cadastro, b.lista, b.relatorios, b.grupos, b.usuarios].forEach(el => { if(el) el.style.display = 'none'; });
     }
+    // 4. USER (Vê Lista, Relatórios e Aniversariantes)
     else if (nivel === 'user') {
         if (b.lista) b.lista.style.display = 'flex';
         if (b.relatorios) b.relatorios.style.display = 'flex';
-        [b.chamada, b.cadastro, b.grupos, b.usuarios, b.aniversariantes].forEach(el => { if(el) el.style.display = 'none'; });
+        if (b.aniversariantes) b.aniversariantes.style.display = 'flex'; // Liberado para User
+        [b.chamada, b.cadastro, b.grupos, b.usuarios].forEach(el => { if(el) el.style.display = 'none'; });
     }
+    // 5. LIVRE (Não vê nada do menu administrativo)
     else if (nivel === 'livre') {
         Object.values(b).forEach(el => { if(el) el.style.display = 'none'; });
     }

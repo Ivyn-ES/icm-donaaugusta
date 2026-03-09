@@ -821,40 +821,41 @@ async function gerarRelatorioAniversariantes() {
     corpoTabela.innerHTML = '<tr><td colspan="3" style="text-align:center;">Buscando...</td></tr>';
     msgVazia.style.display = 'none';
 
-    // Pega o nome do mês selecionado (Ex: "Janeiro")
     const mesEscrito = selectMes.options[selectMes.selectedIndex].text;
 
     try {
+        // Busca simples: apenas membros ativos do mês selecionado
         let query = _supabase
             .from('membros')
             .select('nome, sexo, dia, mes')
             .eq('status_registro', 'Ativo')
-            .eq('mes', mesEscrito)
-            // FILTROS PARA OCULTAR QUEM NÃO TEM DATA
-            .not('dia', 'is', null)
-            .neq('dia', '')
-            .not('mes', 'is', null)
-            .neq('mes', '');
+            .eq('mes', mesEscrito);
 
         if (filtroSexo !== 'Todos') {
             query = query.eq('sexo', filtroSexo);
         }
 
         const { data, error } = await query;
-
         if (error) throw error;
 
-        if (!data || data.length === 0) {
+        // FILTRAGEM MANUAL (O pulo do gato): 
+        // Remove quem não tem dia ou mês preenchido (os temporários)
+        const listaLimpa = data.filter(m => {
+            return m.dia && m.dia.toString().trim() !== "" && 
+                   m.mes && m.mes.toString().trim() !== "";
+        });
+
+        if (listaLimpa.length === 0) {
             corpoTabela.innerHTML = '';
             msgVazia.style.display = 'block';
             return;
         }
 
         // Ordenar por dia (numérico)
-        data.sort((a, b) => parseInt(a.dia) - parseInt(b.dia));
+        listaLimpa.sort((a, b) => parseInt(a.dia) - parseInt(b.dia));
 
         corpoTabela.innerHTML = '';
-        data.forEach(m => {
+        listaLimpa.forEach(m => {
             const icone = m.sexo === 'Masculino' ? '♂️' : '♀️';
             const tr = document.createElement('tr');
             tr.innerHTML = `

@@ -827,19 +827,22 @@ async function marcarComoResolvido(idMembro) {
 
 // Aniversariantes
 async function gerarRelatorioAniversariantes() {
-    const mesAlvo = document.getElementById('filtroMes').options[document.getElementById('filtroMes').selectedIndex].text;
+    const selectMes = document.getElementById('filtroMes');
+    // Pegamos o TEXTO (ex: "Janeiro") em vez do VALUE (ex: "1")
+    const mesEscrito = selectMes.options[selectMes.selectedIndex].text;
     const sexoAlvo = document.getElementById('filtroSexo').value;
+    
     const corpoTabela = document.getElementById('corpoTabelaAniversarios');
     const msgVazia = document.getElementById('msgVazia');
 
-    corpoTabela.innerHTML = "<tr><td colspan='3'>Buscando...</td></tr>";
+    corpoTabela.innerHTML = "<tr><td colspan='3' style='text-align:center;'>Buscando...</td></tr>";
 
     try {
         let query = _supabase
             .from('membros')
             .select('nome, sexo, dia, mes')
             .eq('status_registro', 'Ativo')
-            .eq('mes', mesAlvo); // Filtra direto no banco pelo nome do mês
+            .eq('mes', mesEscrito); // Busca pelo nome do mês (ex: "Março")
 
         if (sexoAlvo !== 'Todos') {
             query = query.eq('sexo', sexoAlvo);
@@ -855,20 +858,20 @@ async function gerarRelatorioAniversariantes() {
         } else {
             msgVazia.style.display = "none";
             
-            // Ordenar por dia (numérico)
+            // Ordena por dia (1, 2, 3...)
             data.sort((a, b) => (a.dia || 0) - (b.dia || 0));
 
             corpoTabela.innerHTML = data.map(m => `
                 <tr>
-                    <td><strong>${m.dia || '-'}</strong></td>
+                    <td style="text-align:center;"><strong>${m.dia || '-'}</strong></td>
                     <td>${m.nome}</td>
-                    <td>${m.sexo === 'Masculino' ? '♂️' : '♀️'}</td>
+                    <td style="text-align:center;">${m.sexo === 'Masculino' ? '♂️' : '♀️'}</td>
                 </tr>
             `).join('');
         }
 
     } catch (err) {
         console.error("Erro ao gerar relatório:", err);
-        corpoTabela.innerHTML = "<tr><td colspan='3'>Erro ao carregar dados.</td></tr>";
+        corpoTabela.innerHTML = "<tr><td colspan='3' style='text-align:center; color:red;'>Erro ao carregar dados.</td></tr>";
     }
 }

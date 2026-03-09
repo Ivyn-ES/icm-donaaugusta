@@ -987,3 +987,90 @@ async function carregarHistoricoEventos() {
         corpoTabela.innerHTML = '<tr><td colspan="4" style="color:red; text-align:center;">Erro ao carregar dados.</td></tr>';
     }
 }
+
+// ==========================================
+// 14. VER DETALHES OU REENVIAR EVENTO
+// ==========================================
+async function verDetalhesEvento(id) {
+    try {
+        // Busca o evento específico pelo ID
+        const { data, error } = await _supabase
+            .from('eventos_especiais')
+            .select('*')
+            .eq('id', id)
+            .single();
+
+        if (error) throw error;
+
+        // Montando o resumo dos números para mostrar na tela
+        const dataFmt = data.data_evento.split('-').reverse().join('/');
+        
+        // Somando Totais (ajustado para os nomes do seu banco)
+        const totalM = (data.m_varoes || 0) + (data.m_senhoras || 0) + (data.m_jovens || 0) + 
+                       (data.m_adolescentes || 0) + (data.m_intermediarios || 0) + 
+                       (data.m_criancas || 0) + (data.m_colo || 0);
+                       
+        const totalV = (data.v_varoes || 0) + (data.v_senhoras || 0) + (data.v_jovens || 0) + 
+                       (data.v_adolescentes || 0) + (data.v_intermediarios || 0) + 
+                       (data.v_criancas || 0) + (data.v_colo || 0);
+
+        // Um alerta simples com o resumo (estilo MacGyver: funcional e direto)
+        const resumo = `
+📊 EVENTO: ${data.descricao}
+📍 LOCAL: ${data.local_evento || 'Não informado'}
+📅 DATA: ${dataFmt}
+
+👥 Membros: ${totalM}
+🤝 Visitantes: ${totalV}
+📈 Total Geral: ${totalM + totalV}
+
+Deseja reenviar este relatório pelo WhatsApp?
+        `;
+
+        if (confirm(resumo)) {
+            // Se o usuário clicar em OK, chamamos a lógica de enviar WhatsApp
+            // Podemos adaptar a função gerarWhatsEspecial para aceitar dados prontos
+            prepararReenvioWhats(data);
+        }
+
+    } catch (err) {
+        console.error("Erro ao detalhar:", err);
+        alert("❌ Não foi possível carregar os detalhes deste evento.");
+    }
+}
+
+// Função auxiliar para montar a mensagem com os dados que vieram do banco
+function prepararReenvioWhats(ev) {
+    const dataFmt = ev.data_evento.split('-').reverse().join('/');
+    
+    // Lista de categorias para iterar (exatamente como no seu banco)
+    const categorias = [
+        { label: "Varões", m: ev.m_varoes, v: ev.v_varoes },
+        { label: "Senhoras", m: ev.m_senhoras, v: ev.v_senhoras },
+        { label: "Jovens", m: ev.m_jovens, v: ev.v_jovens },
+        { label: "Adolescentes", m: ev.m_adolescentes, v: ev.v_adolescentes },
+        { label: "Intermediários", m: ev.m_intermediarios, v: ev.v_intermediarios },
+        { label: "Crianças", m: ev.m_criancas, v: ev.v_criancas },
+        { label: "Crianças de Colo", m: ev.m_colo, v: ev.v_colo }
+    ];
+
+    let textoM = ""; let textoV = "";
+    let somaM = 0; let somaV = 0;
+
+    categorias.forEach(c => {
+        if (c.m > 0) { textoM += `   • ${c.label}: ${c.m}\n`; somaM += c.m; }
+        if (c.v > 0) { textoV += `   • ${c.label}: ${c.v}\n`; somaV += c.v; }
+    });
+
+    let msg = `*📊 RELATÓRIO DE EVENTO - ICM DONA AUGUSTA*\n\n`;
+    msg += `📅 *DATA:* ${dataFmt}\n`;
+    msg += `📍 *LOCAL:* ${ev.local_evento}\n`;
+    msg += `📝 *EVENTO:* ${ev.descricao.toUpperCase()}\n\n`;
+    msg += `--- \n\n`;
+    msg += `*👥 MEMBROS: (${somaM})*\n${textoM || "   _Nenhum_\n"}`;
+    msg += `\n*🌟 VISITANTES: (${somaV})*\n${textoV || "   _Nenhum_\n"}`;
+    msg += `\n*📉 TOTAL GERAL: ${somaM + somaV}*\n\n`;
+    msg += `_A Paz do Senhor Jesus!_`;
+
+    window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`, '_blank');
+}

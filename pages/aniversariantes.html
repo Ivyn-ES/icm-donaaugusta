@@ -119,36 +119,33 @@
     </header>
 
     <main class="container">
-        <section class="filtros-aniversario">
-            <div class="campo-filtro">
-                <label for="filtroMes">Mês:</label>
-                <select id="filtroMes">
-                    <option value="1">Janeiro</option>
-                    <option value="2">Fevereiro</option>
-                    <option value="3">Março</option>
-                    <option value="4">Abril</option>
-                    <option value="5">Maio</option>
-                    <option value="6">Junho</option>
-                    <option value="7">Julho</option>
-                    <option value="8">Agosto</option>
-                    <option value="9">Setembro</option>
-                    <option value="10">Outubro</option>
-                    <option value="11">Novembro</option>
-                    <option value="12">Dezembro</option>
-                </select>
-            </div>
+<section class="filtros-aniversario">
+    <div class="campo-filtro">
+        <label for="filtroMes">📅 Mês:</label>
+        <select id="filtroMes">
+            <option value="1">Janeiro</option>
+            <option value="2">Fevereiro</option>
+            </select>
+    </div>
 
-            <div class="campo-filtro">
-                <label for="filtroSexo">Público:</label>
-                <select id="filtroSexo">
-                    <option value="Todos">Todos</option>
-                    <option value="Masculino">Irmãos</option>
-                    <option value="Feminino">Irmãs</option>
-                </select>
-            </div>
+    <div class="campo-filtro">
+        <label for="filtroSexo">👥 Opção:</label>
+        <select id="filtroSexo">
+            <option value="Todos">Todos</option>
+            <option value="Masculino">Irmãos</option>
+            <option value="Feminino">Irmãs</option>
+        </select>
+    </div>
 
-            <button onclick="gerarRelatorioAniversariantes()" class="btn-gerar">Consultar</button>
-        </section>
+    <div class="area-botoes">
+        <button onclick="gerarRelatorioAniversariantes()" class="btn-gerar">
+            🔍 Consultar
+        </button>
+        <button onclick="enviarAniversariantesZap()" class="btn-whatsapp">
+            📲 WhatsApp
+        </button>
+    </div>
+</section>
 
         <hr>
 

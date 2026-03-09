@@ -942,3 +942,48 @@ function enviarAniversariantesZap() {
         alert('Por favor, permita pop-ups para abrir o WhatsApp.');
     }
 }
+
+// ==========================================
+// 13. CONSULTAR HISTÓRICO DE EVENTOS
+// ==========================================
+async function carregarHistoricoEventos() {
+    const corpoTabela = document.getElementById('corpoHistoricoEventos');
+    if (!corpoTabela) return;
+
+    corpoTabela.innerHTML = '<tr><td colspan="4" style="text-align:center;">Buscando eventos...</td></tr>';
+
+    try {
+        const { data, error } = await _supabase
+            .from('eventos_especiais') // Nome da sua tabela
+            .select('*')
+            .order('data_evento', { ascending: false }); // Do mais novo para o mais antigo
+
+        if (error) throw error;
+
+        if (!data || data.length === 0) {
+            corpoTabela.innerHTML = '<tr><td colspan="4" style="text-align:center;">Nenhum evento encontrado.</td></tr>';
+            return;
+        }
+
+        corpoTabela.innerHTML = '';
+        data.forEach(ev => {
+            // Formata a data para o padrão brasileiro
+            const dataFmt = ev.data_evento.split('-').reverse().join('/');
+            
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td style="text-align: center;">${dataFmt}</td>
+                <td style="font-weight: bold;">${ev.descricao}</td>
+                <td>${ev.local_evento || '---'}</td>
+                <td style="text-align: center;">
+                    <button onclick="verDetalhesEvento('${ev.id}')" class="btn-detalhes">👁️</button>
+                </td>
+            `;
+            corpoTabela.appendChild(tr);
+        });
+
+    } catch (err) {
+        console.error("Erro ao carregar histórico:", err);
+        corpoTabela.innerHTML = '<tr><td colspan="4" style="color:red; text-align:center;">Erro ao carregar dados.</td></tr>';
+    }
+}

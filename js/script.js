@@ -882,3 +882,45 @@ async function gerarRelatorioAniversariantes() {
         corpoTabela.innerHTML = "<tr><td colspan='3' style='text-align:center; color:red;'>Erro ao carregar dados.</td></tr>";
     }
 }
+
+// ==========================================
+// FUNÇÃO DE ENVIO PARA WHATSAPP
+// ==========================================
+function enviarAniversariantesZap() {
+    const selectMes = document.getElementById('filtroMes');
+    if (!selectMes) return;
+    
+    const mesNome = selectMes.options[selectMes.selectedIndex].text;
+    const linhas = document.querySelectorAll('#corpoTabelaAniversarios tr');
+    
+    // Verifica se a tabela está vazia ou ainda carregando
+    if (linhas.length === 0 || linhas[0].innerText.includes('Buscando') || linhas[0].innerText.includes('Nenhum')) {
+        alert("Não há aniversariantes na lista para enviar!");
+        return;
+    }
+
+    let texto = `*🎂 ANIVERSARIANTES DE ${mesNome.toUpperCase()}*\n\n`;
+
+    linhas.forEach(linha => {
+        const colunas = linha.querySelectorAll('td');
+        if (colunas.length >= 3) {
+            const dia = colunas[0].innerText.trim();
+            const nome = colunas[1].innerText.trim();
+            const opcao = colunas[2].innerText.trim(); // Pega o ♂️ ou ♀️
+            texto += `*Dia ${dia}* - ${nome} ${opcao}\n`;
+        }
+    });
+
+    texto += `\n_Paz do Senhor!_`;
+
+    // Tenta abrir o WhatsApp
+    const url = `https://api.whatsapp.com/send?text=${encodeURIComponent(texto)}`;
+    
+    // Pequeno truque para garantir que o navegador não bloqueie o pop-up
+    const win = window.open(url, '_blank');
+    if (win) {
+        win.focus();
+    } else {
+        alert('Por favor, permita pop-ups para abrir o WhatsApp.');
+    }
+}

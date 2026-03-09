@@ -900,7 +900,7 @@ function enviarAniversariantesZap() {
         }
     });
 
-    texto += `\n_Paz do Senhor!_`;
+    texto += `\n_A Paz do Senhor Jesus!_`;
 
     // Tenta abrir o WhatsApp
     const url = `https://api.whatsapp.com/send?text=${encodeURIComponent(texto)}`;

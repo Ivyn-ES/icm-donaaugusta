@@ -667,30 +667,6 @@ async function gerarRelatorio() {
     } catch (err) { console.error(err); }
 }
 
-async function gerarRelatorioAniversariantes() {
-    const mesFiltro = document.getElementById('filtroMesAniversario')?.value;
-    const corpoAniv = document.getElementById('corpoRelatorioAniversariantes');
-    if (!mesFiltro || !corpoAniv) return;
-    try {
-        const { data, error } = await _supabase.from('membros').select('nome, apelido, dia, mes, grupo')
-            .eq('sexo', 'Feminino').eq('mes', mesFiltro).eq('status_registro', 'Ativo').order('dia', { ascending: true });
-        if (error) throw error;
-        if (!data || data.length === 0) {
-            corpoAniv.innerHTML = `<tr><td colspan="4" style="text-align:center;">Nenhuma irmã aniversariante em ${mesFiltro}.</td></tr>`;
-            return;
-        }
-        corpoAniv.innerHTML = data.map(m => `
-            <tr>
-                <td style="font-weight:bold; color:#d81b60;">${m.dia}</td>
-                <td>${m.nome} ${m.apelido ? `<br><small>(${m.apelido})</small>` : ''}</td>
-                <td>Grupo ${m.grupo}</td>
-                <td style="text-align:center;">
-                    <button onclick="enviarParabensIrma('${m.nome}')" style="background:#25d366; color:white; border:none; border-radius:5px; padding:6px 10px; cursor:pointer;">🌹📱</button>
-                </td>
-            </tr>`).join('');
-    } catch (err) { corpoAniv.innerHTML = `<tr><td colspan="4">Erro ao carregar dados.</td></tr>`; }
-}
-
 // ==========================================
 // 10. INICIALIZAÇÃO AUTOMÁTICA
 // ==========================================
@@ -831,28 +807,37 @@ async function marcarComoResolvido(idMembro) {
     } catch (err) { alert("Erro ao salvar."); }
 }
 
-
-// Aniversariantes
+// ==========================================
+// RELATÓRIO DE ANIVERSARIANTES (VERSÃO ÚNICA)
+// ==========================================
 async function gerarRelatorioAniversariantes() {
-    const selectMes = document.getElementById('filtroMes');
-    // Pegamos o TEXTO (ex: "Janeiro") em vez do VALUE (ex: "1")
-    const mesEscrito = selectMes.options[selectMes.selectedIndex].text;
-    const sexoAlvo = document.getElementById('filtroSexo').value;
-    
     const corpoTabela = document.getElementById('corpoTabelaAniversarios');
     const msgVazia = document.getElementById('msgVazia');
+    const selectMes = document.getElementById('filtroMes');
+    const filtroSexo = document.getElementById('filtroSexo').value;
 
-    corpoTabela.innerHTML = "<tr><td colspan='3' style='text-align:center;'>Buscando...</td></tr>";
+    if (!corpoTabela) return;
+
+    corpoTabela.innerHTML = '<tr><td colspan="3" style="text-align:center;">Buscando...</td></tr>';
+    msgVazia.style.display = 'none';
+
+    // Pega o nome do mês selecionado (Ex: "Janeiro")
+    const mesEscrito = selectMes.options[selectMes.selectedIndex].text;
 
     try {
         let query = _supabase
             .from('membros')
             .select('nome, sexo, dia, mes')
             .eq('status_registro', 'Ativo')
-            .eq('mes', mesEscrito); // Busca pelo nome do mês (ex: "Março")
+            .eq('mes', mesEscrito)
+            // FILTROS PARA OCULTAR QUEM NÃO TEM DATA
+            .not('dia', 'is', null)
+            .neq('dia', '')
+            .not('mes', 'is', null)
+            .neq('mes', '');
 
-        if (sexoAlvo !== 'Todos') {
-            query = query.eq('sexo', sexoAlvo);
+        if (filtroSexo !== 'Todos') {
+            query = query.eq('sexo', filtroSexo);
         }
 
         const { data, error } = await query;
@@ -860,26 +845,29 @@ async function gerarRelatorioAniversariantes() {
         if (error) throw error;
 
         if (!data || data.length === 0) {
-            corpoTabela.innerHTML = "";
-            msgVazia.style.display = "block";
-        } else {
-            msgVazia.style.display = "none";
-            
-            // Ordena por dia (1, 2, 3...)
-            data.sort((a, b) => (a.dia || 0) - (b.dia || 0));
-
-            corpoTabela.innerHTML = data.map(m => `
-                <tr>
-                    <td style="text-align:center;"><strong>${m.dia || '-'}</strong></td>
-                    <td>${m.nome}</td>
-                    <td style="text-align:center;">${m.sexo === 'Masculino' ? '♂️' : '♀️'}</td>
-                </tr>
-            `).join('');
+            corpoTabela.innerHTML = '';
+            msgVazia.style.display = 'block';
+            return;
         }
+
+        // Ordenar por dia (numérico)
+        data.sort((a, b) => parseInt(a.dia) - parseInt(b.dia));
+
+        corpoTabela.innerHTML = '';
+        data.forEach(m => {
+            const icone = m.sexo === 'Masculino' ? '♂️' : '♀️';
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td style="text-align: center;">${m.dia}</td>
+                <td>${m.nome}</td>
+                <td style="text-align: center;">${icone}</td>
+            `;
+            corpoTabela.appendChild(tr);
+        });
 
     } catch (err) {
         console.error("Erro ao gerar relatório:", err);
-        corpoTabela.innerHTML = "<tr><td colspan='3' style='text-align:center; color:red;'>Erro ao carregar dados.</td></tr>";
+        corpoTabela.innerHTML = '<tr><td colspan="3" style="color:red; text-align:center;">Erro ao carregar dados.</td></tr>';
     }
 }
 

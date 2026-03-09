@@ -823,3 +823,52 @@ async function marcarComoResolvido(idMembro) {
         carregarListaCuidado();
     } catch (err) { alert("Erro ao salvar."); }
 }
+
+
+// Aniversariantes
+async function gerarRelatorioAniversariantes() {
+    const mesAlvo = document.getElementById('filtroMes').options[document.getElementById('filtroMes').selectedIndex].text;
+    const sexoAlvo = document.getElementById('filtroSexo').value;
+    const corpoTabela = document.getElementById('corpoTabelaAniversarios');
+    const msgVazia = document.getElementById('msgVazia');
+
+    corpoTabela.innerHTML = "<tr><td colspan='3'>Buscando...</td></tr>";
+
+    try {
+        let query = _supabase
+            .from('membros')
+            .select('nome, sexo, dia, mes')
+            .eq('status_registro', 'Ativo')
+            .eq('mes', mesAlvo); // Filtra direto no banco pelo nome do mês
+
+        if (sexoAlvo !== 'Todos') {
+            query = query.eq('sexo', sexoAlvo);
+        }
+
+        const { data, error } = await query;
+
+        if (error) throw error;
+
+        if (!data || data.length === 0) {
+            corpoTabela.innerHTML = "";
+            msgVazia.style.display = "block";
+        } else {
+            msgVazia.style.display = "none";
+            
+            // Ordenar por dia (numérico)
+            data.sort((a, b) => (a.dia || 0) - (b.dia || 0));
+
+            corpoTabela.innerHTML = data.map(m => `
+                <tr>
+                    <td><strong>${m.dia || '-'}</strong></td>
+                    <td>${m.nome}</td>
+                    <td>${m.sexo === 'Masculino' ? '♂️' : '♀️'}</td>
+                </tr>
+            `).join('');
+        }
+
+    } catch (err) {
+        console.error("Erro ao gerar relatório:", err);
+        corpoTabela.innerHTML = "<tr><td colspan='3'>Erro ao carregar dados.</td></tr>";
+    }
+}

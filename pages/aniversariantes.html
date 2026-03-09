@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Relatório de Aniversariantes - ICM</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+    <header>
+        <button onclick="window.location.href='painel.html'" class="btn-voltar">← Voltar</button>
+        <h1>🎂 Aniversariantes</h1>
+    </header>
+
+    <main class="container">
+        <section class="filtros-aniversario">
+            <div class="campo-filtro">
+                <label for="filtroMes">Mês:</label>
+                <select id="filtroMes">
+                    <option value="1">Janeiro</option>
+                    <option value="2">Fevereiro</option>
+                    <option value="3">Março</option>
+                    <option value="4">Abril</option>
+                    <option value="5">Maio</option>
+                    <option value="6">Junho</option>
+                    <option value="7">Julho</option>
+                    <option value="8">Agosto</option>
+                    <option value="9">Setembro</option>
+                    <option value="10">Outubro</option>
+                    <option value="11">Novembro</option>
+                    <option value="12">Dezembro</option>
+                </select>
+            </div>
+
+            <div class="campo-filtro">
+                <label for="filtroSexo">Público:</label>
+                <select id="filtroSexo">
+                    <option value="Todos">Todos</option>
+                    <option value="Masculino">Irmãos</option>
+                    <option value="Feminino">Irmãs</option>
+                </select>
+            </div>
+
+            <button onclick="gerarRelatorioAniversariantes()" class="btn-gerar">Consultar</button>
+        </section>
+
+        <hr>
+
+        <section class="lista-resultados">
+            <table id="tabelaAniversariantes">
+                <thead>
+                    <tr>
+                        <th>Dia</th>
+                        <th>Nome</th>
+                        <th>Sexo</th>
+                    </tr>
+                </thead>
+                <tbody id="corpoTabelaAniversarios">
+                    </tbody>
+            </table>
+            <div id="msgVazia" style="display:none; text-align:center; padding: 20px;">
+                Nenhum aniversariante encontrado para estes filtros.
+            </div>
+        </section>
+    </main>
+
+    <script src="script.js"></script>
+    <script>
+        // Ao carregar, define o mês atual no select automaticamente
+        document.addEventListener('DOMContentLoaded', () => {
+            const mesAtual = new Date().getMonth() + 1;
+            document.getElementById('filtroMes').value = mesAtual;
+            gerarRelatorioAniversariantes(); // Já carrega o mês atual
+        });
+    </script>
+</body>
+</html>

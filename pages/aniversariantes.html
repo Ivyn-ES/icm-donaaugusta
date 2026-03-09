@@ -6,58 +6,110 @@
     <title>Aniversariantes - ICM</title>
     <link rel="stylesheet" href="../css/style.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <style>
-        .filtros-aniversario {
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-            background: #f9f9f9;
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            align-items: flex-end;
+   
+   <style>
+    /* Container dos Filtros */
+    .filtros-aniversario {
+        display: flex;
+        gap: 15px;
+        flex-wrap: wrap;
+        background: #ffffff;
+        padding: 20px;
+        border-radius: 12px;
+        margin-bottom: 25px;
+        align-items: flex-end;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        border: 1px solid #eee;
+    }
+
+    /* Cada campo (Mês e Público) */
+    .campo-filtro {
+        display: flex;
+        flex-direction: column;
+        flex: 1; /* Faz os campos crescerem por igual */
+        min-width: 150px; /* Impede que fiquem muito estreitos */
+    }
+
+    .campo-filtro label {
+        font-size: 0.9rem;
+        font-weight: bold;
+        margin-bottom: 8px;
+        color: #333;
+    }
+
+    .campo-filtro select {
+        padding: 12px; /* Aumenta a área de toque */
+        border-radius: 8px;
+        border: 1px solid #ccc;
+        font-size: 1rem;
+        background-color: #fff;
+    }
+
+    /* Botões */
+    .area-botoes {
+        display: flex;
+        gap: 10px;
+        width: 100%; /* No celular, os botões ficam embaixo dos campos */
+        margin-top: 10px;
+    }
+
+    .btn-gerar, .btn-whatsapp {
+        flex: 1;
+        border: none;
+        padding: 14px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-weight: bold;
+        font-size: 1rem;
+        color: white;
+        transition: opacity 0.2s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+    }
+
+    .btn-gerar { background-color: #27ae60; }
+    .btn-whatsapp { background-color: #25d366; }
+
+    .btn-gerar:active, .btn-whatsapp:active { opacity: 0.8; }
+
+    /* Tabela */
+    #tabelaAniversariantes {
+        width: 100%;
+        border-collapse: collapse;
+        background: white;
+        border-radius: 8px;
+        overflow: hidden;
+    }
+
+    #tabelaAniversariantes th {
+        background-color: #f8f9fa;
+        padding: 15px 10px;
+        text-align: left;
+        border-bottom: 2px solid #dee2e6;
+        color: #495057;
+    }
+
+    #tabelaAniversariantes td {
+        padding: 15px 10px;
+        border-bottom: 1px solid #eee;
+        font-size: 1rem;
+    }
+
+    /* Ajuste para telas grandes (PC) */
+    @media (min-width: 600px) {
+        .area-botoes {
+            width: auto; /* No PC, os botões não ocupam a linha toda */
+            margin-top: 0;
         }
-        .campo-filtro {
-            display: flex;
-            flex-direction: column;
-            flex: 1;
-            min-width: 120px;
+        .btn-gerar, .btn-whatsapp {
+            padding: 12px 25px;
+            flex: none;
         }
-        .campo-filtro label {
-            font-size: 0.8rem;
-            font-weight: bold;
-            margin-bottom: 5px;
-            color: #555;
-        }
-        .campo-filtro select {
-            padding: 8px;
-            border-radius: 5px;
-            border: 1px solid #ccc;
-        }
-        .btn-gerar {
-            background-color: #27ae60;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 5px;
-            cursor: pointer;
-            font-weight: bold;
-        }
-        #tabelaAniversariantes {
-            width: 100%;
-            border-collapse: collapse;
-        }
-        #tabelaAniversariantes th {
-            background-color: #f2f2f2;
-            padding: 10px;
-            text-align: left;
-            border-bottom: 2px solid #ddd;
-        }
-        #tabelaAniversariantes td {
-            padding: 10px;
-            border-bottom: 1px solid #eee;
-        }
-    </style>
+    }
+</style>
+
 </head>
 <body>
 

@@ -698,14 +698,21 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // ==========================================
-// 11. EVENTOS ESPECIAIS
+// 11. EVENTOS ESPECIAIS (VERSÃO FINAL REVISADA)
 // ==========================================
 async function salvarEventoEspecial() {
     const data_evento = document.getElementById('data_especial').value;
+    const local = document.getElementById('local_evento').value.trim();
     const descricao = document.getElementById('desc_evento').value.trim();
-    if (!data_evento || !descricao) return alert("⚠️ Preencha os campos.");
+    
+    if (!data_evento || !local || !descricao) {
+        return alert("⚠️ Preencha Data, Local e Descrição do Evento.");
+    }
+
     const dados = {
-        data_evento, descricao,
+        data_evento, 
+        local_evento: local, // ⚠️ IMPORTANTE: Certifique-se de criar esta coluna 'local_evento' (tipo text) no Supabase
+        descricao,
         m_varoes: parseInt(document.getElementById('val_membro_Varões').innerText) || 0,
         m_senhoras: parseInt(document.getElementById('val_membro_Senhoras').innerText) || 0,
         m_jovens: parseInt(document.getElementById('val_membro_Jovens').innerText) || 0,
@@ -721,32 +728,54 @@ async function salvarEventoEspecial() {
         v_criancas: parseInt(document.getElementById('val_vis_Crianças').innerText) || 0,
         v_colo: parseInt(document.getElementById('val_vis_Crianças de Colo').innerText) || 0
     };
+
     try {
         const { error } = await _supabase.from('eventos_especiais').insert([dados]);
         if (error) throw error;
-        alert("✅ Evento salvo!");
-    } catch (err) { alert("❌ Erro ao salvar."); }
+        alert("✅ Evento salvo com sucesso!");
+    } catch (err) { 
+        console.error("Erro Supabase:", err);
+        alert("❌ Erro ao salvar. Verifique se a coluna 'local_evento' foi criada no banco."); 
+    }
 }
 
 function gerarWhatsEspecial() {
     const nomeIgreja = "ICM - Dona Augusta";
-    const desc = document.getElementById('desc_evento').value || "Evento Especial";
+    const local = document.getElementById('local_evento').value.trim() || "Não informado";
+    const desc = document.getElementById('desc_evento').value.trim() || "Evento Especial";
     const dataRaw = document.getElementById('data_especial').value;
-    const dataFmt = typeof formatarDataBR === "function" ? formatarDataBR(dataRaw) : dataRaw;
-    const obterListaCompleta = (prefixo) => {
+    
+    // Inverte a data de AAAA-MM-DD para DD/MM/AAAA
+    const dataFmt = dataRaw ? dataRaw.split('-').reverse().join('/') : "--/--/----";
+
+    const obterListaFiltrada = (prefixo) => {
         const cats = ["Varões", "Senhoras", "Jovens", "Adolescentes", "Intermediários", "Crianças", "Crianças de Colo"];
         let lista = ""; let total = 0;
         cats.forEach(c => {
             const val = parseInt(document.getElementById(`val_${prefixo}_${c}`).innerText) || 0;
-            lista += `   • ${c}: ${val}\n`;
-            total += val;
+            if (val > 0) { 
+                lista += `   • ${c}: ${val}\n`;
+                total += val;
+            }
         });
         return { lista, total };
     };
-    const membros = obterListaCompleta('membro');
-    const visitantes = obterListaCompleta('vis');
-    let msg = `*${nomeIgreja}*\n*📌 ${desc.toUpperCase()} - ${dataFmt}*\n\n*👥 MEMBROS:* (${membros.total})\n${membros.lista}\n*🌟 VISITANTES:* (${visitantes.total})\n${visitantes.lista}\n*⭐ TOTAL: ${membros.total + visitantes.total}*\n\n_Gerado Sistema Local ICM-Dona Augusta_`;
-    window.location.href = `https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`;
+
+    const membros = obterListaFiltrada('membro');
+    const visitantes = obterListaFiltrada('vis');
+
+    let msg = `*📊 RELATÓRIO DE EVENTO - ${nomeIgreja.toUpperCase()}*\n\n`;
+    msg += `📅 *DATA:* ${dataFmt}\n`;
+    msg += `📍 *LOCAL:* ${local}\n`;
+    msg += `📝 *EVENTO:* ${desc.toUpperCase()}\n\n`;
+    msg += `--- \n\n`;
+    msg += `*👥 MEMBROS: (${membros.total})*\n${membros.total > 0 ? membros.lista : "   _Nenhum registrado_\n"}`;
+    msg += `\n*🌟 VISITANTES: (${visitantes.total})*\n${visitantes.total > 0 ? visitantes.lista : "   _Nenhum registrado_\n"}`;
+    msg += `\n*📉 TOTAL GERAL: ${membros.total + visitantes.total}*\n\n`;
+    msg += `_A Paz do Senhor Jesus!_`;
+
+    const url = `https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`;
+    window.open(url, '_blank');
 }
 
 // ==========================================

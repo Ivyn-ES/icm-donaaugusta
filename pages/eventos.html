@@ -98,7 +98,7 @@
     </div>
 
     <script src="../js/script.js"></script>
-<script>
+    <script>
     window.onload = async () => {
         // 1. Define as categorias (Exatamente como no Banco)
         const categorias = ["Varões", "Senhoras", "Jovens", "Adolescentes", "Intermediários", "Crianças", "Crianças de Colo"];
@@ -128,7 +128,6 @@
         if (idEvento) {
             document.querySelector('h1').innerText = "📝 Editar Evento";
             try {
-                // Busca o evento específico no Supabase
                 const { data, error } = await _supabase
                     .from('eventos_especiais')
                     .select('*')
@@ -160,22 +159,32 @@
                 document.getElementById('val_vis_Crianças').innerText = data.v_criancas;
                 document.getElementById('val_vis_Crianças de Colo').innerText = data.v_colo;
 
-                // Cria um campo invisível para o sistema saber que estamos Editando e não Criando
-                const hiddenId = document.createElement('input');
-                hiddenId.type = 'hidden';
-                hiddenId.id = 'id_evento_edicao';
-                hiddenId.value = idEvento;
-                document.body.appendChild(hiddenId);
+                // Cria o campo invisível para marcar que é EDIÇÃO
+                garantirCampoEdicao(idEvento);
 
             } catch (err) {
                 console.error("Erro ao carregar:", err);
                 alert("Erro ao recuperar os dados salvos.");
             }
         } else {
-            // Se for novo evento, apenas coloca a data de hoje
-            document.getElementById('data_especial').valueAsDate = new Date();
+            // CORREÇÃO DA DATA: Pega a data local (evita pular para o dia seguinte)
+            const hoje = new Date();
+            const dataLocal = hoje.toLocaleDateString('sv-SE'); // Formato AAAA-MM-DD
+            document.getElementById('data_especial').value = dataLocal;
         }
     };
+
+    // Função auxiliar para criar/atualizar o ID de edição sem recarregar a página
+    function garantirCampoEdicao(id) {
+        let hiddenId = document.getElementById('id_evento_edicao');
+        if (!hiddenId) {
+            hiddenId = document.createElement('input');
+            hiddenId.type = 'hidden';
+            hiddenId.id = 'id_evento_edicao';
+            document.body.appendChild(hiddenId);
+        }
+        hiddenId.value = id;
+    }
 
     function alterarContador(id, delta) {
         const el = document.getElementById(`val_${id}`);
@@ -184,5 +193,6 @@
         el.innerText = atual;
     }
 </script>
+
 </body>
 </html>

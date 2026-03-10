@@ -3,125 +3,142 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Relatório de Presença - ICM</title>
+    <title>Relatório de Frequência - ICM</title>
     <link rel="stylesheet" href="../css/style.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        /* Estilos específicos para a área de pastoreio */
-        .secao-cuidado {
-            margin-top: 20px;
-            margin-bottom: 30px;
-            border-top: 5px solid #e74c3c;
+        .card-filtros {
             background: #fff;
-            padding: 15px;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            margin-bottom: 20px;
         }
-        .badge-alerta {
-            background-color: #ffeaa7;
-            color: #d63031;
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-weight: bold;
-            font-size: 0.85rem;
+        .filtros-container {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            align-items: flex-end;
         }
-        .btn-acao-mini {
-            border: none;
-            padding: 8px 12px;
-            border-radius: 6px;
-            cursor: pointer;
-            color: white;
-            font-size: 1.1rem;
-            transition: opacity 0.2s;
+        .filtro-item {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            flex: 1;
+            min-width: 200px;
         }
-        .btn-acao-mini:hover { opacity: 0.8; }
-        
-        .tabela-responsiva {
+        .filtro-item label {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+        .tabela-frequencia {
             width: 100%;
-            overflow-x: auto;
+            border-collapse: collapse;
             margin-top: 10px;
         }
-        
-        .classe-texto { color: #888; font-size: 0.8rem; }
-        
-        /* Ajuste para esconder seções por padrão */
-        #secaoCuidado { display: none; }
+        .tabela-frequencia th {
+            background-color: #f8f9fa;
+            color: #333;
+            text-align: left;
+            padding: 15px 10px;
+            border-bottom: 2px solid #dee2e6;
+        }
+        .tabela-frequencia td {
+            padding: 12px 10px;
+            border-bottom: 1px solid #eee;
+        }
+        .alerta-ausencia {
+            color: #d63031;
+            font-weight: bold;
+            background: #fff0f0;
+            padding: 4px 8px;
+            border-radius: 4px;
+            display: inline-block;
+        }
+        .status-presente {
+            color: #27ae60;
+            font-weight: 600;
+        }
+        @media (max-width: 600px) {
+            .filtros-container { flex-direction: column; align-items: stretch; }
+            .btn-primario { width: 100%; }
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <header style="text-align: center; margin-bottom: 20px;">
-            <h1>Relatório de Frequência</h1>
+        <header style="text-align: center; margin-bottom: 25px;">
+            <h1 style="color: #2c3e50;">📊 Relatório de Frequência</h1>
             <button onclick="window.location.href='dashboard.html'" class="btn-voltar">⬅ Voltar para Painel</button>
         </header>
 
-        <section class="filtros-relatorio card">
-            <h3 style="margin-top:0">🔍 Consulta por Culto</h3>
-            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-                <input type="date" id="filtroData" style="flex: 1; min-width: 150px;">
-                <select id="filtroGrupoRelatorio" style="flex: 1; min-width: 150px;">
-                    <option value="">Todos os Grupos</option>
-                </select>
-                <button onclick="gerarRelatorio()" class="btn-primario" style="flex: 1;">Gerar Relatório</button>
+        <section class="card-filtros">
+            <h3 style="margin-top:0; color: #34495e; margin-bottom: 15px;">🔍 Parâmetros da Consulta</h3>
+            <div class="filtros-container">
+                
+                <div class="filtro-item">
+                    <label>Data de Referência</label>
+                    <input type="date" id="filtroData" style="padding: 10px; border-radius: 6px; border: 1px solid #ccc;">
+                </div>
+
+                <div class="filtro-item">
+                    <label>Público Alvo</label>
+                    <select id="filtroVinculo" style="padding: 10px; border-radius: 6px; border: 1px solid #ccc;">
+                        <option value="todos">Todos (Membros e Visitantes)</option>
+                        <option value="Membro">Apenas Membros</option>
+                        <option value="Visitante">Apenas Visitantes</option>
+                    </select>
+                </div>
+
+                <button onclick="gerarRelatorioFrequencia()" class="btn-primario" style="height: 45px; min-width: 180px;">
+                    Gerar Relatório
+                </button>
             </div>
         </section>
 
-        <div id="resumoCards" class="grid-resumo" style="margin-top: 20px;">
-            </div>
-
-        <section id="secaoCuidado" class="secao-cuidado">
-            <h3 style="color: #c0392b; margin: 0;">⚠️ Atenção: Membros Ausentes</h3>
-            <p style="font-size: 0.85rem; color: #666; margin-bottom: 15px;">
-                Regra: Membros > 7 dias | Idosos > 30 dias de ausência.
-            </p>
-            <div class="tabela-responsiva">
-                <table style="width: 100%; border-collapse: collapse;">
+        <section class="card" style="margin-top: 20px; padding: 15px;">
+            <h3 style="margin-bottom: 15px;">📋 Detalhamento da Frequência</h3>
+            <div style="width: 100%; overflow-x: auto;">
+                <table class="tabela-frequencia" id="tabelaRelatorio">
                     <thead>
-                        <tr style="text-align: left; border-bottom: 2px solid #eee;">
-                            <th style="padding: 10px;">Membro</th>
-                            <th style="padding: 10px;">Última Vez</th>
-                            <th style="padding: 10px;">Ações</th>
+                        <tr>
+                            <th>Nome</th>
+                            <th>Última Presença</th>
+                            <th>Dias Ausente</th>
+                            <th>Status no Dia</th>
                         </tr>
                     </thead>
-                    <tbody id="corpoCuidado">
-                        </tbody>
+                    <tbody id="corpoRelatorio">
+                        <tr>
+                            <td colspan="4" style="text-align:center; padding: 40px; color: #999; font-style: italic;">
+                                Ajuste a data e o público acima para visualizar os dados.
+                            </td>
+                        </tr>
+                    </tbody>
                 </table>
             </div>
-        </section>
-
-        <section class="card" style="margin-top: 20px;">
-            <h3>📋 Detalhamento da Chamada</h3>
-            <table id="tabelaRelatorio" style="width: 100%;">
-                <thead>
-                    <tr style="text-align: left; border-bottom: 2px solid #eee;">
-                        <th style="padding: 10px;">Nome</th>
-                        <th style="padding: 10px;">Status</th>
-                        <th style="padding: 10px;">Ação</th>
-                    </tr>
-                </thead>
-                <tbody id="corpoRelatorio">
-                    </tbody>
-            </table>
         </section>
     </div>
 
     <script src="../js/script.js"></script>
     <script>
-        // Ao carregar a página, inicia os módulos necessários
         document.addEventListener('DOMContentLoaded', () => {
-            // Define data de hoje no filtro por padrão
-            document.getElementById('filtroData').valueAsDate = new Date();
-            
-            // Tenta carregar a lista de cuidado (Módulo 12)
-            if (typeof carregarListaCuidado === "function") {
-                carregarListaCuidado();
-            }
-
-            // Carregar grupos no select (se a função existir no script.js)
-            if (typeof popularGruposRelatorio === "function") {
-                popularGruposRelatorio();
-            }
+            // Data local correta (AAAA-MM-DD)
+            const hoje = new Date();
+            document.getElementById('filtroData').value = hoje.toLocaleDateString('sv-SE');
         });
+
+        async function gerarRelatorioFrequencia() {
+            const corpo = document.getElementById('corpoRelatorio');
+            corpo.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:30px;">🔍 Calculando frequências e ausências...</td></tr>';
+            
+            if (typeof gerarNovoRelatorioFrequencia === "function") {
+                await gerarNovoRelatorioFrequencia();
+            } else {
+                alert("Erro: A lógica de processamento ainda não foi carregada no script.js");
+            }
+        }
     </script>
 </body>
 </html>

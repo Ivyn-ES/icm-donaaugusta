@@ -98,36 +98,91 @@
     </div>
 
     <script src="../js/script.js"></script>
-    <script>
-        window.onload = () => {
-            // Adicionado "Intermediários" conforme sua lista
-            const categorias = ["Varões", "Senhoras", "Jovens", "Adolescentes", "Intermediários", "Crianças", "Crianças de Colo"];
-            
-            const renderContadores = (containerId, prefixo) => {
-                const container = document.getElementById(containerId);
-                container.innerHTML = categorias.map(cat => `
-                    <div class="contador-group">
-                        <span style="font-weight: 500; color: #444;">${cat}</span>
-                        <div class="controls">
-                            <button class="btn-ctrl btn-minus" onclick="alterarContador('${prefixo}_${cat}', -1)">-</button>
-                            <span class="count-val" id="val_${prefixo}_${cat}">0</span>
-                            <button class="btn-ctrl" onclick="alterarContador('${prefixo}_${cat}', 1)">+</button>
-                        </div>
+<script>
+    window.onload = async () => {
+        // 1. Define as categorias (Exatamente como no Banco)
+        const categorias = ["Varões", "Senhoras", "Jovens", "Adolescentes", "Intermediários", "Crianças", "Crianças de Colo"];
+        
+        // 2. Função para desenhar os botões + e -
+        const renderContadores = (containerId, prefixo) => {
+            const container = document.getElementById(containerId);
+            container.innerHTML = categorias.map(cat => `
+                <div class="contador-group">
+                    <span style="font-weight: 500; color: #444;">${cat}</span>
+                    <div class="controls">
+                        <button class="btn-ctrl btn-minus" onclick="alterarContador('${prefixo}_${cat}', -1)">-</button>
+                        <span class="count-val" id="val_${prefixo}_${cat}">0</span>
+                        <button class="btn-ctrl" onclick="alterarContador('${prefixo}_${cat}', 1)">+</button>
                     </div>
-                `).join('');
-            };
-
-            renderContadores('grupoMembros', 'membro');
-            renderContadores('grupoVisitantes', 'vis');
-            document.getElementById('data_especial').valueAsDate = new Date();
+                </div>
+            `).join('');
         };
 
-        function alterarContador(id, delta) {
-            const el = document.getElementById(`val_${id}`);
-            let atual = parseInt(el.innerText);
-            atual = Math.max(0, atual + delta);
-            el.innerText = atual;
+        renderContadores('grupoMembros', 'membro');
+        renderContadores('grupoVisitantes', 'vis');
+
+        // 3. VERIFICAÇÃO DE EDIÇÃO (O segredo do MacGyver)
+        const urlParams = new URLSearchParams(window.location.search);
+        const idEvento = urlParams.get('id');
+
+        if (idEvento) {
+            document.querySelector('h1').innerText = "📝 Editar Evento";
+            try {
+                // Busca o evento específico no Supabase
+                const { data, error } = await _supabase
+                    .from('eventos_especiais')
+                    .select('*')
+                    .eq('id', idEvento)
+                    .single();
+
+                if (error) throw error;
+
+                // Preenche os campos de texto
+                document.getElementById('data_especial').value = data.data_evento;
+                document.getElementById('local_evento').value = data.local_evento;
+                document.getElementById('desc_evento').value = data.descricao;
+
+                // Preenche os números salvos (Membros)
+                document.getElementById('val_membro_Varões').innerText = data.m_varoes;
+                document.getElementById('val_membro_Senhoras').innerText = data.m_senhoras;
+                document.getElementById('val_membro_Jovens').innerText = data.m_jovens;
+                document.getElementById('val_membro_Adolescentes').innerText = data.m_adolescentes;
+                document.getElementById('val_membro_Intermediários').innerText = data.m_intermediarios;
+                document.getElementById('val_membro_Crianças').innerText = data.m_criancas;
+                document.getElementById('val_membro_Crianças de Colo').innerText = data.m_colo;
+
+                // Preenche os números salvos (Visitantes)
+                document.getElementById('val_vis_Varões').innerText = data.v_varoes;
+                document.getElementById('val_vis_Senhoras').innerText = data.v_senhoras;
+                document.getElementById('val_vis_Jovens').innerText = data.v_jovens;
+                document.getElementById('val_vis_Adolescentes').innerText = data.v_adolescentes;
+                document.getElementById('val_vis_Intermediários').innerText = data.v_intermediarios;
+                document.getElementById('val_vis_Crianças').innerText = data.v_criancas;
+                document.getElementById('val_vis_Crianças de Colo').innerText = data.v_colo;
+
+                // Cria um campo invisível para o sistema saber que estamos Editando e não Criando
+                const hiddenId = document.createElement('input');
+                hiddenId.type = 'hidden';
+                hiddenId.id = 'id_evento_edicao';
+                hiddenId.value = idEvento;
+                document.body.appendChild(hiddenId);
+
+            } catch (err) {
+                console.error("Erro ao carregar:", err);
+                alert("Erro ao recuperar os dados salvos.");
+            }
+        } else {
+            // Se for novo evento, apenas coloca a data de hoje
+            document.getElementById('data_especial').valueAsDate = new Date();
         }
-    </script>
+    };
+
+    function alterarContador(id, delta) {
+        const el = document.getElementById(`val_${id}`);
+        let atual = parseInt(el.innerText);
+        atual = Math.max(0, atual + delta);
+        el.innerText = atual;
+    }
+</script>
 </body>
 </html>

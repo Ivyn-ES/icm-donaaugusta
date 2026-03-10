@@ -698,7 +698,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // ==========================================
-// 11. EVENTOS ESPECIAIS (VERSÃO FINAL REVISADA)
+// 11. EVENTOS ESPECIAIS (SALVAR / ATUALIZAR)
 // ==========================================
 async function salvarEventoEspecial() {
     const data_evento = document.getElementById('data_especial').value;
@@ -711,7 +711,7 @@ async function salvarEventoEspecial() {
 
     const dados = {
         data_evento, 
-        local_evento: local, // ⚠️ IMPORTANTE: Certifique-se de criar esta coluna 'local_evento' (tipo text) no Supabase
+        local_evento: local,
         descricao,
         m_varoes: parseInt(document.getElementById('val_membro_Varões').innerText) || 0,
         m_senhoras: parseInt(document.getElementById('val_membro_Senhoras').innerText) || 0,
@@ -729,13 +729,18 @@ async function salvarEventoEspecial() {
         v_colo: parseInt(document.getElementById('val_vis_Crianças de Colo').innerText) || 0
     };
 
+    // --- O Pulo do Gato para Edição ---
+    const idEdicao = document.getElementById('id_evento_edicao')?.value;
+    if (idEdicao) dados.id = idEdicao; 
+
     try {
-        const { error } = await _supabase.from('eventos_especiais').insert([dados]);
+        // Usamos UPSERT: se o ID existir, ele atualiza. Se não, ele insere.
+        const { error } = await _supabase.from('eventos_especiais').upsert([dados]);
         if (error) throw error;
-        alert("✅ Evento salvo com sucesso!");
+        alert(idEdicao ? "✅ Evento atualizado com sucesso!" : "✅ Evento salvo com sucesso!");
     } catch (err) { 
         console.error("Erro Supabase:", err);
-        alert("❌ Erro ao salvar. Verifique se a coluna 'local_evento' foi criada no banco."); 
+        alert("❌ Erro ao salvar."); 
     }
 }
 
@@ -744,8 +749,6 @@ function gerarWhatsEspecial() {
     const local = document.getElementById('local_evento').value.trim() || "Não informado";
     const desc = document.getElementById('desc_evento').value.trim() || "Evento Especial";
     const dataRaw = document.getElementById('data_especial').value;
-    
-    // Inverte a data de AAAA-MM-DD para DD/MM/AAAA
     const dataFmt = dataRaw ? dataRaw.split('-').reverse().join('/') : "--/--/----";
 
     const obterListaFiltrada = (prefixo) => {
@@ -774,8 +777,7 @@ function gerarWhatsEspecial() {
     msg += `\n*📉 TOTAL GERAL: ${membros.total + visitantes.total}*\n\n`;
     msg += `_A Paz do Senhor Jesus!_`;
 
-    const url = `https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`;
-    window.open(url, '_blank');
+    window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`, '_blank');
 }
 
 // ==========================================
@@ -944,32 +946,23 @@ function enviarAniversariantesZap() {
 }
 
 // ==========================================
-// 13. CONSULTAR HISTÓRICO DE EVENTOS
+// 13. CONSULTAR HISTÓRICO E BOTÃO OLHO
 // ==========================================
 async function carregarHistoricoEventos() {
     const corpoTabela = document.getElementById('corpoHistoricoEventos');
     if (!corpoTabela) return;
-
     corpoTabela.innerHTML = '<tr><td colspan="4" style="text-align:center;">Buscando eventos...</td></tr>';
 
     try {
-        const { data, error } = await _supabase
-            .from('eventos_especiais') // Nome da sua tabela
-            .select('*')
-            .order('data_evento', { ascending: false }); // Do mais novo para o mais antigo
-
+        const { data, error } = await _supabase.from('eventos_especiais').select('*').order('data_evento', { ascending: false });
         if (error) throw error;
-
         if (!data || data.length === 0) {
             corpoTabela.innerHTML = '<tr><td colspan="4" style="text-align:center;">Nenhum evento encontrado.</td></tr>';
             return;
         }
-
         corpoTabela.innerHTML = '';
         data.forEach(ev => {
-            // Formata a data para o padrão brasileiro
             const dataFmt = ev.data_evento.split('-').reverse().join('/');
-            
             const tr = document.createElement('tr');
             tr.innerHTML = `
                 <td style="text-align: center;">${dataFmt}</td>
@@ -981,11 +974,12 @@ async function carregarHistoricoEventos() {
             `;
             corpoTabela.appendChild(tr);
         });
+    } catch (err) { corpoTabela.innerHTML = '<tr><td colspan="4" style="text-align:center; color:red;">Erro ao carregar.</td></tr>'; }
+}
 
-    } catch (err) {
-        console.error("Erro ao carregar histórico:", err);
-        corpoTabela.innerHTML = '<tr><td colspan="4" style="color:red; text-align:center;">Erro ao carregar dados.</td></tr>';
-    }
+function verDetalhesEvento(id) {
+    // Redireciona para a página de eventos levando o ID para carregar os dados
+    window.location.href = `eventos.html?id=${id}`;
 }
 
 // ==========================================

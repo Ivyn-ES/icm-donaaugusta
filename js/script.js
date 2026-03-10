@@ -492,6 +492,39 @@ function autoSelecionarFuncao(inputElement, selectId) {
 // ==========================================
 // 7. MÓDULO ADMINISTRATIVO
 // ==========================================
+
+// --- NOVA FUNÇÃO: RESET DE SENHA ---
+async function solicitarNovaSenha(idUsuario, nomeUsuario) {
+    const userLogado = verificarAcesso();
+    const nivel = (userLogado?.permissao || userLogado?.nivel || "").toLowerCase();
+    
+    if (nivel !== 'admin' && nivel !== 'master') {
+        alert("🚫 Acesso negado. Apenas Administradores podem alterar senhas.");
+        return;
+    }
+
+    const novaSenha = prompt(`Digite a nova senha para o usuário: ${nomeUsuario.toUpperCase()}`);
+    if (novaSenha === null) return; 
+    
+    if (novaSenha.trim().length < 4) {
+        alert("⚠️ A senha deve ter pelo menos 4 caracteres.");
+        return;
+    }
+
+    try {
+        const { error } = await _supabase
+            .from('usuarios')
+            .update({ senha: novaSenha.trim() })
+            .eq('id', idUsuario);
+
+        if (error) throw error;
+        alert(`✅ Senha de ${nomeUsuario} alterada com sucesso!`);
+    } catch (err) {
+        console.error(err);
+        alert("❌ Erro ao atualizar senha.");
+    }
+}
+
 async function renderizarGrupos() {
     const corpo = document.getElementById('corpoTabelaGrupos');
     if (!corpo) return;
@@ -502,7 +535,7 @@ async function renderizarGrupos() {
             <tr>
                 <td>${g.nome}</td>
                 <td style="text-align:center;">
-                    <button onclick="deletarGrupo('${g.id}')" style="background:none; border:none; cursor:pointer;">🗑️</button>
+                    <button onclick="deletarGrupo('${g.id}')" style="background:none; border:none; cursor:pointer;" title="Excluir Grupo">🗑️</button>
                 </td>
             </tr>`).join('');
     } catch (err) { console.error(err); }
@@ -542,7 +575,8 @@ async function renderizarUsuarios() {
                 <td>${u.permissao}</td>
                 <td>${u.grupo_vinculado || 'Todos'}</td>
                 <td style="text-align:center;">
-                    <button onclick="deletarUsuario('${u.id}')" style="background:none; border:none; cursor:pointer;">🗑️</button>
+                    <button onclick="solicitarNovaSenha('${u.id}', '${u.login}')" style="background:none; border:none; cursor:pointer; margin-right:10px;" title="Alterar Senha">🔑</button>
+                    <button onclick="deletarUsuario('${u.id}')" style="background:none; border:none; cursor:pointer;" title="Remover Usuário">🗑️</button>
                 </td>
             </tr>`).join('');
     } catch (err) { console.error(err); }

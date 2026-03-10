@@ -6,6 +6,20 @@
     <title>Gestão de Usuários - ICM</title>
     <link rel="stylesheet" href="../css/style.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        .btn-tabela {
+            border: none;
+            padding: 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 0 2px;
+            color: white;
+            font-size: 1rem;
+        }
+        .btn-senha { background-color: #f1c40f; }
+        .btn-excluir { background-color: #e74c3c; }
+        .btn-tabela:hover { opacity: 0.8; }
+    </style>
 </head>
 <body>
     <div class="container">
@@ -27,15 +41,15 @@
                 </div>
                 <div class="linha-dupla">
                     <div class="campo">
-                <label>Nível de Permissão:</label>
-                <select id="nivelAcesso">
-                    <option value="Master">Master</option>
-                    <option value="Admin">Admin</option>
-                    <option value="Coordenadora">Coordenadora (Senhoras)</option>
-                    <option value="User">Resp Grupo</option>
-                    <option value="Apoio">Apoio (Faz Chamada)</option>
-                    <option value="Livre">Membro (apenas leitura)</option>
-                </select>
+                        <label>Nível de Permissão:</label>
+                        <select id="nivelAcesso">
+                            <option value="Master">Master</option>
+                            <option value="Admin">Admin</option>
+                            <option value="Coordenadora">Coordenadora (Senhoras)</option>
+                            <option value="User">Resp Grupo</option>
+                            <option value="Apoio">Apoio (Faz Chamada)</option>
+                            <option value="Livre">Membro (apenas leitura)</option>
+                        </select>
                     </div>
                     <div class="campo">
                         <label>Vincular ao Grupo:</label>
@@ -77,15 +91,14 @@
 
     <script src="../js/script.js"></script>
     <script>
+        let usuarioLogadoGlobal = null;
+
         document.addEventListener('DOMContentLoaded', async () => {
-            const user = verificarAcesso();
-            if (user) {
-                // Exibe o nome do admin no cabeçalho
-                document.getElementById('nomeAdmin').innerText = user.nome || user.login;
+            usuarioLogadoGlobal = verificarAcesso();
+            if (usuarioLogadoGlobal) {
+                document.getElementById('nomeAdmin').innerText = usuarioLogadoGlobal.nome || usuarioLogadoGlobal.login;
                 
-                // --- TRAVA DE SEGURANÇA AJUSTADA ---
-                // Convertemos para minúsculas antes de comparar para evitar erro de acesso negado
-                const nivelLogado = (user.permissao || user.nivel || "").toLowerCase();
+                const nivelLogado = (usuarioLogadoGlobal.permissao || usuarioLogadoGlobal.nivel || "").toLowerCase();
 
                 if (nivelLogado !== 'admin' && nivelLogado !== 'master') {
                     alert('Acesso negado! Esta área é restrita a administradores.');
@@ -93,32 +106,78 @@
                     return;
                 }
 
-                // Carrega grupos no select para vincular o usuário
                 if (typeof carregarGruposNoSelect === 'function') {
                     await carregarGruposNoSelect();
                 }
 
-                // Lista os usuários já criados
-                if (typeof renderizarUsuarios === 'function') {
-                    renderizarUsuarios();
-                }
+                atualizarTabelaUsuarios();
             }
         });
 
-        // Evento de salvar
+        async function atualizarTabelaUsuarios() {
+            const corpo = document.getElementById('corpoTabelaUsuarios');
+            
+            // Busca usuários diretamente do banco
+            const { data: usuarios, error } = await _supabase
+                .from('usuarios')
+                .select('*')
+                .order('login', { ascending: true });
+
+            if (error) {
+                corpo.innerHTML = '<tr><td colspan="4">Erro ao carregar usuários.</td></tr>';
+                return;
+            }
+
+            corpo.innerHTML = '';
+            usuarios.forEach(u => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td style="padding: 10px; border-bottom: 1px solid #eee;">${u.login}</td>
+                    <td style="border-bottom: 1px solid #eee;">${u.permissao || u.nivel}</td>
+                    <td style="border-bottom: 1px solid #eee;">${u.grupo_vinculado || '---'}</td>
+                    <td style="text-align: center; border-bottom: 1px solid #eee;">
+                        <button onclick="solicitarNovaSenha('${u.id}', '${u.login}')" class="btn-tabela btn-senha" title="Alterar Senha">🔑</button>
+                        <button onclick="executarExclusao('${u.id}')" class="btn-tabela btn-excluir" title="Excluir">🗑️</button>
+                    </td>
+                `;
+                corpo.appendChild(tr);
+            });
+        }
+
+        async function solicitarNovaSenha(id, login) {
+            const nova = prompt(`Digite a nova senha para [ ${login} ] :`);
+            if (nova && nova.length >= 4) {
+                const { error } = await _supabase.from('usuarios').update({ senha: nova }).eq('id', id);
+                if (!error) alert('✅ Senha alterada!');
+                else alert('❌ Erro ao alterar.');
+            } else if (nova !== null) {
+                alert('⚠️ Senha muito curta (mínimo 4 caracteres).');
+            }
+        }
+
+        async function executarExclusao(id) {
+            if (confirm('Tem certeza que deseja excluir este usuário?')) {
+                const { error } = await _supabase.from('usuarios').delete().eq('id', id);
+                if (!error) {
+                    alert('Usuário removido!');
+                    atualizarTabelaUsuarios();
+                }
+            }
+        }
+
         document.getElementById('formUsuario').addEventListener('submit', async (e) => {
             e.preventDefault();
             const dados = {
                 login: document.getElementById('novoLogin').value.trim(),
                 senha: document.getElementById('novaSenha').value.trim(),
-                permissao: document.getElementById('nivelAcesso').value, // Envia o valor do select (Ex: Coordenadora)
+                permissao: document.getElementById('nivelAcesso').value,
                 grupo_vinculado: document.getElementById('grupo_vinculado').value
             };
 
             const ok = await criarUsuario(dados);
             if (ok) {
                 document.getElementById('formUsuario').reset();
-                renderizarUsuarios();
+                atualizarTabelaUsuarios();
             }
         });
     </script>

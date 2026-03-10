@@ -48,6 +48,12 @@
             <h1 style="flex-grow: 1; text-align: center; margin-right: 60px;">📂 Histórico</h1>
         </header>
 
+<div style="margin-bottom: 15px;">
+    <input type="text" id="filtroHistorico" placeholder="🔍 Buscar por Local ou Evento..." 
+           onkeyup="filtrarTabela()" 
+           style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #ccc; font-size: 1rem;">
+</div>
+
         <section class="card">
             <h3 style="margin-top: 0; color: #2c3e50;">📋 Últimos Eventos Salvos</h3>
             <div style="overflow-x: auto;">
@@ -77,6 +83,28 @@
                 carregarHistoricoEventos();
             }
         };
+
+function filtrarTabela() {
+    const input = document.getElementById("filtroHistorico");
+    const filter = input.value.toUpperCase();
+    const table = document.getElementById("corpoHistoricoEventos");
+    const tr = table.getElementsByTagName("tr");
+
+    for (let i = 0; i < tr.length; i++) {
+        // Busca na coluna da Descrição (1) e do Local (2)
+        const tdDesc = tr[i].getElementsByTagName("td")[1];
+        const tdLocal = tr[i].getElementsByTagName("td")[2];
+        if (tdDesc || tdLocal) {
+            const txtValue = (tdDesc.textContent || tdDesc.innerText) + " " + 
+                             (tdLocal.textContent || tdLocal.innerText);
+            if (txtValue.toUpperCase().indexOf(filter) > -1) {
+                tr[i].style.display = "";
+            } else {
+                tr[i].style.display = "none";
+            }
+        }
+    }
+}
     </script>
 </body>
 </html>

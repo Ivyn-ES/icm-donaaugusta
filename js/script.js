@@ -761,32 +761,31 @@ function gerarWhatsEspecial() {
     const nomeIgreja = "ICM - Dona Augusta";
     const local = document.getElementById('local_evento').value.trim() || "Não informado";
     const desc = document.getElementById('desc_evento').value.trim() || "Evento Especial";
-    const dataRaw = document.getElementById('data_special').value; // Usando o ID do campo data
+    const dataRaw = document.getElementById('data_especial').value;
     const dataFmt = dataRaw ? dataRaw.split('-').reverse().join('/') : "--/--/----";
 
-    const obterListaFiltrada = (prefixo) => {
+    const obterListaCompleta = (prefixo) => {
         const cats = ["Varões", "Senhoras", "Jovens", "Adolescentes", "Intermediários", "Crianças", "Crianças de Colo"];
         let lista = ""; let total = 0;
         cats.forEach(c => {
             const val = parseInt(document.getElementById(`val_${prefixo}_${c}`).innerText) || 0;
-            if (val > 0) { 
-                lista += `   • ${c}: ${val}\n`;
-                total += val;
-            }
+            // Agora SEM o 'if (val > 0)', para mostrar inclusive os zerados
+            lista += `   • ${c}: ${val}\n`;
+            total += val;
         });
         return { lista, total };
     };
 
-    const membros = obterListaFiltrada('membro');
-    const visitantes = obterListaFiltrada('vis');
+    const membros = obterListaCompleta('membro');
+    const visitantes = obterListaCompleta('vis');
 
     let msg = `*📊 RELATÓRIO DE EVENTO - ${nomeIgreja.toUpperCase()}*\n\n`;
     msg += `📅 *DATA:* ${dataFmt}\n`;
     msg += `📍 *LOCAL:* ${local}\n`;
     msg += `📝 *EVENTO:* ${desc.toUpperCase()}\n\n`;
     msg += `--- \n\n`;
-    msg += `*👥 MEMBROS: (${membros.total})*\n${membros.total > 0 ? membros.lista : "   _Nenhum registrado_\n"}`;
-    msg += `\n*🌟 VISITANTES: (${visitantes.total})*\n${visitantes.total > 0 ? visitantes.lista : "   _Nenhum registrado_\n"}`;
+    msg += `*👥 MEMBROS: (${membros.total})*\n${membros.lista}`;
+    msg += `\n*🌟 VISITANTES: (${visitantes.total})*\n${visitantes.lista}`;
     msg += `\n*📉 TOTAL GERAL: ${membros.total + visitantes.total}*\n\n`;
     msg += `_A Paz do Senhor Jesus!_`;
 

@@ -729,15 +729,28 @@ async function salvarEventoEspecial() {
         v_colo: parseInt(document.getElementById('val_vis_Crianças de Colo').innerText) || 0
     };
 
-    // --- O Pulo do Gato para Edição ---
+    // --- O Pulo do Gato para Edição (ID de Edição) ---
     const idEdicao = document.getElementById('id_evento_edicao')?.value;
     if (idEdicao) dados.id = idEdicao; 
 
     try {
-        // Usamos UPSERT: se o ID existir, ele atualiza. Se não, ele insere.
-        const { error } = await _supabase.from('eventos_especiais').upsert([dados]);
+        // Usamos UPSERT e .select() para capturar o ID caso seja um registro novo
+        const { data, error } = await _supabase
+            .from('eventos_especiais')
+            .upsert([dados])
+            .select();
+
         if (error) throw error;
+
+        // Se for um novo registro, "carimbamos" o ID na página para os dados permanecerem editáveis
+        if (data && data[0].id) {
+            if (typeof garantirCampoEdicao === "function") {
+                garantirCampoEdicao(data[0].id);
+            }
+        }
+
         alert(idEdicao ? "✅ Evento atualizado com sucesso!" : "✅ Evento salvo com sucesso!");
+        // REMOVIDO: qualquer recarregamento de página para manter os dados na tela
     } catch (err) { 
         console.error("Erro Supabase:", err);
         alert("❌ Erro ao salvar."); 
@@ -748,7 +761,7 @@ function gerarWhatsEspecial() {
     const nomeIgreja = "ICM - Dona Augusta";
     const local = document.getElementById('local_evento').value.trim() || "Não informado";
     const desc = document.getElementById('desc_evento').value.trim() || "Evento Especial";
-    const dataRaw = document.getElementById('data_especial').value;
+    const dataRaw = document.getElementById('data_special').value; // Usando o ID do campo data
     const dataFmt = dataRaw ? dataRaw.split('-').reverse().join('/') : "--/--/----";
 
     const obterListaFiltrada = (prefixo) => {

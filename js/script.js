@@ -933,7 +933,7 @@ async function gerarRelatorioAniversariantes() {
 
         corpoTabela.innerHTML = '';
         listaLimpa.forEach(m => {
-            const icone = m.sexo === 'Masculino' ? '♂️' : '♀️';
+            const icone = m.sexo === 'Masculino' ? '👔' : '💐';
             const tr = document.createElement('tr');
             tr.innerHTML = `
                 <td style="text-align: center;">${m.dia}</td>
@@ -972,7 +972,7 @@ function enviarAniversariantesZap() {
         if (colunas.length >= 3) {
             const dia = colunas[0].innerText.trim();
             const nome = colunas[1].innerText.trim();
-            const opcao = colunas[2].innerText.trim(); // Pega o ♂️ ou ♀️
+            const opcao = colunas[2].innerText.trim(); // Pega o 👔 ou 💐
             texto += `*Dia ${dia}* - ${nome} ${opcao}\n`;
         }
     });

@@ -191,8 +191,9 @@ async function excluirMembro(id) {
 }
 
 // ==========================================
-// 4. MÓDULO DE CHAMADA (PRESENÇA)
+// 4. MÓDULO DE CHAMADA (PRESENÇA) - ATUALIZADO (ICM/MAANAIM)
 // ==========================================
+
 async function renderizarListaChamada() {
     const container = document.getElementById('listaChamada');
     const dataSelecionada = document.getElementById('data_chamada')?.value;
@@ -201,6 +202,7 @@ async function renderizarListaChamada() {
 
     try {
         const user = verificarAcesso();
+        // Buscamos membros e apelidos
         const { data: membros, error: errM } = await _supabase.from('membros')
             .select('id, nome, apelido, grupo, categoria, situacao') 
             .eq('status_registro', 'Ativo').order('nome');
@@ -208,60 +210,99 @@ async function renderizarListaChamada() {
         if (errM) throw errM;
 
         let jaRegistrados = [];
-        let resumoExistente = null;
-
         if (dataSelecionada && eventoSelecionado) {
+            // Agora buscamos a coluna 'status' que pode ser Presente, ICM, Maanaim ou Ausente
             const { data: pres } = await _supabase.from('presencas')
-                .select('membro_id, presenca').eq('data_culto', dataSelecionada).eq('tipo_evento', eventoSelecionado);
+                .select('membro_id, status').eq('data_culto', dataSelecionada).eq('tipo_evento', eventoSelecionado);
             jaRegistrados = pres || [];
 
+            // Carrega resumo do culto (Ata)
             const { data: resu } = await _supabase.from('resumo_culto')
                 .select('*').eq('data_culto', dataSelecionada).eq('tipo_evento', eventoSelecionado)
-                .eq('grupo', user.grupo || 'Geral').maybeSingle();
-            resumoExistente = resu;
-        }
-
-        if (resumoExistente) {
-            document.getElementById('vis_adultos').value = resumoExistente.vis_adultos || 0;
-            document.getElementById('vis_cias').value = resumoExistente.vis_cias || 0;
-            document.getElementById('pregador_nome').value = resumoExistente.pregador_nome || "";
-            document.getElementById('pregador_funcao').value = resumoExistente.pregador_funcao || "Pastor";
-            document.getElementById('texto_biblico').value = resumoExistente.texto_biblico || "";
-            document.getElementById('louvor_nome').value = resumoExistente.louvor_nome || "";
-            document.getElementById('louvor_funcao').value = resumoExistente.louvor_funcao || "Membro";
-            document.getElementById('portao_nome').value = resumoExistente.portao_nome || "";
-            document.getElementById('portao_funcao').value = resumoExistente.portao_funcao || "Obreiro";
-            if (document.getElementById('observacoes_culto')) {
-                document.getElementById('observacoes_culto').value = resumoExistente.observacoes || "";
+                .eq('grupo', user.grupo_vinculado || 'Geral').maybeSingle();
+            
+            if (resu) {
+                document.getElementById('vis_adultos').value = resu.vis_adultos || 0;
+                document.getElementById('vis_cias').value = resu.vis_cias || 0;
+                document.getElementById('pregador_nome').value = resu.pregador_nome || "";
+                document.getElementById('texto_biblico').value = resu.texto_biblico || "";
+                document.getElementById('louvor_nome').value = resu.louvor_nome || "";
+                document.getElementById('portao_nome').value = resu.portao_nome || "";
+                if (document.getElementById('observacoes_culto')) {
+                    document.getElementById('observacoes_culto').value = resu.observacoes || "";
+                }
             }
         }
 
         container.innerHTML = membros.map(m => {
             const reg = jaRegistrados.find(r => r.membro_id === m.id);
-            const estaPresente = reg ? reg.presenca : false;
-            const partesNome = m.nome.trim().split(" ");
-            const nomeCurto = partesNome.length > 1 ? `${partesNome[0]} ${partesNome[1]}` : partesNome[0];
-            const sit = (m.situacao || "").toLowerCase();
-            const eVisitante = sit.includes('visitante');
-            const nomeExibicao = m.apelido ? `<strong>${m.apelido}</strong> <br><small>(${nomeCurto})</small>` : `<strong>${nomeCurto}</strong>`;
+            const statusAtual = reg ? reg.status : 'Ausente';
+            
+            // Prioridade para o Apelido
+            const nomeExibicao = m.apelido ? `<strong>${m.apelido}</strong>` : `<strong>${m.nome.split(' ')[0]}</strong>`;
+            const subTexto = m.apelido ? m.nome.split(' ')[0] : (m.grupo || 'Geral');
 
             return `
-                <div class="card-chamada" style="display:flex; align-items:center; justify-content:space-between; padding:12px; border:1px solid #ddd; margin-bottom:8px; border-radius:8px; background:${estaPresente ? '#e8f5e9' : '#fff'};">
-                    <span class="dados-membro">${nomeExibicao} <br><small>${m.grupo}${eVisitante ? ' (Vis)' : ''}</small></span>
-                    <input type="checkbox" class="check-presenca" onchange="atualizarContadores()" data-id="${m.id}" data-categoria="${m.categoria || 'Adulto'}" data-situacao="${m.situacao || 'Membro'}" ${estaPresente ? 'checked' : ''} style="width:28px; height:28px;">
+                <div class="card-chamada" data-id="${m.id}" data-nome="${m.nome}" data-apelido="${m.apelido || ''}" 
+                     style="display:flex; align-items:center; justify-content:space-between; padding:12px; border:1px solid #ddd; margin-bottom:8px; border-radius:10px; background:#fff;">
+                    
+                    <div style="flex:1;">
+                        <span style="font-size:1.1rem;">${nomeExibicao}</span><br>
+                        <small style="color:#888;">${subTexto}</small>
+                    </div>
+
+                    <div class="controles-status" style="display:flex; gap:8px;">
+                        <button onclick="selecionarStatus('${m.id}', 'Presente')" id="btn_P_${m.id}" 
+                                class="btn-status-toggle ${statusAtual === 'Presente' ? 'active-p' : ''}" 
+                                style="padding:10px; border-radius:8px; border:1px solid #ccc; cursor:pointer; background:${statusAtual === 'Presente' ? '#2ecc71' : '#fff'}">✅</button>
+                        
+                        <button onclick="selecionarStatus('${m.id}', 'ICM')" id="btn_I_${m.id}" 
+                                class="btn-status-toggle ${statusAtual === 'ICM' ? 'active-i' : ''}" 
+                                style="padding:10px; border-radius:8px; border:1px solid #ccc; cursor:pointer; background:${statusAtual === 'ICM' ? '#3498db' : '#fff'}">🏠</button>
+                        
+                        <button onclick="selecionarStatus('${m.id}', 'Maanaim')" id="btn_M_${m.id}" 
+                                class="btn-status-toggle ${statusAtual === 'Maanaim' ? 'active-m' : ''}" 
+                                style="padding:10px; border-radius:8px; border:1px solid #ccc; cursor:pointer; background:${statusAtual === 'Maanaim' ? '#e67e22' : '#fff'}">⛰️</button>
+                    </div>
                 </div>`;
         }).join('');
         atualizarContadores();
-    } catch (err) { console.error(err); }
+    } catch (err) { console.error("Erro na lista:", err); }
 }
 
-function filtrarListaMembros() {
-    const termo = document.getElementById('inputBusca')?.value.toLowerCase().trim() || "";
-    const cards = document.querySelectorAll('.card-chamada');
-    cards.forEach(card => {
-        const texto = card.innerText.toLowerCase();
-        card.style.display = texto.includes(termo) ? "flex" : "none";
+// Função para alternar entre os estados
+function selecionarStatus(membroId, novoStatus) {
+    const btnP = document.getElementById(`btn_P_${membroId}`);
+    const btnI = document.getElementById(`btn_I_${membroId}`);
+    const btnM = document.getElementById(`btn_M_${membroId}`);
+    const card = btnP.closest('.card-chamada');
+
+    // Se clicar no que já está ativo, desmarca tudo (volta a ser Ausente)
+    const jaEstavaAtivo = (novoStatus === 'Presente' && btnP.classList.contains('active-p')) ||
+                        (novoStatus === 'ICM' && btnI.classList.contains('active-i')) ||
+                        (novoStatus === 'Maanaim' && btnM.classList.contains('active-m'));
+
+    // Reseta todos os botões daquela linha
+    [btnP, btnI, btnM].forEach(b => {
+        b.style.background = '#fff';
+        b.classList.remove('active-p', 'active-i', 'active-m');
     });
+    card.style.background = '#fff';
+    card.setAttribute('data-status', 'Ausente');
+
+    if (!jaEstavaAtivo) {
+        card.setAttribute('data-status', novoStatus);
+        if (novoStatus === 'Presente') { 
+            btnP.style.background = '#2ecc71'; btnP.classList.add('active-p'); card.style.background = '#e8f5e9';
+        }
+        if (novoStatus === 'ICM') { 
+            btnI.style.background = '#3498db'; btnI.classList.add('active-i'); card.style.background = '#ebf5fb';
+        }
+        if (novoStatus === 'Maanaim') { 
+            btnM.style.background = '#e67e22'; btnM.classList.add('active-m'); card.style.background = '#fef5e7';
+        }
+    }
+    atualizarContadores();
 }
 
 async function salvarChamada() {
@@ -271,38 +312,42 @@ async function salvarChamada() {
     const user = verificarAcesso();
     if (!dataCulto) return alert("Selecione a data!");
     
-    const textoOriginal = btn.innerText;
     btn.disabled = true;
+    const originalText = btn.innerText;
     btn.innerText = "⌛ Salvando...";
 
-    const presencasMembros = Array.from(document.querySelectorAll('.check-presenca')).map(cb => ({
-        membro_id: cb.getAttribute('data-id'), 
+    // Mapeia o status de cada card
+    const registros = Array.from(document.querySelectorAll('.card-chamada')).map(card => ({
+        membro_id: card.getAttribute('data-id'), 
         data_culto: dataCulto, 
         tipo_evento: tipoEvento, 
-        presenca: cb.checked
+        status: card.getAttribute('data-status') || 'Ausente',
+        presenca: card.getAttribute('data-status') === 'Presente' // Mantém compatibilidade com o booleano se necessário
     }));
 
     const dadosAta = {
-        data_culto: dataCulto, tipo_evento: tipoEvento, grupo: user.grupo || 'Geral',
+        data_culto: dataCulto, tipo_evento: tipoEvento, grupo: user.grupo_vinculado || 'Geral',
         vis_adultos: parseInt(document.getElementById('vis_adultos').value) || 0,
         vis_cias: parseInt(document.getElementById('vis_cias').value) || 0,
         pregador_nome: document.getElementById('pregador_nome').value, 
-        pregador_funcao: document.getElementById('pregador_funcao').value,
         texto_biblico: document.getElementById('texto_biblico').value, 
         louvor_nome: document.getElementById('louvor_nome').value,
-        louvor_funcao: document.getElementById('louvor_funcao').value, 
         portao_nome: document.getElementById('portao_nome').value,
-        portao_funcao: document.getElementById('portao_funcao').value,
         observacoes: document.getElementById('observacoes_culto')?.value || ""
     };
 
     try {
-        await _supabase.from('presencas').upsert(presencasMembros, { onConflict: 'membro_id, data_culto, tipo_evento' });
+        await _supabase.from('presencas').upsert(registros, { onConflict: 'membro_id, data_culto, tipo_evento' });
         await _supabase.from('resumo_culto').upsert([dadosAta], { onConflict: 'data_culto, tipo_evento, grupo' });
-        alert(`✅ Dados salvos!`);
-        btn.innerText = "✅ Atualizado";
-        setTimeout(() => { btn.disabled = false; btn.innerText = textoOriginal; }, 3000);
-    } catch (err) { alert(err.message); btn.disabled = false; btn.innerText = textoOriginal; }
+        
+        alert(`✅ Chamada atualizada com sucesso!`);
+        btn.innerText = originalText;
+        btn.disabled = false;
+    } catch (err) { 
+        alert("Erro ao salvar: " + err.message); 
+        btn.disabled = false; 
+        btn.innerText = originalText; 
+    }
 }
 
 // ==========================================

@@ -6,48 +6,33 @@
     <title>Chamada - ICM</title>
     <link rel="stylesheet" href="../css/style.css">
     <style>
-        /* Estilo para os botões de ajuste de visitantes */
-        .btn-ajuste {
-            width: 35px;
-            height: 35px;
-            border: none;
-            border-radius: 8px;
-            font-size: 1.2rem;
-            font-weight: bold;
-            color: white;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: opacity 0.2s;
-        }
+        .btn-ajuste { width: 35px; height: 35px; border: none; border-radius: 8px; font-size: 1.2rem; font-weight: bold; color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: opacity 0.2s; }
         .btn-menos { background-color: #e74c3c; }
         .btn-mais { background-color: #2ecc71; }
-        .btn-ajuste:active { opacity: 0.7; }
-        .input-ajuste {
-            width: 55px;
-            text-align: center;
-            font-size: 1.2rem;
-            font-weight: bold;
+        .input-ajuste { width: 55px; text-align: center; font-size: 1.2rem; font-weight: bold; border: 1px solid #ddd; border-radius: 8px; background: #fdfdfd; }
+        
+        /* Estilo dos novos botões de status */
+        .btn-status-extra {
+            background: #f8f9fa;
             border: 1px solid #ddd;
-            border-radius: 8px;
-            background: #fdfdfd;
+            border-radius: 6px;
+            padding: 8px;
+            cursor: pointer;
+            font-size: 1.2rem;
+            transition: all 0.2s;
         }
-        /* Destaque para o campo de busca fixo no topo
-        .busca-container {
-            margin-bottom: 15px;
-            position: sticky;
-            top: 10px;
-            z-index: 100;
-        }*/
-        #inputBusca {
-            width: 100%;
-            padding: 15px;
-            border-radius: 12px;
-            border: 2px solid #007bff;
-            font-size: 1.1rem;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-            outline: none;
+        .btn-status-extra.active-icm { background-color: #3498db !important; border-color: #2980b9; }
+        .btn-status-extra.active-maanaim { background-color: #e67e22 !important; border-color: #d35400; }
+        
+        #inputBusca { width: 100%; padding: 15px; border-radius: 12px; border: 2px solid #007bff; font-size: 1.1rem; outline: none; margin-bottom: 10px; }
+        
+        .legenda-status {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            font-size: 0.8rem;
+            color: #666;
+            margin-bottom: 10px;
         }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -56,50 +41,55 @@
     <datalist id="listaMembrosSugestao"></datalist>
 
     <div class="container">
-        
         <header style="text-align: center; margin-bottom: 10px;">
             <h1>📋 Fazer Chamada</h1>
             <p id="infoChamada" style="margin-bottom: 10px; font-weight: bold; color: #555;">Verificando grupo...</p>
             
             <div style="display: flex; flex-direction: column; gap: 10px;">
-                <select id="tipo_evento" onchange="renderizarListaChamada()" style="padding: 12px; border-radius: 8px; border: 1px solid #ccc; font-size: 1rem; background: white;">
-                    <option value="Culto">Culto</option>
-                    <option value="EBD">EBD (Escola Bíblica)</option>
-                    <option value="Vigília">Vigília</option>
-                    <option value="Reunião">Reunião</option>
-                    <option value="Outro">Outro</option>
-                </select>
+                <input type="text" id="inputBusca" onkeyup="filtrarListaMembros()" placeholder="🔍 Buscar por nome ou apelido...">
+                
+                <div class="legenda-status">
+                    <span>✅ Presente</span>
+                    <span>🏠 Outra ICM</span>
+                    <span>⛰️ Maanaim</span>
+                </div>
 
-                <input type="date" id="data_chamada" onchange="renderizarListaChamada()" style="padding: 12px; border-radius: 8px; border: 1px solid #ccc; font-size: 1rem;">
+                <div style="display: flex; gap: 10px;">
+                    <select id="tipo_evento" onchange="renderizarListaChamada()" style="flex:1; padding: 12px; border-radius: 8px; border: 1px solid #ccc; background: white;">
+                        <option value="Culto">Culto</option>
+                        <option value="EBD">EBD</option>
+                        <option value="Vigília">Vigília</option>
+                        <option value="Reunião">Reunião</option>
+                    </select>
+                    <input type="date" id="data_chamada" onchange="renderizarListaChamada()" style="flex:1; padding: 12px; border-radius: 8px; border: 1px solid #ccc;">
+                </div>
             </div>
         </header>
 
-        <div id="placar-chamada" style="font-size: 0.9rem; background: #f8f9fa; padding: 15px; border-radius: 12px; margin-bottom: 20px; display: flex; justify-content: space-around; flex-wrap: wrap; border: 1px solid #dee2e6; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+        <div id="placar-chamada" style="font-size: 0.9rem; background: #f8f9fa; padding: 15px; border-radius: 12px; margin-bottom: 20px; display: flex; justify-content: space-around; flex-wrap: wrap; border: 1px solid #dee2e6;">
             <div style="text-align: center; margin: 5px;">
-                <span style="display: block; font-weight: bold; color: #2c3e50; margin-bottom: 5px;">👥 Membros</span>
+                <span style="display: block; font-weight: bold; color: #2c3e50;">👥 Membros</span>
                 <small>Ad: <span id="cont_membros_adultos">0</span> | CIAs: <span id="cont_membros_cias">0</span></small>
             </div>
             <div style="text-align: center; margin: 5px;">
-                <span style="display: block; font-weight: bold; color: #2c3e50; margin-bottom: 5px;">🌟 Visitantes</span>
+                <span style="display: block; font-weight: bold; color: #2c3e50;">🌟 Visitantes</span>
                 <small>Ad: <span id="cont_vis_adultos_display">0</span> | CIAs: <span id="cont_vis_cias_display">0</span></small>
             </div>
             <div style="text-align: center; margin: 5px; border-left: 2px solid #eee; padding-left: 15px;">
-                <span style="display: block; font-weight: bold; color: #d32f2f; margin-bottom: 5px;">Total Geral</span>
+                <span style="display: block; font-weight: bold; color: #d32f2f;">Total Geral</span>
                 <span id="cont_total" style="font-size: 1.2rem; font-weight: 900;">0</span>
             </div>
         </div>
 
         <section style="margin-bottom: 30px;">
-            <h3 style="border-bottom: 2px solid #007bff; padding-bottom: 8px; color: #007bff;">👥 Frequência de Membros</h3>
+            <h3 style="border-bottom: 2px solid #007bff; padding-bottom: 8px; color: #007bff;">👥 Lista de Chamada</h3>
             <div id="listaChamada" style="display: flex; flex-direction: column; gap: 10px; margin-top: 15px;">
-                <p style="text-align:center; color: #888;">Carregando lista de membros...</p>
+                <p style="text-align:center; color: #888;">Carregando...</p>
             </div>
         </section>
 
-        <hr style="margin: 40px 0; border: 0; border-top: 2px solid #eee;">
-        
-        <section id="ataCulto" style="background: #ffffff; padding: 25px; border-radius: 15px; border: 1px solid #ddd; box-shadow: 0 4px 6px rgba(0,0,0,0.02);">
-            <h3 style="margin-top:0; color: #2ecc71; border-bottom: 2px solid #2ecc71; padding-bottom: 8px;">📊 Resumo do Culto</h3>
+        <section id="ataCulto" style="background: #ffffff; padding: 20px; border-radius: 15px; border: 1px solid #ddd;">
+            <h3 style="margin-top:0; color: #2ecc71; border-bottom: 2px solid #2ecc71; padding-bottom: 8px;">📊 Resumo do Trabalho</h3>
             
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 25px; margin-top: 20px;">
                 <div style="text-align: center;">
@@ -120,21 +110,9 @@
                 </div>
             </div>
 
-            <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 10px; margin-bottom: 15px;">
-                <div>
-                    <label style="display:block; font-weight:bold; margin-bottom:5px;">Pregador</label>
-                    <input type="search" id="pregador_nome" list="listaMembrosSugestao" oninput="autoSelecionarFuncao(this, 'pregador_funcao')" placeholder="Nome..." autocomplete="off" spellcheck="false" style="width:100%; padding:10px; border-radius:8px; border:1px solid #ccc;">
-                </div>
-                <div>
-                    <label style="display:block; font-weight:bold; margin-bottom:5px;">Função</label>
-                    <select id="pregador_funcao" style="width:100%; padding:10px; border-radius:8px; border:1px solid #ccc;">
-                        <option value="Pastor">Pastor</option>
-                        <option value="Diácono">Diácono</option>
-                        <option value="Obreiro">Obreiro</option>
-                        <option value="Membro">Membro</option>
-                        <option value="Convidado">Convidado</option>
-                    </select>
-                </div>
+            <div style="margin-bottom: 15px;">
+                <label style="display:block; font-weight:bold; margin-bottom:5px;">Pregador</label>
+                <input type="search" id="pregador_nome" list="listaMembrosSugestao" placeholder="Nome..." style="width:100%; padding:10px; border-radius:8px; border:1px solid #ccc;">
             </div>
 
             <div style="margin-bottom: 20px;">
@@ -142,81 +120,44 @@
                 <input type="text" id="texto_biblico" placeholder="Ex: Efésios 2:8" style="width:100%; padding:10px; border-radius:8px; border:1px solid #ccc;">
             </div>
 
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
                 <div>
                     <label style="display:block; font-weight:bold; margin-bottom:5px;">🎶 Louvor</label>
-                    <input type="search" id="louvor_nome" list="listaMembrosSugestao" oninput="autoSelecionarFuncao(this, 'louvor_funcao')" placeholder="Nome..." autocomplete="off" style="width:100%; padding:10px; border-radius:8px; border:1px solid #ccc; margin-bottom:5px;">
-                    <select id="louvor_funcao" style="width:100%; padding:10px; border-radius:8px; border:1px solid #ccc;">
-                        <option value="Membro">Membro</option>
-                        <option value="Obreiro">Obreiro</option>
-                        <option value="Diácono">Diácono</option>
-                        <option value="Pastor">Pastor</option>
-                    </select>
+                    <input type="search" id="louvor_nome" list="listaMembrosSugestao" placeholder="Nome..." style="width:100%; padding:10px; border-radius:8px; border:1px solid #ccc;">
                 </div>
                 <div>
                     <label style="display:block; font-weight:bold; margin-bottom:5px;">🚪 Portão</label>
-                    <input type="search" id="portao_nome" list="listaMembrosSugestao" oninput="autoSelecionarFuncao(this, 'portao_funcao')" placeholder="Nome..." autocomplete="off" style="width:100%; padding:10px; border-radius:8px; border:1px solid #ccc; margin-bottom:5px;">
-                    <select id="portao_funcao" style="width:100%; padding:10px; border-radius:8px; border:1px solid #ccc;">
-                        <option value="Obreiro">Obreiro</option>
-                        <option value="Diácono">Diácono</option>
-                        <option value="Membro">Membro</option>
-                    </select>
+                    <input type="search" id="portao_nome" list="listaMembrosSugestao" placeholder="Nome..." style="width:100%; padding:10px; border-radius:8px; border:1px solid #ccc;">
                 </div>
-            </div>
-
-            <div style="margin-bottom: 10px;">
-                <label style="display:block; font-weight:bold; margin-bottom:5px;">📝 Observações</label>
-                <textarea id="observacoes_culto" rows="3" placeholder="Anotações especiais..." style="width:100%; padding:10px; border-radius:8px; border:1px solid #ccc; font-family:inherit;"></textarea>
             </div>
         </section>
 
         <div style="margin-top: 30px; display: flex; flex-direction: column; gap: 12px;">
-            <button onclick="salvarChamada()" class="btn-salvar" id="btnFinalizar" style="padding: 18px; font-size: 1.2rem; font-weight: bold; background-color: #007bff; color: white; border: none; border-radius: 10px; cursor: pointer;">Atualizar dados</button>
+            <button onclick="salvarChamada()" class="btn-salvar" id="btnFinalizar" style="padding: 18px; font-size: 1.2rem; font-weight: bold; background-color: #007bff; color: white; border: none; border-radius: 10px;">Atualizar dados</button>
             
-            <button onclick="gerarResumoWhatsApp()" style="background-color: #25d366; width: 100%; padding: 15px; color: white; border: none; border-radius: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px;">
-                <span style="font-size: 1.5rem;">📱</span> 
-                <span style="font-weight: bold;">Gerar Resumo para WhatsApp</span>
+            <button onclick="gerarResumoWhatsApp()" style="background-color: #25d366; width: 100%; padding: 15px; color: white; border: none; border-radius: 10px; font-weight: bold; display: flex; align-items: center; justify-content: center; gap: 10px;">
+                <span>📱 Gerar Resumo para WhatsApp</span>
             </button>
             
-            <a href="dashboard.html" class="btn-voltar" style="text-align: center; text-decoration: none; padding: 12px; background: #f1f1f1; border-radius: 8px; color: #555; font-weight: bold;">⬅ Voltar ao Painel</a>
+            <a href="dashboard.html" class="btn-voltar" style="text-align: center; text-decoration: none; padding: 12px; background: #f1f1f1; border-radius: 8px; color: #555;">⬅ Voltar</a>
         </div>
     </div>
 
     <script src="../js/script.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', async () => {
-            const user = JSON.parse(localStorage.getItem('usuarioLogado'));
-            if (user) {
-                const hoje = new Date().toISOString().split('T')[0]; 
-                document.getElementById('data_chamada').value = hoje;
-                document.getElementById('infoChamada').innerText = `Grupo: ${user.grupo_vinculado || 'Geral'}`;
-                
-                // Primeiro renderiza os cards
-                await renderizarListaChamada();
-
-                // Damos um tempo extra (1 segundo) para o Firefox Mobile reconhecer o datalist
-                setTimeout(async () => {
-                    if (typeof carregarSugestoesMembros === 'function') {
-                        await carregarSugestoesMembros();
-                        console.log("Sugestões carregadas com sucesso.");
-                    }
-                    if (typeof atualizarContadores === 'function') {
-                        atualizarContadores();
-                    }
-                }, 1000);
-
-            } else {
-                window.location.href = '../index.html';
-            }
+            const hoje = new Date().toLocaleDateString('sv-SE');
+            document.getElementById('data_chamada').value = hoje;
+            await renderizarListaChamada();
         });
 
         function filtrarListaMembros() {
-            const termo = document.getElementById('inputBusca').value.toLowerCase().trim();
+            const termo = document.getElementById('inputBusca').value.toLowerCase();
             const cards = document.querySelectorAll('.card-chamada');
-
             cards.forEach(card => {
-                const texto = card.innerText.toLowerCase();
-                card.style.display = texto.includes(termo) ? "flex" : "none";
+                const nome = card.getAttribute('data-nome').toLowerCase();
+                const apelido = card.getAttribute('data-apelido').toLowerCase();
+                card.style.display = (nome.includes(termo) || apelido.includes(termo)) ? "flex" : "none";
             });
         }
     </script>

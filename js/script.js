@@ -507,9 +507,9 @@ async function renderizarListaChamada() {
                     <small style="color: #888; font-size: 0.8rem;">${tagVis}(${nomeDoisTermos})</small>
                 </div>
                 <div class="botoes-status" style="display:flex; gap:15px; padding-right: 10px;">
-                    <span class="op-status btn-check" onclick="marcarStatus(this, 'Presente')" style="cursor:pointer; font-size:1.3rem; filter:grayscale(1); opacity:0.3;">✅</span>
-                    <span class="op-status btn-icm" onclick="marcarStatus(this, 'ICM')" style="cursor:pointer; font-size:1.3rem; filter:grayscale(1); opacity:0.3;">🏠</span>
-                    <span class="op-status btn-maa" onclick="marcarStatus(this, 'Maanaim')" style="cursor:pointer; font-size:1.3rem; filter:grayscale(1); opacity:0.3;">⛰️</span>
+                    <span class="op-status btn-check" onclick="marcarStatus(this, 'Presente')" style="cursor:pointer; font-size:1.3rem; filter:grayscale(1); opacity:0.3; transition: 0.2s;">✅</span>
+                    <span class="op-status btn-icm" onclick="marcarStatus(this, 'ICM')" style="cursor:pointer; font-size:1.3rem; filter:grayscale(1); opacity:0.3; transition: 0.2s;">🏠</span>
+                    <span class="op-status btn-maa" onclick="marcarStatus(this, 'Maanaim')" style="cursor:pointer; font-size:1.3rem; filter:grayscale(1); opacity:0.3; transition: 0.2s;">⛰️</span>
                 </div>
             `;
             listaContainer.appendChild(card);
@@ -525,11 +525,11 @@ function marcarStatus(elemento, novoStatus) {
     const card = elemento.closest('.card-chamada');
     const statusAnterior = card.getAttribute('data-status');
     
-    // 1. LÓGICA DE SELEÇÃO: Se clicar no mesmo, vira Faltou. Senão, assume o novo.
+    // 1. LÓGICA DE SELEÇÃO ÚNICA (RÁDIO)
     const statusFinal = (statusAnterior === novoStatus) ? 'Faltou' : novoStatus;
     card.setAttribute('data-status', statusFinal);
 
-    // 2. RESET VISUAL DE TODOS OS ÍCONES DO CARD
+    // 2. RESET VISUAL (Apaga todos os ícones da linha)
     const icones = card.querySelectorAll('.op-status');
     icones.forEach(i => {
         i.style.filter = 'grayscale(1)';
@@ -537,12 +537,18 @@ function marcarStatus(elemento, novoStatus) {
         i.style.transform = 'scale(1)';
     });
 
-    // 3. ATIVAÇÃO DA LUZ PILOTO (Sempre o ✅)
+    // 3. ATIVAÇÃO INDIVIDUAL (Acende apenas o que foi escolhido)
     if (statusFinal !== 'Faltou') {
-        const btnVerde = card.querySelector('.btn-check');
-        btnVerde.style.filter = 'none';
-        btnVerde.style.opacity = '1';
-        btnVerde.style.transform = 'scale(1.3)';
+        let classeAlvo = '.btn-check';
+        if (statusFinal === 'ICM') classeAlvo = '.btn-icm';
+        if (statusFinal === 'Maanaim') classeAlvo = '.btn-maa';
+
+        const iconeAtivo = card.querySelector(classeAlvo);
+        if (iconeAtivo) {
+            iconeAtivo.style.filter = 'none';
+            iconeAtivo.style.opacity = '1';
+            iconeAtivo.style.transform = 'scale(1.4)';
+        }
         card.style.backgroundColor = '#f0f7ff';
     } else {
         card.style.backgroundColor = 'transparent';
@@ -565,15 +571,22 @@ async function carregarDadosExistentes() {
             
             if (p && p.status !== 'Faltou') {
                 card.setAttribute('data-status', p.status);
-                const check = card.querySelector('.btn-check');
-                check.style.filter = 'none';
-                check.style.opacity = '1';
-                check.style.transform = 'scale(1.3)';
-                card.style.backgroundColor = '#f0f7ff';
+                
+                // Determina qual ícone acender ao carregar do banco
+                let classeAlvo = '.btn-check';
+                if (p.status === 'ICM') classeAlvo = '.btn-icm';
+                if (p.status === 'Maanaim') classeAlvo = '.btn-maa';
+
+                const icone = card.querySelector(classeAlvo);
+                if (icone) {
+                    icone.style.filter = 'none';
+                    icone.style.opacity = '1';
+                    icone.style.transform = 'scale(1.4)';
+                    card.style.backgroundColor = '#f0f7ff';
+                }
             }
         });
 
-        // Carregamento do resumo_culto simplificado
         const { data: resumo } = await _supabase.from('resumo_culto')
             .select('*').eq('data_culto', dataCulto).eq('tipo_evento', tipoEvento).maybeSingle();
         if (resumo) {

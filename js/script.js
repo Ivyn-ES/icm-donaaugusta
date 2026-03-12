@@ -319,9 +319,8 @@ async function carregarSugestoesEFuncoes() {
         const datalist = document.getElementById('listaMembrosSugestao');
         if (datalist) {
             datalist.innerHTML = membros.map(m => {
-                const valor = m.nome; 
                 const label = m.apelido ? `${m.nome} (${m.apelido})` : m.nome;
-                return `<option value="${valor}">${m.funcao} - ${label}</option>`;
+                return `<option value="${m.nome}">${m.funcao} - ${label}</option>`;
             }).join('');
         }
     } catch (err) { console.error("Erro nas sugestões:", err); }
@@ -356,14 +355,9 @@ function ajustarVisitante(id, valor) {
 
 async function gerarResumoWhatsApp() {
     try {
-        const dataInput = document.getElementById('data_chamada').value;
-        const dataFmt = dataInput ? dataInput.split('-').reverse().join('/') : "--/--/--";
+        const dataFmt = document.getElementById('data_chamada').value.split('-').reverse().join('/');
         const total = document.getElementById('cont_total').innerText;
-        
-        const pNome = (id) => {
-            const val = document.getElementById(id).value;
-            return val ? val.split(" ")[0] : "---";
-        };
+        const pNome = (id) => document.getElementById(id).value.split(" ")[0] || "---";
 
         let msg = `*ICM - Dona Augusta*\n*📊 RESUMO - ${dataFmt}*\n\n`;
         msg += `*⭐ TOTAL GERAL: ${total}*\n\n`;
@@ -376,14 +370,12 @@ async function gerarResumoWhatsApp() {
         if(obs) msg += `\n📝 *Obs:* ${obs}`;
 
         window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`, '_blank');
-    } catch (e) {
-        alert("Erro ao gerar resumo.");
-    }
+    } catch (e) { alert("Erro ao gerar resumo."); }
 }
 
 async function salvarChamada() {
     const btn = document.getElementById('btnFinalizar');
-    const textoOriginal = btn.innerText;
+    const original = btn.innerText;
     btn.innerText = "⌛ Salvando...";
     btn.disabled = true;
 
@@ -415,31 +407,30 @@ async function salvarChamada() {
             observacoes: document.getElementById('observacoes_culto').value
         };
 
-        await _supabase.from('presencas').upsert(registros, { onConflict: 'membro_id, data_culto, tipo_evento' });
+        await _supabase.from('presencas').delete().eq('data_culto', dataCulto).eq('tipo_evento', tipoEvento);
+        
+        if (registros.length > 0) {
+            await _supabase.from('presencas').insert(registros);
+        }
         await _supabase.from('resumo_culto').upsert([resumo], { onConflict: 'data_culto, tipo_evento, grupo' });
 
-        alert("✅ Dados sincronizados!");
-    } catch (e) { 
-        alert("Erro ao salvar."); 
-    } finally {
-        btn.innerText = textoOriginal;
-        btn.disabled = false;
-    }
+        alert("✅ Sincronizado com o Supabase!");
+    } catch (e) { alert("Erro ao salvar."); }
+    btn.innerText = original;
+    btn.disabled = false;
 }
 
 // ==========================================
-// 6. RENDERIZAÇÃO E PLACAR (VERSÃO FINAL)
+// 6. RENDERIZAÇÃO E PLACAR (REGRA UNIFICADA)
 // ==========================================
 
 async function renderizarListaChamada() {
     const listaContainer = document.getElementById('listaChamada');
-    listaContainer.innerHTML = "<p style='text-align:center; padding: 20px;'>Buscando no banco...</p>";
+    listaContainer.innerHTML = "<p style='text-align:center;'>Buscando membros...</p>";
 
     try {
         const { data: membros, error } = await _supabase.from('membros')
-            .select('*')
-            .eq('status_registro', 'Ativo')
-            .order('nome', { ascending: true });
+            .select('*').eq('status_registro', 'Ativo').order('nome', { ascending: true });
 
         if (error) throw error;
         listaContainer.innerHTML = ""; 
@@ -463,9 +454,9 @@ async function renderizarListaChamada() {
                     <small style="color: #888; font-size: 0.8rem;">${tagVis}(${nomeDoisTermos})</small>
                 </div>
                 <div class="botoes-status" style="display:flex; gap:12px; padding-right: 5px;">
-                    <button type="button" onclick="marcarStatus(this, 'Presente')" style="background:none; border:none; cursor:pointer; font-size:1.2rem; width:35px; filter: grayscale(1); opacity: 0.4;">✅</button>
-                    <button type="button" onclick="marcarStatus(this, 'ICM')" style="background:none; border:none; cursor:pointer; font-size:1.2rem; width:35px; filter: grayscale(1); opacity: 0.4;">🏠</button>
-                    <button type="button" onclick="marcarStatus(this, 'Maanaim')" style="background:none; border:none; cursor:pointer; font-size:1.2rem; width:35px; filter: grayscale(1); opacity: 0.4;">⛰️</button>
+                    <button type="button" onclick="marcarStatus(this, 'Presente')" style="background:none; border:none; cursor:pointer; font-size:1.2rem; filter: grayscale(1); opacity: 0.4;">✅</button>
+                    <button type="button" onclick="marcarStatus(this, 'ICM')" style="background:none; border:none; cursor:pointer; font-size:1.2rem; filter: grayscale(1); opacity: 0.4;">🏠</button>
+                    <button type="button" onclick="marcarStatus(this, 'Maanaim')" style="background:none; border:none; cursor:pointer; font-size:1.2rem; filter: grayscale(1); opacity: 0.4;">⛰️</button>
                 </div>
             `;
             listaContainer.appendChild(card);
@@ -479,33 +470,30 @@ async function renderizarListaChamada() {
 
 function marcarStatus(botao, novoStatus) {
     const card = botao.closest('.card-chamada');
-    if (!card) return;
-
     const statusAtual = card.getAttribute('data-status');
     const statusFinal = (statusAtual === novoStatus) ? 'Faltou' : novoStatus;
-
+    
     card.setAttribute('data-status', statusFinal);
     
-    // Reseta visual de todos os botões do card
+    // Reset visual total dos botões do card
     card.querySelectorAll('.botoes-status button').forEach(btn => {
         btn.style.filter = 'grayscale(1)';
         btn.style.opacity = '0.4';
         btn.style.transform = 'scale(1)';
     });
 
-    // Se não for falta, acende o botão ✅ (Regra de Painel do Abel)
+    // REGRA MACGYVER: Independente do status (Presente, ICM ou Maanaim), acende sempre o ✅
     if (statusFinal !== 'Faltou') {
         const btnCheck = card.querySelector('button[onclick*="Presente"]');
         if (btnCheck) {
             btnCheck.style.filter = 'none'; 
             btnCheck.style.opacity = '1';
-            btnCheck.style.transform = 'scale(1.3)';
+            btnCheck.style.transform = 'scale(1.4)';
         }
         card.style.backgroundColor = '#f0f7ff';
     } else {
         card.style.backgroundColor = 'transparent';
     }
-
     atualizarContadores();
 }
 
@@ -513,7 +501,7 @@ async function carregarDadosExistentes() {
     const dataCulto = document.getElementById('data_chamada').value;
     const tipoEvento = document.getElementById('tipo_evento').value;
 
-    // RESET: Limpa a tela antes de carregar dados novos/antigos
+    // LIMPEZA TOTAL DA TELA ANTES DE CARREGAR
     document.querySelectorAll('.card-chamada').forEach(card => {
         card.setAttribute('data-status', 'Faltou');
         card.style.backgroundColor = 'transparent';
@@ -526,23 +514,21 @@ async function carregarDadosExistentes() {
 
     try {
         const { data: presencas } = await _supabase.from('presencas')
-            .select('membro_id, status')
-            .eq('data_culto', dataCulto)
-            .eq('tipo_evento', tipoEvento);
+            .select('membro_id, status').eq('data_culto', dataCulto).eq('tipo_evento', tipoEvento);
 
         if (presencas) {
             presencas.forEach(p => {
                 const card = document.querySelector(`.card-chamada[data-id="${p.membro_id}"]`);
                 if (card) {
-                    // Marca o status visualmente (✅ acende) e internamente (status do banco)
                     card.setAttribute('data-status', p.status);
+                    // REGRA DE CARREGAMENTO: Acende o ✅ para qualquer um dos 3 status do banco
                     const btnCheck = card.querySelector('button[onclick*="Presente"]');
                     if (btnCheck) {
-                        btnCheck.style.filter = 'none'; 
+                        btnCheck.style.filter = 'none';
                         btnCheck.style.opacity = '1';
-                        btnCheck.style.transform = 'scale(1.3)';
+                        btnCheck.style.transform = 'scale(1.4)';
+                        card.style.backgroundColor = '#f0f7ff';
                     }
-                    card.style.backgroundColor = '#f0f7ff';
                 }
             });
         }
@@ -561,11 +547,6 @@ async function carregarDadosExistentes() {
             document.getElementById('portao_nome').value = resumo.portao_nome || "";
             document.getElementById('portao_funcao').value = resumo.portao_funcao || "Membro";
             document.getElementById('observacoes_culto').value = resumo.observacoes || "";
-        } else {
-            // Se não houver dados, garante campos limpos (exceto data/evento)
-            document.querySelectorAll('#ataCulto input:not([type=date]), #ataCulto textarea').forEach(i => i.value = "");
-            document.getElementById('vis_adultos').value = 0;
-            document.getElementById('vis_cias').value = 0;
         }
         atualizarContadores();
     } catch (e) { console.error(e); }
@@ -573,24 +554,17 @@ async function carregarDadosExistentes() {
 
 function atualizarContadores() {
     let mAd = 0, mCi = 0, vAd = 0, vCi = 0;
-
     document.querySelectorAll('.card-chamada').forEach(card => {
         if (card.getAttribute('data-status') !== 'Faltou') {
             const sit = card.getAttribute('data-situacao');
             const cat = (card.getAttribute('data-categoria') || "").toLowerCase();
             const eCia = (cat.includes('crian') || cat.includes('interme') || cat.includes('adolesc'));
-
-            if (sit === 'Visitante') {
-                if (eCia) vCi++; else vAd++;
-            } else {
-                if (eCia) mCi++; else mAd++;
-            }
+            if (sit === 'Visitante') { if (eCia) vCi++; else vAd++; }
+            else { if (eCia) mCi++; else mAd++; }
         }
     });
-
     const vAdExtra = parseInt(document.getElementById('vis_adultos').value) || 0;
     const vCiExtra = parseInt(document.getElementById('vis_cias').value) || 0;
-
     document.getElementById('cont_membros_adultos').innerText = mAd;
     document.getElementById('cont_membros_cias').innerText = mCi;
     document.getElementById('cont_vis_adultos_display').innerText = vAd + vAdExtra;

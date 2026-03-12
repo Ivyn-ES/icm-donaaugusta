@@ -191,19 +191,21 @@ async function excluirMembro(id) {
 }
 
 // ==========================================
-// 4. MÓDULO DE CHAMADA (PRESENÇA) - VERSÃO ZORIN OS
+// 4. MÓDULO DE CHAMADA (PRESENÇA) - VERSÃO ESPAÇO OTIMIZADO
 // ==========================================
 
 async function renderizarListaChamada() {
     const container = document.getElementById('listaChamada');
     const dataSelecionada = document.getElementById('data_chamada')?.value;
     const eventoSelecionado = document.getElementById('tipo_evento')?.value;
+    
+    // 1. Localizamos o título para injetar os nomes lá em cima
+    const areaTitulo = document.querySelector('.titulo-chamada-container'); 
+    // Nota: Se você não tiver essa classe, pode ajustar o seletor acima.
+
     if (!container) return;
 
     try {
-        const user = JSON.parse(localStorage.getItem('usuarioLogado'));
-        
-        // 1. Busca membros ativos
         const { data: membros, error: errM } = await _supabase.from('membros')
             .select('id, nome, apelido, grupo, categoria, situacao') 
             .eq('status_registro', 'Ativo').order('nome');
@@ -211,111 +213,90 @@ async function renderizarListaChamada() {
         if (errM) throw errM;
 
         let jaRegistrados = [];
-        let resumoExistente = null;
-
-        // 2. Busca presenças e resumo (ata) do dia
         if (dataSelecionada && eventoSelecionado) {
             const { data: pres } = await _supabase.from('presencas')
                 .select('membro_id, status, presenca')
                 .eq('data_culto', dataSelecionada)
                 .eq('tipo_evento', eventoSelecionado);
             jaRegistrados = pres || [];
-
-            const { data: resu } = await _supabase.from('resumo_culto')
-                .select('*')
-                .eq('data_culto', dataSelecionada)
-                .eq('tipo_evento', eventoSelecionado)
-                .eq('grupo', user.grupo_vinculado || 'Geral').maybeSingle();
-            resumoExistente = resu;
         }
 
-        // 3. Preenche os campos da Ata se já existirem
-        if (resumoExistente) {
-            if(document.getElementById('vis_adultos')) document.getElementById('vis_adultos').value = resumoExistente.vis_adultos || 0;
-            if(document.getElementById('vis_cias')) document.getElementById('vis_cias').value = resumoExistente.vis_cias || 0;
-            if(document.getElementById('pregador_nome')) document.getElementById('pregador_nome').value = resumoExistente.pregador_nome || "";
-            if(document.getElementById('texto_biblico')) document.getElementById('texto_biblico').value = resumoExistente.texto_biblico || "";
-            if(document.getElementById('louvor_nome')) document.getElementById('louvor_nome').value = resumoExistente.louvor_nome || "";
-            if(document.getElementById('portao_nome')) document.getElementById('portao_nome').value = resumoExistente.portao_nome || "";
-            if (document.getElementById('observacoes_culto')) {
-                document.getElementById('observacoes_culto').value = resumoExistente.observacoes || "";
-            }
-        }
+        // 2. Limpamos o container para a nova lista
+        container.innerHTML = "";
 
-        // 4. Renderiza os Cards
+        // 3. Geramos os Cards um por um
         container.innerHTML = membros.map(m => {
             const reg = jaRegistrados.find(r => r.membro_id === m.id);
-            
-            // Lógica de compatibilidade: Prioriza status (texto), senão olha presenca (bool)
             let statusAtual = 'Ausente';
             if (reg) {
                 if (reg.status && reg.status !== 'Ausente') statusAtual = reg.status;
                 else if (reg.presenca === true) statusAtual = 'Presente';
             }
 
-            const partesNome = m.nome.trim().split(" ");
-            const nomeCurto = partesNome[0];
-            const nomeExibicao = m.apelido ? `<strong>${m.apelido}</strong>` : `<strong>${nomeCurto}</strong>`;
-            const subTexto = m.apelido ? nomeCurto : (m.grupo || 'Geral');
-
+            const nomeExibicao = m.apelido ? `<strong>${m.apelido}</strong>` : `<strong>${m.nome.split(" ")[0]}</strong>`;
+            
             return `
-                <div class="card-chamada" 
-                     data-id="${m.id}" 
-                     data-nome="${m.nome}" 
-                     data-apelido="${m.apelido || ''}" 
-                     data-categoria="${m.categoria || 'Adulto'}"
-                     data-status="${statusAtual}"
-                     style="display:flex; align-items:center; justify-content:space-between; padding:12px; border:1px solid #ddd; margin-bottom:8px; border-radius:10px; background:${statusAtual === 'Presente' ? '#e8f5e9' : '#fff'};">
+                <div class="card-chamada" data-id="${m.id}" data-status="${statusAtual}"
+                     style="display:flex; align-items:center; justify-content:space-between; padding:10px 12px; border-bottom:1px solid #f0f0f0; background:${statusAtual === 'Presente' ? '#f0fff4' : '#fff'}; transition: 0.2s;">
                     
                     <div style="flex:1;">
-                        <span style="font-size:1.1rem;">${nomeExibicao}</span><br>
-                        <small style="color:#888;">${subTexto} ${m.situacao.includes('Visitante') ? '(Vis)' : ''}</small>
+                        <span style="font-size:1.05rem;">${nomeExibicao}</span>
                     </div>
 
-                    <div style="display:flex; gap:8px;">
+                    <div style="display:flex; gap:20px; align-items:center;">
                         <button onclick="selecionarStatus('${m.id}', 'Presente')" id="btn_P_${m.id}" 
-                                class="btn-status-toggle" 
-                                style="padding:10px; border-radius:8px; border:1px solid #ccc; background:${statusAtual === 'Presente' ? '#2ecc71' : '#fff'}">✅</button>
+                                style="width:35px; height:35px; cursor:pointer; font-size:1.5rem; display:flex; align-items:center; justify-content:center; background:none; padding:0;
+                                border: ${statusAtual === 'Presente' ? 'none' : '1px solid #ccc'}; border-radius:4px;">
+                            ${statusAtual === 'Presente' ? '✅' : ''}
+                        </button>
                         
                         <button onclick="selecionarStatus('${m.id}', 'ICM')" id="btn_I_${m.id}" 
-                                class="btn-status-toggle" 
-                                style="padding:10px; border-radius:8px; border:1px solid #ccc; background:${statusAtual === 'ICM' ? '#3498db' : '#fff'}">🏠</button>
+                                style="width:35px; height:35px; border:none; cursor:pointer; font-size:1.5rem; display:flex; align-items:center; justify-content:center; background:none; padding:0;">
+                            ${statusAtual === 'ICM' ? '✅' : '🏠'}
+                        </button>
                         
                         <button onclick="selecionarStatus('${m.id}', 'Maanaim')" id="btn_M_${m.id}" 
-                                class="btn-status-toggle" 
-                                style="padding:10px; border-radius:8px; border:1px solid #ccc; background:${statusAtual === 'Maanaim' ? '#e67e22' : '#fff'}">⛰️</button>
+                                style="width:35px; height:35px; border:none; cursor:pointer; font-size:1.5rem; display:flex; align-items:center; justify-content:center; background:none; padding:0;">
+                            ${statusAtual === 'Maanaim' ? '✅' : '⛰️'}
+                        </button>
                     </div>
                 </div>`;
         }).join('');
         
         atualizarContadores();
-    } catch (err) { console.error("Erro na lista:", err); }
+    } catch (err) { console.error(err); }
 }
 
-// Alternar entre Presente, ICM, Maanaim ou Ausente
 function selecionarStatus(membroId, novoStatus) {
     const card = document.querySelector(`.card-chamada[data-id="${membroId}"]`);
-    if (!card) return;
-
     const btnP = document.getElementById(`btn_P_${membroId}`);
     const btnI = document.getElementById(`btn_I_${membroId}`);
     const btnM = document.getElementById(`btn_M_${membroId}`);
-
     const statusAnterior = card.getAttribute('data-status');
 
-    // Reseta visual
-    [btnP, btnI, btnM].forEach(b => b.style.background = '#fff');
+    // RESET: Volta ao quadradinho no Presente e ícones nos outros
+    btnP.innerText = ''; 
+    btnP.style.border = '1px solid #ccc';
+    btnI.innerText = '🏠'; 
+    btnM.innerText = '⛰️';
     card.style.background = '#fff';
 
     if (statusAnterior === novoStatus) {
-        // Se clicou no mesmo, vira Ausente
         card.setAttribute('data-status', 'Ausente');
     } else {
-        // Define novo status
         card.setAttribute('data-status', novoStatus);
-        if (novoStatus === 'Presente') { btnP.style.background = '#2ecc71'; card.style.background = '#e8f5e9'; }
-        if (novoStatus === 'ICM') { btnI.style.background = '#3498db'; card.style.background = '#ebf5fb'; }
-        if (novoStatus === 'Maanaim') { btnM.style.background = '#e67e22'; card.style.background = '#fef5e7'; }
+        
+        if (novoStatus === 'Presente') {
+            btnP.innerText = '✅';
+            btnP.style.border = 'none'; 
+            card.style.background = '#f0fff4'; 
+        } else if (novoStatus === 'ICM') {
+            btnI.innerText = '✅';
+            card.style.background = '#f0f7ff'; 
+        } else if (novoStatus === 'Maanaim') {
+            btnM.innerText = '✅';
+            card.style.background = '#fffaf0'; 
+        }
     }
     atualizarContadores();
 }

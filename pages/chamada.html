@@ -6,33 +6,49 @@
     <title>Chamada - ICM</title>
     <link rel="stylesheet" href="../css/style.css">
     <style>
+        /* Estilos dos botões de ajuste de visitantes */
         .btn-ajuste { width: 35px; height: 35px; border: none; border-radius: 8px; font-size: 1.2rem; font-weight: bold; color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: opacity 0.2s; }
         .btn-menos { background-color: #e74c3c; }
         .btn-mais { background-color: #2ecc71; }
         .input-ajuste { width: 55px; text-align: center; font-size: 1.2rem; font-weight: bold; border: 1px solid #ddd; border-radius: 8px; background: #fdfdfd; }
         
-        /* Estilo dos novos botões de status */
-        .btn-status-extra {
-            background: #f8f9fa;
-            border: 1px solid #ddd;
-            border-radius: 6px;
-            padding: 8px;
-            cursor: pointer;
-            font-size: 1.2rem;
-            transition: all 0.2s;
-        }
-        .btn-status-extra.active-icm { background-color: #3498db !important; border-color: #2980b9; }
-        .btn-status-extra.active-maanaim { background-color: #e67e22 !important; border-color: #d35400; }
-        
-        #inputBusca { width: 100%; padding: 15px; border-radius: 12px; border: 2px solid #007bff; font-size: 1.1rem; outline: none; margin-bottom: 10px; }
-        
-        .legenda-status {
+        /* Legenda de topo (fixa) */
+        .legenda-status-topo {
             display: flex;
             justify-content: center;
             gap: 15px;
             font-size: 0.8rem;
             color: #666;
-            margin-bottom: 10px;
+            margin-bottom: 15px;
+            padding: 10px;
+            background: #fdfdfd;
+            border-radius: 8px;
+            border: 1px dashed #ccc;
+        }
+
+        /* Container do Título com as Colunas Alinhadas */
+        .cabecalho-lista {
+            display: flex; 
+            justify-content: space-between; 
+            align-items: flex-end; 
+            border-bottom: 2px solid #007bff; 
+            padding-bottom: 8px;
+            margin-top: 20px;
+        }
+
+        .colunas-nomes {
+            display: flex; 
+            gap: 12px; 
+            font-size: 0.65rem; 
+            color: #888; 
+            font-weight: bold; 
+            text-transform: uppercase; 
+            padding-right: 5px;
+        }
+
+        .colunas-nomes span {
+            width: 35px; 
+            text-align: center;
         }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -41,28 +57,24 @@
     <datalist id="listaMembrosSugestao"></datalist>
 
     <div class="container">
-        <header style="text-align: center; margin-bottom: 10px;">
+        <header style="text-align: center; margin-bottom: 15px;">
             <h1>📋 Fazer Chamada</h1>
-            <p id="infoChamada" style="margin-bottom: 10px; font-weight: bold; color: #555;">Verificando grupo...</p>
+            <p id="infoChamada" style="margin-bottom: 12px; font-weight: bold; color: #555;"></p>
             
-            <div style="display: flex; flex-direction: column; gap: 10px;">
-                <input type="text" id="inputBusca" onkeyup="filtrarListaMembros()" placeholder="🔍 Buscar por nome ou apelido...">
-                
-                <div class="legenda-status">
-                    <span>✅ Presente</span>
-                    <span>🏠 Outra ICM</span>
-                    <span>⛰️ Maanaim</span>
-                </div>
+            <div class="legenda-status-topo">
+                <span>✅ Presente</span>
+                <span>🏠 Outra ICM</span>
+                <span>⛰️ Maanaim</span>
+            </div>
 
-                <div style="display: flex; gap: 10px;">
-                    <select id="tipo_evento" onchange="renderizarListaChamada()" style="flex:1; padding: 12px; border-radius: 8px; border: 1px solid #ccc; background: white;">
-                        <option value="Culto">Culto</option>
-                        <option value="EBD">EBD</option>
-                        <option value="Vigília">Vigília</option>
-                        <option value="Reunião">Reunião</option>
-                    </select>
-                    <input type="date" id="data_chamada" onchange="renderizarListaChamada()" style="flex:1; padding: 12px; border-radius: 8px; border: 1px solid #ccc;">
-                </div>
+            <div style="display: flex; gap: 10px;">
+                <select id="tipo_evento" onchange="renderizarListaChamada()" style="flex:1; padding: 12px; border-radius: 8px; border: 1px solid #ccc; background: white; font-size: 1rem;">
+                    <option value="Culto">Culto</option>
+                    <option value="EBD">EBD</option>
+                    <option value="Vigília">Vigília</option>
+                    <option value="Reunião">Reunião</option>
+                </select>
+                <input type="date" id="data_chamada" onchange="renderizarListaChamada()" style="flex:1; padding: 12px; border-radius: 8px; border: 1px solid #ccc; font-size: 1rem;">
             </div>
         </header>
 
@@ -82,9 +94,18 @@
         </div>
 
         <section style="margin-bottom: 30px;">
-            <h3 style="border-bottom: 2px solid #007bff; padding-bottom: 8px; color: #007bff;">👥 Lista de Chamada</h3>
-            <div id="listaChamada" style="display: flex; flex-direction: column; gap: 10px; margin-top: 15px;">
-                <p style="text-align:center; color: #888;">Carregando...</p>
+            <div class="cabecalho-lista">
+                <h3 style="margin: 0; color: #007bff;">👥 Lista de Membros</h3>
+                
+                <div class="colunas-nomes">
+                    <span>Presente</span>
+                    <span>ICM</span>
+                    <span>Maanaim</span>
+                </div>
+            </div>
+
+            <div id="listaChamada" style="display: flex; flex-direction: column; margin-top: 5px;">
+                <p style="text-align:center; padding: 20px; color: #888;">Buscando lista no banco...</p>
             </div>
         </section>
 
@@ -112,54 +133,48 @@
 
             <div style="margin-bottom: 15px;">
                 <label style="display:block; font-weight:bold; margin-bottom:5px;">Pregador</label>
-                <input type="search" id="pregador_nome" list="listaMembrosSugestao" placeholder="Nome..." style="width:100%; padding:10px; border-radius:8px; border:1px solid #ccc;">
+                <input type="search" id="pregador_nome" list="listaMembrosSugestao" placeholder="Nome do pregador..." style="width:100%; padding:12px; border-radius:8px; border:1px solid #ccc;">
             </div>
 
             <div style="margin-bottom: 20px;">
                 <label style="display:block; font-weight:bold; margin-bottom:5px;">📖 Texto Bíblico</label>
-                <input type="text" id="texto_biblico" placeholder="Ex: Efésios 2:8" style="width:100%; padding:10px; border-radius:8px; border:1px solid #ccc;">
+                <input type="text" id="texto_biblico" placeholder="Ex: João 3:16" style="width:100%; padding:12px; border-radius:8px; border:1px solid #ccc;">
             </div>
 
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
                 <div>
                     <label style="display:block; font-weight:bold; margin-bottom:5px;">🎶 Louvor</label>
-                    <input type="search" id="louvor_nome" list="listaMembrosSugestao" placeholder="Nome..." style="width:100%; padding:10px; border-radius:8px; border:1px solid #ccc;">
+                    <input type="search" id="louvor_nome" list="listaMembrosSugestao" placeholder="Responsável..." style="width:100%; padding:10px; border-radius:8px; border:1px solid #ccc;">
                 </div>
                 <div>
                     <label style="display:block; font-weight:bold; margin-bottom:5px;">🚪 Portão</label>
-                    <input type="search" id="portao_nome" list="listaMembrosSugestao" placeholder="Nome..." style="width:100%; padding:10px; border-radius:8px; border:1px solid #ccc;">
+                    <input type="search" id="portao_nome" list="listaMembrosSugestao" placeholder="Responsável..." style="width:100%; padding:10px; border-radius:8px; border:1px solid #ccc;">
                 </div>
             </div>
         </section>
 
         <div style="margin-top: 30px; display: flex; flex-direction: column; gap: 12px;">
-            <button onclick="salvarChamada()" class="btn-salvar" id="btnFinalizar" style="padding: 18px; font-size: 1.2rem; font-weight: bold; background-color: #007bff; color: white; border: none; border-radius: 10px;">Atualizar dados</button>
+            <button onclick="salvarChamada()" class="btn-salvar" id="btnFinalizar" style="padding: 18px; font-size: 1.2rem; font-weight: bold; background-color: #007bff; color: white; border: none; border-radius: 10px; cursor: pointer;">Atualizar Dados</button>
             
-            <button onclick="gerarResumoWhatsApp()" style="background-color: #25d366; width: 100%; padding: 15px; color: white; border: none; border-radius: 10px; font-weight: bold; display: flex; align-items: center; justify-content: center; gap: 10px;">
+            <button onclick="gerarResumoWhatsApp()" style="background-color: #25d366; width: 100%; padding: 15px; color: white; border: none; border-radius: 10px; font-weight: bold; display: flex; align-items: center; justify-content: center; gap: 10px; cursor: pointer;">
                 <span>📱 Gerar Resumo para WhatsApp</span>
             </button>
             
-            <a href="dashboard.html" class="btn-voltar" style="text-align: center; text-decoration: none; padding: 12px; background: #f1f1f1; border-radius: 8px; color: #555;">⬅ Voltar</a>
+            <a href="dashboard.html" class="btn-voltar" style="text-align: center; text-decoration: none; padding: 12px; background: #f1f1f1; border-radius: 8px; color: #555; font-weight: bold;">⬅ Voltar ao Painel</a>
         </div>
     </div>
 
     <script src="../js/script.js"></script>
     <script>
+        // Inicialização ao carregar a página
         document.addEventListener('DOMContentLoaded', async () => {
-            const hoje = new Date().toLocaleDateString('sv-SE');
-            document.getElementById('data_chamada').value = hoje;
+            const campoData = document.getElementById('data_chamada');
+            if (campoData) {
+                const hoje = new Date().toLocaleDateString('sv-SE'); // Formato YYYY-MM-DD
+                campoData.value = hoje;
+            }
             await renderizarListaChamada();
         });
-
-        function filtrarListaMembros() {
-            const termo = document.getElementById('inputBusca').value.toLowerCase();
-            const cards = document.querySelectorAll('.card-chamada');
-            cards.forEach(card => {
-                const nome = card.getAttribute('data-nome').toLowerCase();
-                const apelido = card.getAttribute('data-apelido').toLowerCase();
-                card.style.display = (nome.includes(termo) || apelido.includes(termo)) ? "flex" : "none";
-            });
-        }
     </script>
 </body>
 </html>

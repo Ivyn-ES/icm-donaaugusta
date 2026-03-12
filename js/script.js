@@ -305,9 +305,8 @@ function selecionarStatus(membroId, novoStatus) {
 // 5. MÓDULO DE AUTOMAÇÃO E WHATSAPP
 // ==========================================
 
-window.membrosCache = []; // Para busca rápida de funções
+window.membrosCache = []; 
 
-// Carrega os nomes na lista de sugestão e guarda no cache
 async function carregarSugestoesEFuncoes() {
     try {
         const { data: membros, error } = await _supabase.from('membros')
@@ -319,24 +318,37 @@ async function carregarSugestoesEFuncoes() {
 
         const datalist = document.getElementById('listaMembrosSugestao');
         if (datalist) {
-            datalist.innerHTML = membros.map(m => `<option value="${m.nome}">${m.cargo || m.categoria || 'Membro'}</option>`).join('');
+            datalist.innerHTML = membros.map(m => {
+                // PRIORIDADE PARA APELIDO: Se tiver, ele vira o valor principal
+                const sugestaoPrincipal = m.apelido ? m.apelido : m.nome;
+                const legenda = m.cargo || m.categoria || 'Membro';
+                return `<option value="${sugestaoPrincipal}">${legenda} - ${m.nome}</option>`;
+            }).join('');
         }
+        console.log("✅ Motor de sugestões pronto!");
     } catch (err) { console.error("Erro nas sugestões:", err); }
 }
 
-// Mágica: Identifica a função ao digitar/selecionar o nome
-function identificarFuncao(input) {
-    const nomeDigitado = input.value.trim();
-    if (!window.membrosCache || nomeDigitado === "") return;
+// Mágica: Agora recebe o ID do select para saber quem preencher (Pregador, Louvor ou Portão)
+function identificarFuncao(input, idSelectAlvo) {
+    const termoDigitado = input.value.trim().toLowerCase();
+    if (!window.membrosCache || termoDigitado === "") return;
 
-    const membro = window.membrosCache.find(m => m.nome === nomeDigitado);
+    // Procura por apelido ou nome
+    const membro = window.membrosCache.find(m => 
+        (m.apelido && m.apelido.toLowerCase() === termoDigitado) || 
+        (m.nome.toLowerCase() === termoDigitado)
+    );
 
     if (membro) {
-        const selectFuncao = document.getElementById('pregador_funcao');
+        const selectFuncao = document.getElementById(idSelectAlvo);
         if (selectFuncao) {
-            // Ajusta o valor para bater com as opções do Select
             const cargo = membro.cargo || membro.categoria || "Membro";
-            selectFuncao.value = cargo;
+            // Ajusta para as opções oficiais da ICM
+            if (cargo.includes("Pastor")) selectFuncao.value = "Pastor";
+            else if (cargo.includes("Diácono")) selectFuncao.value = "Diácono";
+            else if (cargo.includes("Obreiro")) selectFuncao.value = "Obreiro";
+            else selectFuncao.value = "Membro";
         }
     }
 }
@@ -348,22 +360,9 @@ function formatarDataBR(dataString) {
     return `${partes[2]}/${meses[parseInt(partes[1]) - 1]}`;
 }
 
-function encurtarNome(nomeCompleto) {
-    if (!nomeCompleto) return "Não informado";
-    const partes = nomeCompleto.trim().split(" ");
-    if (partes.length <= 1) return partes[0];
-    const primeiroNome = partes[0];
-    let ultimo = partes[partes.length - 1];
-    if (["de", "da", "do", "dos", "das"].includes(ultimo.toLowerCase()) && partes.length > 2) {
-        ultimo = partes[partes.length - 2];
-    }
-    return `${primeiroNome} ${ultimo[0]}.`;
-}
-
 async function gerarResumoWhatsApp() {
-    const nomeIgreja = "ICM - Dona Augusta";
     const tipoEvento = document.getElementById('tipo_evento')?.value || "Evento";
-    const dataFormatada = formatarDataBR(document.getElementById('data_chamada')?.value);
+    const dataFmt = formatarDataBR(document.getElementById('data_chamada')?.value);
 
     const mAd = document.getElementById('cont_membros_adultos')?.innerText || 0;
     const mCi = document.getElementById('cont_membros_cias')?.innerText || 0;
@@ -371,30 +370,31 @@ async function gerarResumoWhatsApp() {
     const vCi = document.getElementById('cont_vis_cias_display')?.innerText || 0;
     const totalGeral = document.getElementById('cont_total')?.innerText || 0;
 
-    let contICM = 0, contMaan = 0;
-    document.querySelectorAll('.card-chamada').forEach(card => {
-        const st = card.getAttribute('data-status');
-        if (st === 'ICM') contICM++;
-        if (st === 'Maanaim') contMaan++;
-    });
-
-    const pregador = encurtarNome(document.getElementById('pregador_nome')?.value);
-    const funcao   = document.getElementById('pregador_funcao')?.value || "Membro";
-    const louvor   = encurtarNome(document.getElementById('louvor_nome')?.value);
-    const portao   = encurtarNome(document.getElementById('portao_nome')?.value);
-    const texto    = document.getElementById('texto_biblico')?.value || "Não informado";
-
-    let mensagem = `*${nomeIgreja}*\n*📊 RESUMO ${tipoEvento.toUpperCase()} - ${dataFormatada}*\n\n`;
-    mensagem += `*PÚBLICO:*\n• Membros (Ad/Cia): ${mAd} / ${mCi}\n`;
-    mensagem += `• Visitantes (Ad/Cia): ${vAd} / ${vCi}\n`;
-    if (contICM > 0 || contMaan > 0) mensagem += `• Assistência (ICM/Maan): ${contICM} / ${contMaan}\n`;
-    mensagem += `*⭐ TOTAL GERAL: ${totalGeral}*\n\n`;
-    mensagem += `*ESCALA:*\n🎤 *Pregador:* ${funcao} ${pregador}\n`;
-    mensagem += `🎶 *Louvor:* ${louvor}\n`;
-    mensagem += `🚪 *Portão:* ${portao}\n`;
-    mensagem += `📖 *Texto:* ${texto}\n`;
+    // Pegando Escala com as Funções do Select
+    const pregador = document.getElementById('pregador_nome')?.value || "---";
+    const fPregador = document.getElementById('pregador_funcao')?.value;
     
-    window.location.href = `https://api.whatsapp.com/send?text=${encodeURIComponent(mensagem)}`;
+    const louvor = document.getElementById('louvor_nome')?.value || "---";
+    const fLouvor = document.getElementById('louvor_funcao')?.value;
+    
+    const portao = document.getElementById('portao_nome')?.value || "---";
+    const fPortao = document.getElementById('portao_funcao')?.value;
+
+    const texto = document.getElementById('texto_biblico')?.value || "Não informado";
+    const obs = document.getElementById('observacoes_culto')?.value || "";
+
+    let msg = `*ICM - Dona Augusta*\n*📊 RESUMO ${tipoEvento.toUpperCase()} - ${dataFmt}*\n\n`;
+    msg += `*PÚBLICO:*\n• Membros (Ad/Cia): ${mAd} / ${mCi}\n`;
+    msg += `• Visitantes (Ad/Cia): ${vAd} / ${vCi}\n`;
+    msg += `*⭐ TOTAL GERAL: ${totalGeral}*\n\n`;
+    msg += `*ESCALA:*\n`;
+    msg += `🎤 *Pregador:* ${fPregador} ${pregador}\n`;
+    msg += `🎶 *Louvor:* ${fLouvor} ${louvor}\n`;
+    msg += `🚪 *Portão:* ${fPortao} ${portao}\n`;
+    msg += `📖 *Texto:* ${texto}\n`;
+    if(obs) msg += `\n📝 *Obs:* ${obs}`;
+    
+    window.location.href = `https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`;
 }
 
 // ==========================================
@@ -429,43 +429,7 @@ function atualizarContadores() {
     document.getElementById('cont_total').innerText = mAd + mCi + vAd + vCi;
 }
 
-async function salvarChamada() {
-    const btn = document.getElementById('btnFinalizar');
-    const dataCulto = document.getElementById('data_chamada').value;
-    const tipoEvento = document.getElementById('tipo_evento').value;
-    const user = JSON.parse(localStorage.getItem('usuarioLogado'));
-    
-    btn.disabled = true;
-    const original = btn.innerText;
-    btn.innerText = "⌛ Salvando...";
-
-    const registros = Array.from(document.querySelectorAll('.card-chamada')).map(card => ({
-        membro_id: card.getAttribute('data-id'), 
-        data_culto: dataCulto, 
-        tipo_evento: tipoEvento, 
-        status: card.getAttribute('data-status'),
-        presenca: card.getAttribute('data-status') === 'Presente'
-    }));
-
-    const dadosAta = {
-        data_culto: dataCulto, tipo_evento: tipoEvento, grupo: user.grupo_vinculado || 'Geral',
-        vis_adultos: parseInt(document.getElementById('vis_adultos').value) || 0,
-        vis_cias: parseInt(document.getElementById('vis_cias').value) || 0,
-        pregador_nome: document.getElementById('pregador_nome').value, 
-        texto_biblico: document.getElementById('texto_biblico').value, 
-        louvor_nome: document.getElementById('louvor_nome').value,
-        portao_nome: document.getElementById('portao_nome').value
-    };
-
-    try {
-        await _supabase.from('presencas').upsert(registros, { onConflict: 'membro_id, data_culto, tipo_evento' });
-        await _supabase.from('resumo_culto').upsert([dadosAta], { onConflict: 'data_culto, tipo_evento, grupo' });
-        alert(`✅ Salvo com sucesso!`);
-    } catch (err) { alert("Erro: " + err.message); }
-    finally { btn.disabled = false; btn.innerText = original; }
-}
-
-// Inicia as sugestões ao carregar o arquivo
+// Inicia as sugestões ao carregar
 carregarSugestoesEFuncoes();
 
 // ==========================================

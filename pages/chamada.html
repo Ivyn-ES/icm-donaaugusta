@@ -50,6 +50,15 @@
             width: 35px; 
             text-align: center;
         }
+
+        .select-funcao-estilo { 
+            width:100%; 
+            padding:10px; 
+            border-radius:8px; 
+            border:1px solid #ccc; 
+            background: white; 
+            height: 40px; 
+        }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
@@ -100,7 +109,6 @@
                     <span>Maanaim</span>
                 </div>
             </div>
-
             <div id="listaChamada" style="display: flex; flex-direction: column; margin-top: 5px;">
                 <p style="text-align:center; padding: 20px; color: #888;">Buscando lista no banco...</p>
             </div>
@@ -111,7 +119,7 @@
             
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 25px; margin-top: 20px;">
                 <div style="text-align: center;">
-                    <label style="display:block; font-weight:bold; margin-bottom:8px;">Vis. Adultos</label>
+                    <label style="display:block; font-weight:bold; margin-bottom:5px;">Vis. Adultos</label>
                     <div style="display: flex; justify-content: center; align-items: center; gap: 10px;">
                         <button type="button" onclick="ajustarVisitante('vis_adultos', -1)" class="btn-ajuste btn-menos">-</button>
                         <input type="number" id="vis_adultos" value="0" readonly class="input-ajuste">
@@ -119,7 +127,7 @@
                     </div>
                 </div>
                 <div style="text-align: center;">
-                    <label style="display:block; font-weight:bold; margin-bottom:8px;">Vis. CIAs</label>
+                    <label style="display:block; font-weight:bold; margin-bottom:5px;">Vis. CIAs</label>
                     <div style="display: flex; justify-content: center; align-items: center; gap: 10px;">
                         <button type="button" onclick="ajustarVisitante('vis_cias', -1)" class="btn-ajuste btn-menos">-</button>
                         <input type="number" id="vis_cias" value="0" readonly class="input-ajuste">
@@ -130,36 +138,51 @@
 
             <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 10px; margin-bottom: 15px;">
                 <div>
-                    <label style="display:block; font-weight:bold; margin-bottom:5px;">Pregador</label>
-                    <input type="search" id="pregador_nome" list="listaMembrosSugestao" oninput="identificarFuncao(this)" placeholder="Nome..." style="width:100%; padding:10px; border-radius:8px; border:1px solid #ccc;">
+                    <label style="display:block; font-weight:bold; margin-bottom:5px;">🎤 Pregador</label>
+                    <input type="search" id="pregador_nome" list="listaMembrosSugestao" oninput="identificarFuncao(this, 'pregador_funcao')" placeholder="Nome..." style="width:100%; padding:10px; border-radius:8px; border:1px solid #ccc;">
                 </div>
                 <div>
                     <label style="display:block; font-weight:bold; margin-bottom:5px;">Função</label>
-                    <select id="pregador_funcao" style="width:100%; padding:10px; border-radius:8px; border:1px solid #ccc; background: white; height: 40px;">
+                    <select id="pregador_funcao" class="select-funcao-estilo">
                         <option value="Membro">Membro</option>
                         <option value="Obreiro">Obreiro</option>
                         <option value="Diácono">Diácono</option>
-                        <option value="Presbítero">Presbítero</option>
                         <option value="Pastor">Pastor</option>
-                        <option value="Convidado">Convidado</option>
                     </select>
                 </div>
             </div>
 
             <div style="margin-bottom: 20px;">
                 <label style="display:block; font-weight:bold; margin-bottom:5px;">📖 Texto Bíblico</label>
-                <input type="text" id="texto_biblico" placeholder="Ex: Efésios 2:8" style="width:100%; padding:10px; border-radius:8px; border:1px solid #ccc;">
+                <input type="text" id="texto_biblico" placeholder="Escreva o texto aqui..." style="width:100%; padding:10px; border-radius:8px; border:1px solid #ccc;">
             </div>
 
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
                 <div>
                     <label style="display:block; font-weight:bold; margin-bottom:5px;">🎶 Louvor</label>
-                    <input type="search" id="louvor_nome" list="listaMembrosSugestao" placeholder="Responsável..." style="width:100%; padding:10px; border-radius:8px; border:1px solid #ccc;">
+                    <input type="search" id="louvor_nome" list="listaMembrosSugestao" oninput="identificarFuncao(this, 'louvor_funcao')" placeholder="Responsável..." style="width:100%; padding:10px; border-radius:8px; border:1px solid #ccc; margin-bottom: 5px;">
+                    <select id="louvor_funcao" class="select-funcao-estilo">
+                        <option value="Membro">Membro</option>
+                        <option value="Obreiro">Obreiro</option>
+                        <option value="Diácono">Diácono</option>
+                        <option value="Pastor">Pastor</option>
+                    </select>
                 </div>
                 <div>
                     <label style="display:block; font-weight:bold; margin-bottom:5px;">🚪 Portão</label>
-                    <input type="search" id="portao_nome" list="listaMembrosSugestao" placeholder="Responsável..." style="width:100%; padding:10px; border-radius:8px; border:1px solid #ccc;">
+                    <input type="search" id="portao_nome" list="listaMembrosSugestao" oninput="identificarFuncao(this, 'portao_funcao')" placeholder="Responsável..." style="width:100%; padding:10px; border-radius:8px; border:1px solid #ccc; margin-bottom: 5px;">
+                    <select id="portao_funcao" class="select-funcao-estilo">
+                        <option value="Membro">Membro</option>
+                        <option value="Obreiro">Obreiro</option>
+                        <option value="Diácono">Diácono</option>
+                        <option value="Pastor">Pastor</option>
+                    </select>
                 </div>
+            </div>
+
+            <div style="margin-bottom: 10px;">
+                <label style="display:block; font-weight:bold; margin-bottom:5px;">📝 Obs:</label>
+                <textarea id="observacoes_culto" rows="3" placeholder="Detalhes do culto..." style="width:100%; padding:10px; border-radius:8px; border:1px solid #ccc; font-family: inherit; resize: none;"></textarea>
             </div>
         </section>
 
@@ -168,7 +191,7 @@
             <button onclick="gerarResumoWhatsApp()" style="background-color: #25d366; width: 100%; padding: 15px; color: white; border: none; border-radius: 10px; font-weight: bold; display: flex; align-items: center; justify-content: center; gap: 10px; cursor: pointer;">
                 <span>📱 Gerar Resumo para WhatsApp</span>
             </button>
-            <a href="dashboard.html" class="btn-voltar" style="text-align: center; text-decoration: none; padding: 12px; background: #f1f1f1; border-radius: 8px; color: #555; font-weight: bold;">⬅ Voltar ao Painel</a>
+            <a href="dashboard.html" style="text-align: center; text-decoration: none; padding: 12px; background: #f1f1f1; border-radius: 8px; color: #555; font-weight: bold;">⬅ Voltar ao Painel</a>
         </div>
     </div>
 

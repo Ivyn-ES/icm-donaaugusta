@@ -421,7 +421,7 @@ async function salvarChamada() {
 }
 
 // ==========================================
-// 6. RENDERIZAÇÃO E PLACAR (REGRA UNIFICADA)
+// 6. RENDERIZAÇÃO E PLACAR (VERSÃO REVISADA)
 // ==========================================
 
 async function renderizarListaChamada() {
@@ -448,13 +448,14 @@ async function renderizarListaChamada() {
             const nomeDoisTermos = obterNomeResumido(m.nome);
             const tagVis = m.situacao === 'Visitante' ? '<span style="color:red; font-weight:bold; font-size:0.7rem;">Vis. </span>' : '';
 
+            // Adicionei a classe "btn-check" no primeiro botão para facilitar a vida do script
             card.innerHTML = `
                 <div style="flex: 1;">
                     <strong style="display:block; font-size: 1rem; color: #333;">${nomePrincipal}</strong>
                     <small style="color: #888; font-size: 0.8rem;">${tagVis}(${nomeDoisTermos})</small>
                 </div>
                 <div class="botoes-status" style="display:flex; gap:12px; padding-right: 5px;">
-                    <button type="button" onclick="marcarStatus(this, 'Presente')" style="background:none; border:none; cursor:pointer; font-size:1.2rem; filter: grayscale(1); opacity: 0.4;">✅</button>
+                    <button type="button" class="btn-check" onclick="marcarStatus(this, 'Presente')" style="background:none; border:none; cursor:pointer; font-size:1.2rem; filter: grayscale(1); opacity: 0.4;">✅</button>
                     <button type="button" onclick="marcarStatus(this, 'ICM')" style="background:none; border:none; cursor:pointer; font-size:1.2rem; filter: grayscale(1); opacity: 0.4;">🏠</button>
                     <button type="button" onclick="marcarStatus(this, 'Maanaim')" style="background:none; border:none; cursor:pointer; font-size:1.2rem; filter: grayscale(1); opacity: 0.4;">⛰️</button>
                 </div>
@@ -475,16 +476,16 @@ function marcarStatus(botao, novoStatus) {
     
     card.setAttribute('data-status', statusFinal);
     
-    // Reset visual total dos botões do card
+    // Reset visual
     card.querySelectorAll('.botoes-status button').forEach(btn => {
         btn.style.filter = 'grayscale(1)';
         btn.style.opacity = '0.4';
         btn.style.transform = 'scale(1)';
     });
 
-    // REGRA MACGYVER: Independente do status (Presente, ICM ou Maanaim), acende sempre o ✅
     if (statusFinal !== 'Faltou') {
-        const btnCheck = card.querySelector('button[onclick*="Presente"]');
+        // Busca pela classe que criamos, muito mais seguro!
+        const btnCheck = card.querySelector('.btn-check');
         if (btnCheck) {
             btnCheck.style.filter = 'none'; 
             btnCheck.style.opacity = '1';
@@ -501,7 +502,6 @@ async function carregarDadosExistentes() {
     const dataCulto = document.getElementById('data_chamada').value;
     const tipoEvento = document.getElementById('tipo_evento').value;
 
-    // LIMPEZA TOTAL DA TELA ANTES DE CARREGAR
     document.querySelectorAll('.card-chamada').forEach(card => {
         card.setAttribute('data-status', 'Faltou');
         card.style.backgroundColor = 'transparent';
@@ -521,8 +521,7 @@ async function carregarDadosExistentes() {
                 const card = document.querySelector(`.card-chamada[data-id="${p.membro_id}"]`);
                 if (card) {
                     card.setAttribute('data-status', p.status);
-                    // REGRA DE CARREGAMENTO: Acende o ✅ para qualquer um dos 3 status do banco
-                    const btnCheck = card.querySelector('button[onclick*="Presente"]');
+                    const btnCheck = card.querySelector('.btn-check');
                     if (btnCheck) {
                         btnCheck.style.filter = 'none';
                         btnCheck.style.opacity = '1';
@@ -555,6 +554,7 @@ async function carregarDadosExistentes() {
 function atualizarContadores() {
     let mAd = 0, mCi = 0, vAd = 0, vCi = 0;
     document.querySelectorAll('.card-chamada').forEach(card => {
+        // Se o status for diferente de Faltou, ele CONTA (seja Presente, ICM ou Maanaim)
         if (card.getAttribute('data-status') !== 'Faltou') {
             const sit = card.getAttribute('data-situacao');
             const cat = (card.getAttribute('data-categoria') || "").toLowerCase();

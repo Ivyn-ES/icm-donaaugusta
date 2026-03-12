@@ -366,21 +366,22 @@ async function gerarResumoWhatsApp() {
         const vAd = document.getElementById('cont_vis_adultos_display').innerText;
         const vCi = document.getElementById('cont_vis_cias_display').innerText;
 
-        // --- FUNÇÃO PARA BUSCAR O APELIDO REAL ---
+        // --- FUNÇÃO PARA BUSCAR O APELIDO REAL NO CACHE (CORRIGIDA) ---
         const obterApelidoOuPrimeiroNome = (id) => {
             const valorInput = document.getElementById(id).value.trim();
             if (!valorInput) return "";
 
-            // Procura no cache de membros se o que foi digitado corresponde a um nome ou apelido
+            // Busca no cache ignorando maiúsculas/minúsculas
             const membro = window.membrosCache.find(m => 
-                m.nome === valorInput || m.apelido === valorInput
+                (m.nome && m.nome.toLowerCase() === valorInput.toLowerCase()) || 
+                (m.apelido && m.apelido.toLowerCase() === valorInput.toLowerCase())
             );
 
-            // Se achou o membro e ele tem apelido, usa o apelido. 
-            // Se não, usa a primeira palavra do que foi digitado.
-            if (membro && membro.apelido) {
+            // Se achou na tabela e tem apelido preenchido, retorna o apelido
+            if (membro && membro.apelido && membro.apelido.trim() !== "") {
                 return membro.apelido;
             } else {
+                // Se não achou ou não tem apelido, pega só a primeira palavra do que foi digitado
                 return valorInput.split(" ")[0];
             }
         };
@@ -399,7 +400,7 @@ async function gerarResumoWhatsApp() {
 
         msg += `*Responsáveis:*\n`;
         
-        // Lógica de Dirigente / Pregador + Texto Bíblico
+        // Lógica de Dirigente / Pregador + Texto Bíblico logo abaixo
         if (pregador !== "" && (pregador === louvor || louvor === "")) {
             msg += `⭐ Dirigente: ${pregador}\n`;
             msg += `📖 Texto: ${texto}\n`;
@@ -433,6 +434,7 @@ async function salvarChamada() {
         const dataCulto = document.getElementById('data_chamada').value;
         const tipoEvento = document.getElementById('tipo_evento').value;
 
+        // Captura quem não está como "Faltou" (ou seja: Presente, ICM ou Maanaim)
         const registros = Array.from(document.querySelectorAll('.card-chamada'))
             .filter(card => card.getAttribute('data-status') !== 'Faltou')
             .map(card => ({
@@ -457,6 +459,7 @@ async function salvarChamada() {
             observacoes: document.getElementById('observacoes_culto').value
         };
 
+        // Deleta os antigos e insere os novos (Sincronização limpa)
         await _supabase.from('presencas').delete().eq('data_culto', dataCulto).eq('tipo_evento', tipoEvento);
         
         if (registros.length > 0) {

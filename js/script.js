@@ -366,7 +366,7 @@ async function gerarResumoWhatsApp() {
         const vAd = document.getElementById('cont_vis_adultos_display').innerText;
         const vCi = document.getElementById('cont_vis_cias_display').innerText;
 
-        // Pega apenas o primeiro nome/apelido (Remove a função conforme pedido)
+        // Pega apenas o primeiro nome ou apelido digitado
         const pNome = (id) => {
             const val = document.getElementById(id).value.trim();
             return val ? val.split(" ")[0] : "";
@@ -378,29 +378,36 @@ async function gerarResumoWhatsApp() {
         const texto = document.getElementById('texto_biblico').value || "---";
 
         let msg = `*ICM - Dona Augusta*\n*📊 Resumo do Culto - ${dataFmt}*\n\n`;
-        msg += `*⭐ Total Geral: ${total}*\n\n`;
         
         msg += `*Público:*\n`;
         msg += `- Membros (Ad/CIA): ${mAd}/${mCi}\n`;
-        msg += `- Visitantes (Ad/CIA): ${vAd}/${vCi}\n\n`;
+        msg += `- Visitantes (Ad/CIA): ${vAd}/${vCi}\n`;
+        msg += `*⭐ Total Geral: ${total}*\n\n`;
 
         msg += `*Responsáveis:*\n`;
-        // Lógica Inteligente: Dirigente ou Escala Separada
+        
+        // Lógica de Dirigente / Pregador + Texto Bíblico
         if (pregador !== "" && (pregador === louvor || louvor === "")) {
             msg += `⭐ Dirigente: ${pregador}\n`;
+            msg += `📖 Texto: ${texto}\n`;
         } else {
-            if (pregador) msg += `🎤 Pregador: ${pregador}\n`;
+            if (pregador) {
+                msg += `🎤 Pregador: ${pregador}\n`;
+                msg += `📖 Texto: ${texto}\n`;
+            }
             if (louvor) msg += `🎶 Louvor: ${louvor}\n`;
         }
-        if (portao) msg += `🚪 Portão: ${portao}\n`;
         
-        msg += `\n📖 *Texto:* ${texto}\n`;
+        if (portao) msg += `🚪 Portão: ${portao}\n`;
         
         const obs = document.getElementById('observacoes_culto').value;
         if(obs) msg += `\n📝 *Obs:* ${obs}`;
 
         window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`, '_blank');
-    } catch (e) { alert("Erro ao gerar resumo."); }
+    } catch (e) { 
+        console.error(e);
+        alert("Erro ao gerar resumo."); 
+    }
 }
 
 async function salvarChamada() {

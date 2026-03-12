@@ -474,7 +474,7 @@ async function salvarChamada() {
 }
 
 // ==========================================
-// 6. RENDERIZAÇÃO E PLACAR (VERSÃO FINAL 3 OPÇÕES)
+// 6. RENDERIZAÇÃO E PLACAR (OPÇÃO ÚNICA: PRESENTE, ICM OU MAANAIM)
 // ==========================================
 
 async function renderizarListaChamada() {
@@ -506,10 +506,10 @@ async function renderizarListaChamada() {
                     <strong style="display:block; font-size: 1rem; color: #333;">${nomePrincipal}</strong>
                     <small style="color: #888; font-size: 0.8rem;">${tagVis}(${nomeDoisTermos})</small>
                 </div>
-                <div class="botoes-status" style="display:flex; gap:12px; padding-right: 5px;">
-                    <button type="button" class="btn-check" onclick="marcarStatus(this, 'Presente')" style="background:none; border:none; cursor:pointer; font-size:1.2rem; filter: grayscale(1); opacity: 0.4;">✅</button>
-                    <button type="button" class="btn-icm" onclick="marcarStatus(this, 'ICM')" style="background:none; border:none; cursor:pointer; font-size:1.2rem; filter: grayscale(1); opacity: 0.4;">🏠</button>
-                    <button type="button" class="btn-maa" onclick="marcarStatus(this, 'Maanaim')" style="background:none; border:none; cursor:pointer; font-size:1.2rem; filter: grayscale(1); opacity: 0.4;">⛰️</button>
+                <div class="botoes-status" style="display:flex; gap:15px; padding-right: 10px;">
+                    <span class="op-status btn-check" onclick="marcarStatus(this, 'Presente')" style="cursor:pointer; font-size:1.3rem; filter:grayscale(1); opacity:0.3;">✅</span>
+                    <span class="op-status btn-icm" onclick="marcarStatus(this, 'ICM')" style="cursor:pointer; font-size:1.3rem; filter:grayscale(1); opacity:0.3;">🏠</span>
+                    <span class="op-status btn-maa" onclick="marcarStatus(this, 'Maanaim')" style="cursor:pointer; font-size:1.3rem; filter:grayscale(1); opacity:0.3;">⛰️</span>
                 </div>
             `;
             listaContainer.appendChild(card);
@@ -521,36 +521,33 @@ async function renderizarListaChamada() {
     } catch (err) { console.error(err); }
 }
 
-function marcarStatus(botao, novoStatus) {
-    const card = botao.closest('.card-chamada');
-    const statusAtual = card.getAttribute('data-status');
+function marcarStatus(elemento, novoStatus) {
+    const card = elemento.closest('.card-chamada');
+    const statusAnterior = card.getAttribute('data-status');
     
-    // Troca o status: Se for o mesmo, vira falta. Se for novo, assume o novo.
-    const statusFinal = (statusAtual === novoStatus) ? 'Faltou' : novoStatus;
-    
-    // Aplica no atributo do card (O que o Alex usou com sucesso)
+    // 1. LÓGICA DE SELEÇÃO: Se clicar no mesmo, vira Faltou. Senão, assume o novo.
+    const statusFinal = (statusAnterior === novoStatus) ? 'Faltou' : novoStatus;
     card.setAttribute('data-status', statusFinal);
-    
-    // Reset visual de todos os botões do card
-    card.querySelectorAll('.botoes-status button').forEach(btn => {
-        btn.style.filter = 'grayscale(1)';
-        btn.style.opacity = '0.4';
-        btn.style.transform = 'scale(1)';
+
+    // 2. RESET VISUAL DE TODOS OS ÍCONES DO CARD
+    const icones = card.querySelectorAll('.op-status');
+    icones.forEach(i => {
+        i.style.filter = 'grayscale(1)';
+        i.style.opacity = '0.3';
+        i.style.transform = 'scale(1)';
     });
 
+    // 3. ATIVAÇÃO DA LUZ PILOTO (Sempre o ✅)
     if (statusFinal !== 'Faltou') {
-        const btnCheck = card.querySelector('.btn-check');
-        if (btnCheck) {
-            btnCheck.style.filter = 'none'; 
-            btnCheck.style.opacity = '1';
-            btnCheck.style.transform = 'scale(1.4)';
-        }
+        const btnVerde = card.querySelector('.btn-check');
+        btnVerde.style.filter = 'none';
+        btnVerde.style.opacity = '1';
+        btnVerde.style.transform = 'scale(1.3)';
         card.style.backgroundColor = '#f0f7ff';
     } else {
         card.style.backgroundColor = 'transparent';
     }
 
-    console.log(`Membro ID ${card.getAttribute('data-id')} alterado para: ${statusFinal}`);
     atualizarContadores();
 }
 
@@ -558,50 +555,34 @@ async function carregarDadosExistentes() {
     const dataCulto = document.getElementById('data_chamada').value;
     const tipoEvento = document.getElementById('tipo_evento').value;
 
-    document.querySelectorAll('.card-chamada').forEach(card => {
-        card.setAttribute('data-status', 'Faltou');
-        card.style.backgroundColor = 'transparent';
-        const btnCheck = card.querySelector('.btn-check');
-        if (btnCheck) {
-            btnCheck.style.filter = 'grayscale(1)';
-            btnCheck.style.opacity = '0.4';
-            btnCheck.style.transform = 'scale(1)';
-        }
-    });
-
     try {
         const { data: presencas } = await _supabase.from('presencas')
             .select('membro_id, status').eq('data_culto', dataCulto).eq('tipo_evento', tipoEvento);
 
-        if (presencas) {
-            presencas.forEach(p => {
-                const card = document.querySelector(`.card-chamada[data-id="${p.membro_id}"]`);
-                if (card && p.status !== 'Faltou') {
-                    card.setAttribute('data-status', p.status); // Garante que o status vindo do banco (Ex: ICM) seja respeitado
-                    const btnCheck = card.querySelector('.btn-check');
-                    if (btnCheck) {
-                        btnCheck.style.filter = 'none';
-                        btnCheck.style.opacity = '1';
-                        btnCheck.style.transform = 'scale(1.4)';
-                        card.style.backgroundColor = '#f0f7ff';
-                    }
-                }
-            });
-        }
+        document.querySelectorAll('.card-chamada').forEach(card => {
+            const mId = card.getAttribute('data-id');
+            const p = presencas?.find(x => String(x.membro_id) === String(mId));
+            
+            if (p && p.status !== 'Faltou') {
+                card.setAttribute('data-status', p.status);
+                const check = card.querySelector('.btn-check');
+                check.style.filter = 'none';
+                check.style.opacity = '1';
+                check.style.transform = 'scale(1.3)';
+                card.style.backgroundColor = '#f0f7ff';
+            }
+        });
 
+        // Carregamento do resumo_culto simplificado
         const { data: resumo } = await _supabase.from('resumo_culto')
             .select('*').eq('data_culto', dataCulto).eq('tipo_evento', tipoEvento).maybeSingle();
-
         if (resumo) {
             document.getElementById('vis_adultos').value = resumo.vis_adultos || 0;
             document.getElementById('vis_cias').value = resumo.vis_cias || 0;
             document.getElementById('pregador_nome').value = resumo.pregador_nome || "";
-            document.getElementById('pregador_funcao').value = resumo.pregador_funcao || "Membro";
             document.getElementById('texto_biblico').value = resumo.texto_biblico || "";
             document.getElementById('louvor_nome').value = resumo.louvor_nome || "";
-            document.getElementById('louvor_funcao').value = resumo.louvor_funcao || "Membro";
             document.getElementById('portao_nome').value = resumo.portao_nome || "";
-            document.getElementById('portao_funcao').value = resumo.portao_funcao || "Membro";
             document.getElementById('observacoes_culto').value = resumo.observacoes || "";
         }
         atualizarContadores();

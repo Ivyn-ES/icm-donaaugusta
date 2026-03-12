@@ -345,7 +345,6 @@ function identificarFuncao(input, idSelectAlvo) {
     }
 }
 
-// SOLDA DOS BOTÕES + e - DE VISITANTES
 function ajustarVisitante(id, valor) {
     const input = document.getElementById(id);
     let atual = parseInt(input.value) || 0;
@@ -378,7 +377,7 @@ async function gerarResumoWhatsApp() {
 
         window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`, '_blank');
     } catch (e) {
-        alert("Erro ao gerar resumo. Verifique se os campos estão preenchidos.");
+        alert("Erro ao gerar resumo.");
     }
 }
 
@@ -416,17 +415,12 @@ async function salvarChamada() {
             observacoes: document.getElementById('observacoes_culto').value
         };
 
-        // Salva as presenças
-        if (registros.length > 0) {
-            await _supabase.from('presencas').upsert(registros, { onConflict: 'membro_id, data_culto, tipo_evento' });
-        }
-        // Salva a ata/resumo
+        await _supabase.from('presencas').upsert(registros, { onConflict: 'membro_id, data_culto, tipo_evento' });
         await _supabase.from('resumo_culto').upsert([resumo], { onConflict: 'data_culto, tipo_evento, grupo' });
 
-        alert("✅ Dados sincronizados com sucesso!");
+        alert("✅ Dados sincronizados!");
     } catch (e) { 
-        console.error(e);
-        alert("Erro ao salvar no banco de dados."); 
+        alert("Erro ao salvar."); 
     } finally {
         btn.innerText = textoOriginal;
         btn.disabled = false;
@@ -434,7 +428,7 @@ async function salvarChamada() {
 }
 
 // ==========================================
-// 6. RENDERIZAÇÃO E PLACAR
+// 6. RENDERIZAÇÃO E PLACAR (VERSÃO FINAL)
 // ==========================================
 
 async function renderizarListaChamada() {
@@ -452,8 +446,8 @@ async function renderizarListaChamada() {
 
         membros.forEach(m => {
             const card = document.createElement('div');
-            card.style = "display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #eee; transition: background 0.3s;";
             card.className = 'card-chamada';
+            card.style = "display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #eee;";
             card.setAttribute('data-id', m.id);
             card.setAttribute('data-status', 'Faltou');
             card.setAttribute('data-categoria', m.categoria || "");
@@ -492,15 +486,15 @@ function marcarStatus(botao, novoStatus) {
 
     card.setAttribute('data-status', statusFinal);
     
-    // Reseta visual dos botões
+    // Reseta visual de todos os botões do card
     card.querySelectorAll('.botoes-status button').forEach(btn => {
         btn.style.filter = 'grayscale(1)';
         btn.style.opacity = '0.4';
         btn.style.transform = 'scale(1)';
     });
 
+    // Se não for falta, acende o botão ✅ (Regra de Painel do Abel)
     if (statusFinal !== 'Faltou') {
-        // SEMPRE destaca o ✅ para indicar presença
         const btnCheck = card.querySelector('button[onclick*="Presente"]');
         if (btnCheck) {
             btnCheck.style.filter = 'none'; 
@@ -519,6 +513,17 @@ async function carregarDadosExistentes() {
     const dataCulto = document.getElementById('data_chamada').value;
     const tipoEvento = document.getElementById('tipo_evento').value;
 
+    // RESET: Limpa a tela antes de carregar dados novos/antigos
+    document.querySelectorAll('.card-chamada').forEach(card => {
+        card.setAttribute('data-status', 'Faltou');
+        card.style.backgroundColor = 'transparent';
+        card.querySelectorAll('.botoes-status button').forEach(btn => {
+            btn.style.filter = 'grayscale(1)';
+            btn.style.opacity = '0.4';
+            btn.style.transform = 'scale(1)';
+        });
+    });
+
     try {
         const { data: presencas } = await _supabase.from('presencas')
             .select('membro_id, status')
@@ -529,9 +534,15 @@ async function carregarDadosExistentes() {
             presencas.forEach(p => {
                 const card = document.querySelector(`.card-chamada[data-id="${p.membro_id}"]`);
                 if (card) {
-                    const emoji = p.status === 'Presente' ? '✅' : (p.status === 'ICM' ? '🏠' : '⛰️');
-                    const btn = Array.from(card.querySelectorAll('button')).find(b => b.innerText === emoji);
-                    if (btn) marcarStatus(btn, p.status);
+                    // Marca o status visualmente (✅ acende) e internamente (status do banco)
+                    card.setAttribute('data-status', p.status);
+                    const btnCheck = card.querySelector('button[onclick*="Presente"]');
+                    if (btnCheck) {
+                        btnCheck.style.filter = 'none'; 
+                        btnCheck.style.opacity = '1';
+                        btnCheck.style.transform = 'scale(1.3)';
+                    }
+                    card.style.backgroundColor = '#f0f7ff';
                 }
             });
         }
@@ -550,6 +561,11 @@ async function carregarDadosExistentes() {
             document.getElementById('portao_nome').value = resumo.portao_nome || "";
             document.getElementById('portao_funcao').value = resumo.portao_funcao || "Membro";
             document.getElementById('observacoes_culto').value = resumo.observacoes || "";
+        } else {
+            // Se não houver dados, garante campos limpos (exceto data/evento)
+            document.querySelectorAll('#ataCulto input:not([type=date]), #ataCulto textarea').forEach(i => i.value = "");
+            document.getElementById('vis_adultos').value = 0;
+            document.getElementById('vis_cias').value = 0;
         }
         atualizarContadores();
     } catch (e) { console.error(e); }
@@ -559,14 +575,9 @@ function atualizarContadores() {
     let mAd = 0, mCi = 0, vAd = 0, vCi = 0;
 
     document.querySelectorAll('.card-chamada').forEach(card => {
-        const status = card.getAttribute('data-status');
-        
-        // CONTA QUALQUER UM QUE NÃO SEJA "FALTOU"
-        if (status !== 'Faltou') {
+        if (card.getAttribute('data-status') !== 'Faltou') {
             const sit = card.getAttribute('data-situacao');
             const cat = (card.getAttribute('data-categoria') || "").toLowerCase();
-            
-            // Definição de CIAs: Criança, Intermediário, Adolescente
             const eCia = (cat.includes('crian') || cat.includes('interme') || cat.includes('adolesc'));
 
             if (sit === 'Visitante') {

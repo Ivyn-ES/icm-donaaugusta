@@ -474,12 +474,12 @@ async function salvarChamada() {
 }
 
 // ==========================================
-// 6. RENDERIZAÇÃO E PLACAR (VERSÃO CORRIGIDA: SEM CONGELAMENTO)
+// 6. RENDERIZAÇÃO E PLACAR - VERSÃO LIMPEZA TOTAL
 // ==========================================
 
 async function renderizarListaChamada() {
     const listaContainer = document.getElementById('listaChamada');
-    listaContainer.innerHTML = "<p style='text-align:center;'>Buscando membros...</p>";
+    listaContainer.innerHTML = "<p style='text-align:center;'>Carregando lista...</p>";
 
     try {
         const { data: membros, error } = await _supabase.from('membros')
@@ -497,54 +497,42 @@ async function renderizarListaChamada() {
             card.setAttribute('data-categoria', m.categoria || "");
             card.setAttribute('data-situacao', m.situacao || "Membro");
 
-            const nomePrincipal = m.apelido || m.nome;
-            const nomeDoisTermos = obterNomeResumido(m.nome);
-            const tagVis = m.situacao === 'Visitante' ? '<span style="color:red; font-weight:bold; font-size:0.7rem;">Vis. </span>' : '';
-
             card.innerHTML = `
                 <div style="flex: 1;">
-                    <strong style="display:block; font-size: 1rem; color: #333;">${nomePrincipal}</strong>
-                    <small style="color: #888; font-size: 0.8rem;">${tagVis}(${nomeDoisTermos})</small>
+                    <strong style="display:block; font-size: 1rem; color: #333;">${m.apelido || m.nome}</strong>
+                    <small style="color: #888; font-size: 0.8rem;">${m.situacao === 'Visitante' ? 'Vis. ' : ''}(${obterNomeResumido(m.nome)})</small>
                 </div>
                 <div class="botoes-status" style="display:flex; gap:15px; padding-right: 10px;">
-                    <span class="op-status btn-check" onclick="marcarStatus(this, 'Presente')" style="cursor:pointer; font-size:1.3rem; filter:grayscale(1); opacity:0.3; transition: 0.2s;">✅</span>
-                    <span class="op-status btn-icm" onclick="marcarStatus(this, 'ICM')" style="cursor:pointer; font-size:1.3rem; filter:grayscale(1); opacity:0.3; transition: 0.2s;">🏠</span>
-                    <span class="op-status btn-maa" onclick="marcarStatus(this, 'Maanaim')" style="cursor:pointer; font-size:1.3rem; filter:grayscale(1); opacity:0.3; transition: 0.2s;">⛰️</span>
+                    <span class="op-status btn-check" onclick="marcarStatus(this, 'Presente')" style="cursor:pointer; font-size:1.4rem; filter:grayscale(1); opacity:0.3;">✅</span>
+                    <span class="op-status btn-icm" onclick="marcarStatus(this, 'ICM')" style="cursor:pointer; font-size:1.4rem; filter:grayscale(1); opacity:0.3;">🏠</span>
+                    <span class="op-status btn-maa" onclick="marcarStatus(this, 'Maanaim')" style="cursor:pointer; font-size:1.4rem; filter:grayscale(1); opacity:0.3;">⛰️</span>
                 </div>
             `;
             listaContainer.appendChild(card);
         });
         
         await carregarDadosExistentes(); 
-        if (typeof carregarSugestoesEFuncoes === "function") await carregarSugestoesEFuncoes(); 
         
-    } catch (err) { console.error("Erro na renderização:", err); }
+    } catch (err) { console.error("Erro:", err); }
 }
 
 function marcarStatus(elemento, novoStatus) {
     const card = elemento.closest('.card-chamada');
-    if (!card) return;
-
     const statusAnterior = card.getAttribute('data-status');
     const statusFinal = (statusAnterior === novoStatus) ? 'Faltou' : novoStatus;
+    
     card.setAttribute('data-status', statusFinal);
 
-    // Reset Visual dos ícones da linha
+    // Reset visual da linha
     card.querySelectorAll('.op-status').forEach(i => {
         i.style.filter = 'grayscale(1)';
         i.style.opacity = '0.3';
-        i.style.transform = 'scale(1)';
     });
 
-    // Ativação do ícone selecionado
+    // Acende o escolhido
     if (statusFinal !== 'Faltou') {
-        let classeAlvo = statusFinal === 'Presente' ? '.btn-check' : (statusFinal === 'ICM' ? '.btn-icm' : '.btn-maa');
-        const iconeAtivo = card.querySelector(classeAlvo);
-        if (iconeAtivo) {
-            iconeAtivo.style.filter = 'none';
-            iconeAtivo.style.opacity = '1';
-            iconeAtivo.style.transform = 'scale(1.4)';
-        }
+        elemento.style.filter = 'none';
+        elemento.style.opacity = '1';
         card.style.backgroundColor = '#f0f7ff';
     } else {
         card.style.backgroundColor = 'transparent';
@@ -557,102 +545,72 @@ async function carregarDadosExistentes() {
     const dataCulto = document.getElementById('data_chamada').value;
     const tipoEvento = document.getElementById('tipo_evento').value;
 
-    // --- RESET DE SEGURANÇA ---
-    // Limpa campos de texto para não herdar dados de outra data
-    const camposResumo = ['vis_adultos', 'vis_cias', 'pregador_nome', 'texto_biblico', 'louvor_nome', 'portao_nome', 'observacoes_culto'];
-    camposResumo.forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.value = (el.tagName === 'INPUT' && el.type === 'number') ? 0 : "";
-    });
-
-    // Reset visual de todos os cards antes de marcar os novos
-    document.querySelectorAll('.card-chamada').forEach(card => {
-        card.setAttribute('data-status', 'Faltou');
-        card.style.backgroundColor = 'transparent';
-        card.querySelectorAll('.op-status').forEach(i => {
-            i.style.filter = 'grayscale(1)';
-            i.style.opacity = '0.3';
-            i.style.transform = 'scale(1)';
-        });
-    });
+    // Reset campos manuais
+    document.getElementById('vis_adultos').value = 0;
+    document.getElementById('vis_cias').value = 0;
 
     try {
-        const { data: presencas, error: errP } = await _supabase.from('presencas')
+        const { data: presencas } = await _supabase.from('presencas')
             .select('membro_id, status').eq('data_culto', dataCulto).eq('tipo_evento', tipoEvento);
 
-        if (errP) throw errP;
-
-        // Aplica presenças encontradas
-        if (presencas) {
-            presencas.forEach(p => {
-                const card = document.querySelector(`.card-chamada[data-id="${p.membro_id}"]`);
-                if (card && p.status !== 'Faltou') {
-                    card.setAttribute('data-status', p.status);
-                    let classeAlvo = p.status === 'Presente' ? '.btn-check' : (p.status === 'ICM' ? '.btn-icm' : '.btn-maa');
-                    const icone = card.querySelector(classeAlvo);
-                    if (icone) {
-                        icone.style.filter = 'none';
-                        icone.style.opacity = '1';
-                        icone.style.transform = 'scale(1.4)';
-                        card.style.backgroundColor = '#f0f7ff';
-                    }
-                }
+        // Reset visual de todos antes de marcar
+        document.querySelectorAll('.card-chamada').forEach(card => {
+            card.setAttribute('data-status', 'Faltou');
+            card.style.backgroundColor = 'transparent';
+            card.querySelectorAll('.op-status').forEach(i => {
+                i.style.filter = 'grayscale(1)';
+                i.style.opacity = '0.3';
             });
-        }
+        });
 
-        const { data: resumo, error: errR } = await _supabase.from('resumo_culto')
+        // Marca quem veio
+        presencas?.forEach(p => {
+            const card = document.querySelector(`.card-chamada[data-id="${p.membro_id}"]`);
+            if (card) {
+                card.setAttribute('data-status', p.status);
+                let btn = p.status === 'Presente' ? '.btn-check' : (p.status === 'ICM' ? '.btn-icm' : '.btn-maa');
+                const icone = card.querySelector(btn);
+                if (icone) {
+                    icone.style.filter = 'none';
+                    icone.style.opacity = '1';
+                    card.style.backgroundColor = '#f0f7ff';
+                }
+            }
+        });
+
+        const { data: resumo } = await _supabase.from('resumo_culto')
             .select('*').eq('data_culto', dataCulto).eq('tipo_evento', tipoEvento).maybeSingle();
-
-        if (errR) throw errR;
+        
         if (resumo) {
             document.getElementById('vis_adultos').value = resumo.vis_adultos || 0;
             document.getElementById('vis_cias').value = resumo.vis_cias || 0;
             document.getElementById('pregador_nome').value = resumo.pregador_nome || "";
             document.getElementById('texto_biblico').value = resumo.texto_biblico || "";
-            document.getElementById('louvor_nome').value = resumo.louvor_nome || "";
-            document.getElementById('portao_nome').value = resumo.portao_nome || "";
-            document.getElementById('observacoes_culto').value = resumo.observacoes || "";
         }
         
         atualizarContadores();
-    } catch (e) { 
-        console.error("Erro ao carregar dados existentes:", e);
-        atualizarContadores(); // Garante que zera o placar em caso de erro
-    }
+    } catch (e) { console.error(e); }
 }
 
 function atualizarContadores() {
     let mAd = 0, mCi = 0, vAd = 0, vCi = 0;
-    
     document.querySelectorAll('.card-chamada').forEach(card => {
-        const status = card.getAttribute('data-status');
-        if (status && status !== 'Faltou') {
+        if (card.getAttribute('data-status') !== 'Faltou') {
             const sit = card.getAttribute('data-situacao');
             const cat = (card.getAttribute('data-categoria') || "").toLowerCase();
             const eCia = (cat.includes('crian') || cat.includes('interme') || cat.includes('adolesc'));
-            
-            if (sit === 'Visitante') { 
-                if (eCia) vCi++; else vAd++; 
-            } else { 
-                if (eCia) mCi++; else mAd++; 
-            }
+            if (sit === 'Visitante') { if (eCia) vCi++; else vAd++; }
+            else { if (eCia) mCi++; else mAd++; }
         }
     });
-
     const vAdExtra = parseInt(document.getElementById('vis_adultos').value) || 0;
     const vCiExtra = parseInt(document.getElementById('vis_cias').value) || 0;
-
-    // Atualização segura do DOM
-    const updateText = (id, val) => {
-        const el = document.getElementById(id);
-        if (el) el.innerText = val;
-    };
-
-    updateText('cont_membros_adultos', mAd);
-    updateText('cont_membros_cias', mCi);
-    updateText('cont_vis_adultos_display', vAd + vAdExtra);
-    updateText('cont_vis_cias_display', vCi + vCiExtra);
-    updateText('cont_total', mAd + mCi + vAd + vAdExtra + vCi + vCiExtra);
+    
+    document.getElementById('cont_membros_adultos').innerText = mAd;
+    document.getElementById('cont_membros_cias').innerText = mCi;
+    document.getElementById('cont_vis_adultos_display').innerText = vAd + vAdExtra;
+    document.getElementById('cont_vis_cias_display').innerText = vCi + vCiExtra;
+    document.getElementById('cont_total').innerText = mAd + mCi + vAd + vAdExtra + vCi + vCiExtra;
 }
 
 // ==========================================

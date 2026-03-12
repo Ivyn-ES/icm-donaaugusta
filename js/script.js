@@ -305,138 +305,186 @@ function selecionarStatus(membroId, novoStatus) {
 // 5. MÓDULO DE AUTOMAÇÃO E WHATSAPP
 // ==========================================
 
-// ... (mantenha sua função carregarSugestoesEFuncoes e identificarFuncao aqui)
+window.membrosCache = []; 
+
+async function carregarSugestoesEFuncoes() {
+    try {
+        const { data: membros, error } = await _supabase.from('membros')
+            .select('nome, apelido, funcao, situacao')
+            .eq('status_registro', 'Ativo');
+
+        if (error) throw error;
+        window.membrosCache = membros;
+
+        const datalist = document.getElementById('listaMembrosSugestao');
+        if (datalist) {
+            datalist.innerHTML = ""; // Limpa antes
+            membros.forEach(m => {
+                // Cria a opção mostrando Nome e Apelido para facilitar a busca
+                const option = document.createElement('option');
+                option.value = m.nome; 
+                option.innerText = m.apelido ? `${m.nome} (${m.apelido})` : m.nome;
+                datalist.appendChild(option);
+            });
+        }
+    } catch (err) { console.error("Erro nas sugestões:", err); }
+}
+
+function identificarFuncao(input, idSelectAlvo) {
+    const termo = input.value.trim().toLowerCase();
+    if (!termo) return;
+
+    const membro = window.membrosCache.find(m => 
+        m.nome.toLowerCase() === termo || 
+        (m.apelido && m.apelido.toLowerCase() === termo)
+    );
+
+    if (membro) {
+        const select = document.getElementById(idSelectAlvo);
+        if (select) select.value = membro.funcao || "Membro";
+    }
+}
 
 async function gerarResumoWhatsApp() {
     try {
-        const dataFmt = formatarDataBR(document.getElementById('data_chamada').value);
+        const dataInput = document.getElementById('data_chamada').value;
+        const dataFmt = dataInput ? dataInput.split('-').reverse().join('/') : "--/--/--";
         
-        // Pega os nomes e usa apenas o primeiro termo
-        const pNome = (id) => {
-            const val = document.getElementById(id)?.value;
-            return val ? val.trim().split(" ")[0] : "---";
-        };
-        
-        const pregador = pNome('pregador_nome');
+        const totalGeral = document.getElementById('cont_total').innerText;
+        const pregador = document.getElementById('pregador_nome').value || "---";
         const fPreg = document.getElementById('pregador_funcao').value;
-        const louvor = pNome('louvor_nome');
+        const louvor = document.getElementById('louvor_nome').value || "---";
         const fLouv = document.getElementById('louvor_funcao').value;
-        const portao = pNome('portao_nome');
+        const portao = document.getElementById('portao_nome').value || "---";
         const fPort = document.getElementById('portao_funcao').value;
+        const texto = document.getElementById('texto_biblico').value || "---";
 
-        const total = document.getElementById('cont_total').innerText;
-
-        let msg = `*ICM - Dona Augusta*\n*📊 RESUMO - ${dataFmt}*\n\n`;
-        msg += `*⭐ TOTAL GERAL: ${total}*\n\n`;
-        msg += `*ESCALA:*\n`;
+        let msg = `*ICM - Dona Augusta*\n`;
+        msg += `*📊 RESUMO - ${dataFmt}*\n\n`;
+        msg += `*⭐ TOTAL GERAL: ${totalGeral}*\n\n`;
         msg += `🎤 *Pregador:* ${fPreg} ${pregador}\n`;
         msg += `🎶 *Louvor:* ${fLouv} ${louvor}\n`;
-        msg += `🚪 *Portão:* ${fPort} ${portao}\n`;
+        msg += `🚪 *Portão:* ${fPort} ${fPort}\n`;
+        msg += `📖 *Texto:* ${texto}\n`;
         
         const obs = document.getElementById('observacoes_culto').value;
         if(obs) msg += `\n📝 *Obs:* ${obs}`;
 
-        window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`, '_blank');
-    } catch (err) {
-        console.error("Erro WhatsApp:", err);
-        alert("Erro ao gerar resumo.");
+        const url = `https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`;
+        window.open(url, '_blank');
+    } catch (e) {
+        alert("Erro ao gerar resumo: " + e.message);
     }
 }
 
 // ==========================================
-// 6. RENDERIZAÇÃO E BOTÕES (PADRÃO ✅)
+// 6. RENDERIZAÇÃO E PLACAR (O CORAÇÃO)
 // ==========================================
+
+async function renderizarListaChamada() {
+    const listaContainer = document.getElementById('listaChamada');
+    listaContainer.innerHTML = "<p style='text-align:center;'>Buscando no banco...</p>";
+
+    try {
+        const { data: membros, error } = await _supabase.from('membros')
+            .select('*')
+            .eq('status_registro', 'Ativo')
+            .order('nome', { ascending: true });
+
+        if (error) throw error;
+        listaContainer.innerHTML = ""; 
+
+        membros.forEach(m => {
+            const card = document.createElement('div');
+            card.className = 'card-chamada';
+            card.style = "display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #eee;";
+            
+            card.setAttribute('data-id', m.id);
+            card.setAttribute('data-status', 'Faltou');
+            card.setAttribute('data-categoria', m.categoria || "");
+            card.setAttribute('data-situacao', m.situacao || "Membro");
+
+            // AJUSTE DE NOME: Prioriza Nome Completo para não "comer" os dados
+            const exibicao = m.nome; 
+            const sublinhado = m.apelido ? ` <small>(${m.apelido})</small>` : "";
+
+            card.innerHTML = `
+                <div style="flex: 1;">
+                    <strong style="display:block; font-size: 1rem; color: #333;">${exibicao}</strong>
+                    <span style="color: #888; font-size: 0.8rem;">${m.categoria}${sublinhado}</span>
+                </div>
+                <div class="botoes-status" style="display:flex; gap:12px;">
+                    <button type="button" onclick="marcarStatus(this, 'Presente')" style="background:none; border:none; cursor:pointer; font-size:1.2rem; filter:grayscale(1); opacity:0.3;">✅</button>
+                    <button type="button" onclick="marcarStatus(this, 'ICM')" style="background:none; border:none; cursor:pointer; font-size:1.2rem; filter:grayscale(1); opacity:0.3;">🏠</button>
+                    <button type="button" onclick="marcarStatus(this, 'Maanaim')" style="background:none; border:none; cursor:pointer; font-size:1.2rem; filter:grayscale(1); opacity:0.3;">⛰️</button>
+                </div>
+            `;
+            listaContainer.appendChild(card);
+        });
+        
+        await carregarDadosExistentes(); // Tenta carregar o que já foi salvo
+        await carregarSugestoesEFuncoes(); // Carrega o datalist
+        atualizarContadores(); // Zera ou atualiza o placar
+        
+    } catch (err) { console.error(err); }
+}
 
 function marcarStatus(botao, novoStatus) {
     const card = botao.closest('.card-chamada');
-    if (!card) return;
-
     const statusAtual = card.getAttribute('data-status');
     const statusFinal = (statusAtual === novoStatus) ? 'Faltou' : novoStatus;
 
     card.setAttribute('data-status', statusFinal);
     
-    // Reseta todos os botões do card para cinza
+    // Reset visual
     card.querySelectorAll('.botoes-status button').forEach(btn => {
         btn.style.filter = 'grayscale(1)';
-        btn.style.opacity = '0.4';
+        btn.style.opacity = '0.3';
+        btn.style.transform = 'scale(1)';
     });
 
     if (statusFinal !== 'Faltou') {
-        // REGRA MACGYVER: Independente de ser ICM ou Maanaim, 
-        // o botão que fica colorido e destacado é o ✅
+        // SEMPRE acende o ✅
         const btnCheck = card.querySelector('button[onclick*="Presente"]');
-        if (btnCheck) {
-            btnCheck.style.filter = 'none'; 
-            btnCheck.style.opacity = '1';
-            btnCheck.style.transform = 'scale(1.3)';
-        }
+        btnCheck.style.filter = 'none'; 
+        btnCheck.style.opacity = '1';
+        btnCheck.style.transform = 'scale(1.2)';
         card.style.backgroundColor = '#f0f7ff';
     } else {
         card.style.backgroundColor = 'transparent';
     }
-
     atualizarContadores();
 }
 
-async function salvarChamada() {
-    const btn = document.getElementById('btnFinalizar');
-    const originalText = btn.innerText;
+function atualizarContadores() {
+    let mAd = 0, mCi = 0, vAd = 0, vCi = 0;
+
+    document.querySelectorAll('.card-chamada').forEach(card => {
+        const status = card.getAttribute('data-status');
+        if (status !== 'Faltou') {
+            const sit = card.getAttribute('data-situacao');
+            const cat = (card.getAttribute('data-categoria') || "").toLowerCase();
+            const eCia = (cat.includes('crianca') || cat.includes('intermediario') || cat.includes('adolescente'));
+
+            if (sit === 'Visitante') {
+                if (eCia) vCi++; else vAd++;
+            } else {
+                if (eCia) mCi++; else mAd++;
+            }
+        }
+    });
+
+    const vAdExtra = parseInt(document.getElementById('vis_adultos').value) || 0;
+    const vCiExtra = parseInt(document.getElementById('vis_cias').value) || 0;
+
+    document.getElementById('cont_membros_adultos').innerText = mAd;
+    document.getElementById('cont_membros_cias').innerText = mCi;
+    document.getElementById('cont_vis_adultos_display').innerText = vAd + vAdExtra;
+    document.getElementById('cont_vis_cias_display').innerText = vCi + vCiExtra;
     
-    try {
-        btn.disabled = true;
-        btn.innerText = "⌛ Salvando...";
-
-        const dataCulto = document.getElementById('data_chamada').value;
-        const tipoEvento = document.getElementById('tipo_evento').value;
-
-        // 1. Coleta Presenças
-        const registros = Array.from(document.querySelectorAll('.card-chamada'))
-            .filter(card => card.getAttribute('data-status') !== 'Faltou')
-            .map(card => ({
-                membro_id: card.getAttribute('data-id'),
-                data_culto: dataCulto,
-                tipo_evento: tipoEvento,
-                status: card.getAttribute('data-status'),
-                presenca: true
-            }));
-
-        // 2. Coleta Resumo
-        const dadosResumo = {
-            data_culto: dataCulto,
-            tipo_evento: tipoEvento,
-            vis_adultos: parseInt(document.getElementById('vis_adultos').value) || 0,
-            vis_cias: parseInt(document.getElementById('vis_cias').value) || 0,
-            pregador_nome: document.getElementById('pregador_nome').value,
-            pregador_funcao: document.getElementById('pregador_funcao').value,
-            louvor_nome: document.getElementById('louvor_nome').value,
-            louvor_funcao: document.getElementById('louvor_funcao').value,
-            portao_nome: document.getElementById('portao_nome').value,
-            portao_funcao: document.getElementById('portao_funcao').value,
-            texto_biblico: document.getElementById('texto_biblico').value,
-            observacoes: document.getElementById('observacoes_culto').value,
-            grupo: 'Geral' // ajuste conforme sua lógica de grupo
-        };
-
-        // Salva no Supabase (UPSERT para não duplicar)
-        const { error: err1 } = await _supabase.from('presencas').upsert(registros, { onConflict: 'membro_id, data_culto, tipo_evento' });
-        const { error: err2 } = await _supabase.from('resumo_culto').upsert([dadosResumo], { onConflict: 'data_culto, tipo_evento, grupo' });
-
-        if (err1 || err2) throw (err1 || err2);
-
-        alert("✅ Dados atualizados com sucesso!");
-    } catch (err) {
-        console.error(err);
-        alert("Erro ao salvar: " + err.message);
-    } finally {
-        btn.disabled = false;
-        btn.innerText = originalText;
-    }
+    const total = mAd + mCi + vAd + vAdExtra + vCi + vCiExtra;
+    document.getElementById('cont_total').innerText = total;
 }
-
-// ... (mantenha carregarDadosExistentes, renderizarListaChamada e atualizarContadores)
-
-// WHATSAPP... (mesma função que você já tem)
 
 // ==========================================
 // 7. MÓDULO ADMINISTRATIVO

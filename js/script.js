@@ -525,8 +525,10 @@ function marcarStatus(botao, novoStatus) {
     const card = botao.closest('.card-chamada');
     const statusAtual = card.getAttribute('data-status');
     
-    // Lógica de Troca: Se clicar no mesmo, vira falta. Senão, assume o novo.
+    // Troca o status: Se for o mesmo, vira falta. Se for novo, assume o novo.
     const statusFinal = (statusAtual === novoStatus) ? 'Faltou' : novoStatus;
+    
+    // Aplica no atributo do card (O que o Alex usou com sucesso)
     card.setAttribute('data-status', statusFinal);
     
     // Reset visual de todos os botões do card
@@ -536,7 +538,6 @@ function marcarStatus(botao, novoStatus) {
         btn.style.transform = 'scale(1)';
     });
 
-    // REGRA MACGYVER: Independente do status (Presente, ICM ou Maanaim), ACENDE O CHECK (✅)
     if (statusFinal !== 'Faltou') {
         const btnCheck = card.querySelector('.btn-check');
         if (btnCheck) {
@@ -548,6 +549,8 @@ function marcarStatus(botao, novoStatus) {
     } else {
         card.style.backgroundColor = 'transparent';
     }
+
+    console.log(`Membro ID ${card.getAttribute('data-id')} alterado para: ${statusFinal}`);
     atualizarContadores();
 }
 
@@ -555,15 +558,15 @@ async function carregarDadosExistentes() {
     const dataCulto = document.getElementById('data_chamada').value;
     const tipoEvento = document.getElementById('tipo_evento').value;
 
-    // Reset geral antes de carregar
     document.querySelectorAll('.card-chamada').forEach(card => {
         card.setAttribute('data-status', 'Faltou');
         card.style.backgroundColor = 'transparent';
-        card.querySelectorAll('.botoes-status button').forEach(btn => {
-            btn.style.filter = 'grayscale(1)';
-            btn.style.opacity = '0.4';
-            btn.style.transform = 'scale(1)';
-        });
+        const btnCheck = card.querySelector('.btn-check');
+        if (btnCheck) {
+            btnCheck.style.filter = 'grayscale(1)';
+            btnCheck.style.opacity = '0.4';
+            btnCheck.style.transform = 'scale(1)';
+        }
     });
 
     try {
@@ -574,7 +577,7 @@ async function carregarDadosExistentes() {
             presencas.forEach(p => {
                 const card = document.querySelector(`.card-chamada[data-id="${p.membro_id}"]`);
                 if (card && p.status !== 'Faltou') {
-                    card.setAttribute('data-status', p.status);
+                    card.setAttribute('data-status', p.status); // Garante que o status vindo do banco (Ex: ICM) seja respeitado
                     const btnCheck = card.querySelector('.btn-check');
                     if (btnCheck) {
                         btnCheck.style.filter = 'none';

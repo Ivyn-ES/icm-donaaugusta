@@ -191,7 +191,7 @@ async function excluirMembro(id) {
 }
 
 // ==========================================
-// 4. MÓDULO DE CHAMADA (PRESENÇA) - ATUALIZADO (ICM/MAANAIM)
+// 4. MÓDULO DE CHAMADA (PRESENÇA) - VERSÃO ZORIN OS
 // ==========================================
 
 async function renderizarListaChamada() {
@@ -201,8 +201,9 @@ async function renderizarListaChamada() {
     if (!container) return;
 
     try {
-        const user = verificarAcesso();
-        // Buscamos membros e apelidos
+        const user = JSON.parse(localStorage.getItem('usuarioLogado'));
+        
+        // 1. Busca membros ativos
         const { data: membros, error: errM } = await _supabase.from('membros')
             .select('id, nome, apelido, grupo, categoria, situacao') 
             .eq('status_registro', 'Ativo').order('nome');
@@ -210,144 +211,113 @@ async function renderizarListaChamada() {
         if (errM) throw errM;
 
         let jaRegistrados = [];
+        let resumoExistente = null;
+
+        // 2. Busca presenças e resumo (ata) do dia
         if (dataSelecionada && eventoSelecionado) {
-            // Agora buscamos a coluna 'status' que pode ser Presente, ICM, Maanaim ou Ausente
             const { data: pres } = await _supabase.from('presencas')
-                .select('membro_id, status').eq('data_culto', dataSelecionada).eq('tipo_evento', eventoSelecionado);
+                .select('membro_id, status, presenca')
+                .eq('data_culto', dataSelecionada)
+                .eq('tipo_evento', eventoSelecionado);
             jaRegistrados = pres || [];
 
-            // Carrega resumo do culto (Ata)
             const { data: resu } = await _supabase.from('resumo_culto')
-                .select('*').eq('data_culto', dataSelecionada).eq('tipo_evento', eventoSelecionado)
+                .select('*')
+                .eq('data_culto', dataSelecionada)
+                .eq('tipo_evento', eventoSelecionado)
                 .eq('grupo', user.grupo_vinculado || 'Geral').maybeSingle();
-            
-            if (resu) {
-                document.getElementById('vis_adultos').value = resu.vis_adultos || 0;
-                document.getElementById('vis_cias').value = resu.vis_cias || 0;
-                document.getElementById('pregador_nome').value = resu.pregador_nome || "";
-                document.getElementById('texto_biblico').value = resu.texto_biblico || "";
-                document.getElementById('louvor_nome').value = resu.louvor_nome || "";
-                document.getElementById('portao_nome').value = resu.portao_nome || "";
-                if (document.getElementById('observacoes_culto')) {
-                    document.getElementById('observacoes_culto').value = resu.observacoes || "";
-                }
+            resumoExistente = resu;
+        }
+
+        // 3. Preenche os campos da Ata se já existirem
+        if (resumoExistente) {
+            if(document.getElementById('vis_adultos')) document.getElementById('vis_adultos').value = resumoExistente.vis_adultos || 0;
+            if(document.getElementById('vis_cias')) document.getElementById('vis_cias').value = resumoExistente.vis_cias || 0;
+            if(document.getElementById('pregador_nome')) document.getElementById('pregador_nome').value = resumoExistente.pregador_nome || "";
+            if(document.getElementById('texto_biblico')) document.getElementById('texto_biblico').value = resumoExistente.texto_biblico || "";
+            if(document.getElementById('louvor_nome')) document.getElementById('louvor_nome').value = resumoExistente.louvor_nome || "";
+            if(document.getElementById('portao_nome')) document.getElementById('portao_nome').value = resumoExistente.portao_nome || "";
+            if (document.getElementById('observacoes_culto')) {
+                document.getElementById('observacoes_culto').value = resumoExistente.observacoes || "";
             }
         }
 
+        // 4. Renderiza os Cards
         container.innerHTML = membros.map(m => {
             const reg = jaRegistrados.find(r => r.membro_id === m.id);
-            const statusAtual = reg ? reg.status : 'Ausente';
             
-            // Prioridade para o Apelido
-            const nomeExibicao = m.apelido ? `<strong>${m.apelido}</strong>` : `<strong>${m.nome.split(' ')[0]}</strong>`;
-            const subTexto = m.apelido ? m.nome.split(' ')[0] : (m.grupo || 'Geral');
+            // Lógica de compatibilidade: Prioriza status (texto), senão olha presenca (bool)
+            let statusAtual = 'Ausente';
+            if (reg) {
+                if (reg.status && reg.status !== 'Ausente') statusAtual = reg.status;
+                else if (reg.presenca === true) statusAtual = 'Presente';
+            }
+
+            const partesNome = m.nome.trim().split(" ");
+            const nomeCurto = partesNome[0];
+            const nomeExibicao = m.apelido ? `<strong>${m.apelido}</strong>` : `<strong>${nomeCurto}</strong>`;
+            const subTexto = m.apelido ? nomeCurto : (m.grupo || 'Geral');
 
             return `
-                <div class="card-chamada" data-id="${m.id}" data-nome="${m.nome}" data-apelido="${m.apelido || ''}" 
-                     style="display:flex; align-items:center; justify-content:space-between; padding:12px; border:1px solid #ddd; margin-bottom:8px; border-radius:10px; background:#fff;">
+                <div class="card-chamada" 
+                     data-id="${m.id}" 
+                     data-nome="${m.nome}" 
+                     data-apelido="${m.apelido || ''}" 
+                     data-categoria="${m.categoria || 'Adulto'}"
+                     data-status="${statusAtual}"
+                     style="display:flex; align-items:center; justify-content:space-between; padding:12px; border:1px solid #ddd; margin-bottom:8px; border-radius:10px; background:${statusAtual === 'Presente' ? '#e8f5e9' : '#fff'};">
                     
                     <div style="flex:1;">
                         <span style="font-size:1.1rem;">${nomeExibicao}</span><br>
-                        <small style="color:#888;">${subTexto}</small>
+                        <small style="color:#888;">${subTexto} ${m.situacao.includes('Visitante') ? '(Vis)' : ''}</small>
                     </div>
 
-                    <div class="controles-status" style="display:flex; gap:8px;">
+                    <div style="display:flex; gap:8px;">
                         <button onclick="selecionarStatus('${m.id}', 'Presente')" id="btn_P_${m.id}" 
-                                class="btn-status-toggle ${statusAtual === 'Presente' ? 'active-p' : ''}" 
-                                style="padding:10px; border-radius:8px; border:1px solid #ccc; cursor:pointer; background:${statusAtual === 'Presente' ? '#2ecc71' : '#fff'}">✅</button>
+                                class="btn-status-toggle" 
+                                style="padding:10px; border-radius:8px; border:1px solid #ccc; background:${statusAtual === 'Presente' ? '#2ecc71' : '#fff'}">✅</button>
                         
                         <button onclick="selecionarStatus('${m.id}', 'ICM')" id="btn_I_${m.id}" 
-                                class="btn-status-toggle ${statusAtual === 'ICM' ? 'active-i' : ''}" 
-                                style="padding:10px; border-radius:8px; border:1px solid #ccc; cursor:pointer; background:${statusAtual === 'ICM' ? '#3498db' : '#fff'}">🏠</button>
+                                class="btn-status-toggle" 
+                                style="padding:10px; border-radius:8px; border:1px solid #ccc; background:${statusAtual === 'ICM' ? '#3498db' : '#fff'}">🏠</button>
                         
                         <button onclick="selecionarStatus('${m.id}', 'Maanaim')" id="btn_M_${m.id}" 
-                                class="btn-status-toggle ${statusAtual === 'Maanaim' ? 'active-m' : ''}" 
-                                style="padding:10px; border-radius:8px; border:1px solid #ccc; cursor:pointer; background:${statusAtual === 'Maanaim' ? '#e67e22' : '#fff'}">⛰️</button>
+                                class="btn-status-toggle" 
+                                style="padding:10px; border-radius:8px; border:1px solid #ccc; background:${statusAtual === 'Maanaim' ? '#e67e22' : '#fff'}">⛰️</button>
                     </div>
                 </div>`;
         }).join('');
+        
         atualizarContadores();
     } catch (err) { console.error("Erro na lista:", err); }
 }
 
-// Função para alternar entre os estados
+// Alternar entre Presente, ICM, Maanaim ou Ausente
 function selecionarStatus(membroId, novoStatus) {
+    const card = document.querySelector(`.card-chamada[data-id="${membroId}"]`);
+    if (!card) return;
+
     const btnP = document.getElementById(`btn_P_${membroId}`);
     const btnI = document.getElementById(`btn_I_${membroId}`);
     const btnM = document.getElementById(`btn_M_${membroId}`);
-    const card = btnP.closest('.card-chamada');
 
-    // Se clicar no que já está ativo, desmarca tudo (volta a ser Ausente)
-    const jaEstavaAtivo = (novoStatus === 'Presente' && btnP.classList.contains('active-p')) ||
-                        (novoStatus === 'ICM' && btnI.classList.contains('active-i')) ||
-                        (novoStatus === 'Maanaim' && btnM.classList.contains('active-m'));
+    const statusAnterior = card.getAttribute('data-status');
 
-    // Reseta todos os botões daquela linha
-    [btnP, btnI, btnM].forEach(b => {
-        b.style.background = '#fff';
-        b.classList.remove('active-p', 'active-i', 'active-m');
-    });
+    // Reseta visual
+    [btnP, btnI, btnM].forEach(b => b.style.background = '#fff');
     card.style.background = '#fff';
-    card.setAttribute('data-status', 'Ausente');
 
-    if (!jaEstavaAtivo) {
+    if (statusAnterior === novoStatus) {
+        // Se clicou no mesmo, vira Ausente
+        card.setAttribute('data-status', 'Ausente');
+    } else {
+        // Define novo status
         card.setAttribute('data-status', novoStatus);
-        if (novoStatus === 'Presente') { 
-            btnP.style.background = '#2ecc71'; btnP.classList.add('active-p'); card.style.background = '#e8f5e9';
-        }
-        if (novoStatus === 'ICM') { 
-            btnI.style.background = '#3498db'; btnI.classList.add('active-i'); card.style.background = '#ebf5fb';
-        }
-        if (novoStatus === 'Maanaim') { 
-            btnM.style.background = '#e67e22'; btnM.classList.add('active-m'); card.style.background = '#fef5e7';
-        }
+        if (novoStatus === 'Presente') { btnP.style.background = '#2ecc71'; card.style.background = '#e8f5e9'; }
+        if (novoStatus === 'ICM') { btnI.style.background = '#3498db'; card.style.background = '#ebf5fb'; }
+        if (novoStatus === 'Maanaim') { btnM.style.background = '#e67e22'; card.style.background = '#fef5e7'; }
     }
     atualizarContadores();
-}
-
-async function salvarChamada() {
-    const btn = document.getElementById('btnFinalizar');
-    const dataCulto = document.getElementById('data_chamada').value;
-    const tipoEvento = document.getElementById('tipo_evento').value;
-    const user = verificarAcesso();
-    if (!dataCulto) return alert("Selecione a data!");
-    
-    btn.disabled = true;
-    const originalText = btn.innerText;
-    btn.innerText = "⌛ Salvando...";
-
-    // Mapeia o status de cada card
-    const registros = Array.from(document.querySelectorAll('.card-chamada')).map(card => ({
-        membro_id: card.getAttribute('data-id'), 
-        data_culto: dataCulto, 
-        tipo_evento: tipoEvento, 
-        status: card.getAttribute('data-status') || 'Ausente',
-        presenca: card.getAttribute('data-status') === 'Presente' // Mantém compatibilidade com o booleano se necessário
-    }));
-
-    const dadosAta = {
-        data_culto: dataCulto, tipo_evento: tipoEvento, grupo: user.grupo_vinculado || 'Geral',
-        vis_adultos: parseInt(document.getElementById('vis_adultos').value) || 0,
-        vis_cias: parseInt(document.getElementById('vis_cias').value) || 0,
-        pregador_nome: document.getElementById('pregador_nome').value, 
-        texto_biblico: document.getElementById('texto_biblico').value, 
-        louvor_nome: document.getElementById('louvor_nome').value,
-        portao_nome: document.getElementById('portao_nome').value,
-        observacoes: document.getElementById('observacoes_culto')?.value || ""
-    };
-
-    try {
-        await _supabase.from('presencas').upsert(registros, { onConflict: 'membro_id, data_culto, tipo_evento' });
-        await _supabase.from('resumo_culto').upsert([dadosAta], { onConflict: 'data_culto, tipo_evento, grupo' });
-        
-        alert(`✅ Chamada atualizada com sucesso!`);
-        btn.innerText = originalText;
-        btn.disabled = false;
-    } catch (err) { 
-        alert("Erro ao salvar: " + err.message); 
-        btn.disabled = false; 
-        btn.innerText = originalText; 
-    }
 }
 
 // ==========================================
@@ -449,8 +419,20 @@ async function gerarResumoWhatsApp() {
 }
 
 // ==========================================
-// 6. PLACAR, CONTADORES E SUGESTÕES
+// 6. PLACAR, CONTADORES E BUSCA
 // ==========================================
+
+function filtrarListaMembros() {
+    const termo = document.getElementById('inputBusca')?.value.toLowerCase().trim() || "";
+    const cards = document.querySelectorAll('.card-chamada');
+
+    cards.forEach(card => {
+        const nome = card.getAttribute('data-nome').toLowerCase();
+        const apelido = card.getAttribute('data-apelido').toLowerCase();
+        card.style.display = (nome.includes(termo) || apelido.includes(termo)) ? "flex" : "none";
+    });
+}
+
 function ajustarVisitante(id, delta) {
     const campo = document.getElementById(id);
     if (!campo) return;
@@ -460,77 +442,70 @@ function ajustarVisitante(id, delta) {
 }
 
 function atualizarContadores() {
-    let mAd = 0, mCi = 0, vLAd = 0, vLCi = 0;
-    document.querySelectorAll('.check-presenca:checked').forEach(cb => {
-        let cat = (cb.getAttribute('data-categoria') || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-        let sit = (cb.getAttribute('data-situacao') || "").toLowerCase();
-        const eCia = (cat.includes('crianca') || cat.includes('intermediario') || cat.includes('adolescente'));
-        if (sit.includes('visitante')) { if (eCia) vLCi++; else vLAd++; } 
-        else { if (eCia) mCi++; else mAd++; }
-    });
-
+    let mAd = 0, mCi = 0;
     const vDAd = parseInt(document.getElementById('vis_adultos')?.value) || 0;
     const vDCi = parseInt(document.getElementById('vis_cias')?.value) || 0;
 
+    document.querySelectorAll('.card-chamada').forEach(card => {
+        const status = card.getAttribute('data-status');
+        if (status === 'Presente') {
+            const cat = (card.getAttribute('data-categoria') || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+            const eCia = (cat.includes('crianca') || cat.includes('intermediario') || cat.includes('adolescente'));
+            if (eCia) mCi++; else mAd++;
+        }
+    });
+
     if(document.getElementById('cont_membros_adultos')) document.getElementById('cont_membros_adultos').innerText = mAd;
     if(document.getElementById('cont_membros_cias')) document.getElementById('cont_membros_cias').innerText = mCi;
-    if(document.getElementById('cont_vis_adultos_display')) document.getElementById('cont_vis_adultos_display').innerText = vLAd + vDAd;
-    if(document.getElementById('cont_vis_cias_display')) document.getElementById('cont_vis_cias_display').innerText = vLCi + vDCi;
+    if(document.getElementById('cont_vis_adultos_display')) document.getElementById('cont_vis_adultos_display').innerText = vDAd;
+    if(document.getElementById('cont_vis_cias_display')) document.getElementById('cont_vis_cias_display').innerText = vDCi;
     
-    const total = mAd + mCi + vLAd + vDAd + vLCi + vDCi;
-    if(document.getElementById('cont_total')) document.getElementById('cont_total').innerText = total;
+    const totalLocal = mAd + mCi + vDAd + vDCi;
+    if(document.getElementById('cont_total')) document.getElementById('cont_total').innerText = totalLocal;
 }
 
-async function carregarSugestoesMembros() {
-    const listagem = document.getElementById('listaMembrosSugestao');
-    if (!listagem) return;
+async function salvarChamada() {
+    const btn = document.getElementById('btnFinalizar');
+    const dataCulto = document.getElementById('data_chamada').value;
+    const tipoEvento = document.getElementById('tipo_evento').value;
+    const user = JSON.parse(localStorage.getItem('usuarioLogado'));
+    
+    if (!dataCulto) return alert("Selecione a data!");
+    
+    const textoOriginal = btn.innerText;
+    btn.disabled = true;
+    btn.innerText = "⌛ Salvando...";
+
+    const registrosPresenca = Array.from(document.querySelectorAll('.card-chamada')).map(card => ({
+        membro_id: card.getAttribute('data-id'), 
+        data_culto: dataCulto, 
+        tipo_evento: tipoEvento, 
+        status: card.getAttribute('data-status'),
+        presenca: card.getAttribute('data-status') === 'Presente'
+    }));
+
+    const dadosAta = {
+        data_culto: dataCulto, tipo_evento: tipoEvento, grupo: user.grupo_vinculado || 'Geral',
+        vis_adultos: parseInt(document.getElementById('vis_adultos').value) || 0,
+        vis_cias: parseInt(document.getElementById('vis_cias').value) || 0,
+        pregador_nome: document.getElementById('pregador_nome').value, 
+        texto_biblico: document.getElementById('texto_biblico').value, 
+        louvor_nome: document.getElementById('louvor_nome').value,
+        portao_nome: document.getElementById('portao_nome').value,
+        observacoes: document.getElementById('observacoes_culto')?.value || ""
+    };
 
     try {
-        const { data, error } = await _supabase
-            .from('membros')
-            .select('nome, funcao') 
-            .eq('status_registro', 'Ativo')
-            .order('nome', { ascending: true });
-
-        if (error) throw error;
-
-        if (data) {
-            listagem.innerHTML = ""; 
-            
-            // CORREÇÃO AQUI: 
-            // O value deve ser o NOME (para preencher o campo)
-            // O texto interno deve ser NOME + FUNÇÃO para você saber quem é quem
-            listagem.innerHTML = data.map(m => 
-                `<option value="${m.nome}">${m.nome} — ${m.funcao || 'Membro'}</option>`
-            ).join('');
-            
-            window.membrosCache = data;
-            console.log("Sugestões corrigidas: " + data.length);
-        }
-
-    } catch (err) {
-        console.error("Erro ao carregar sugestões:", err);
-    }
-}
-
-function autoSelecionarFuncao(inputElement, selectId) {
-    const nomeDigitado = inputElement.value;
-    const selectDestino = document.getElementById(selectId);
-    
-    if (!window.membrosCache || !selectDestino) return;
-
-    // Busca exata no cache pelo nome selecionado
-    const membroEncontrado = window.membrosCache.find(m => m.nome === nomeDigitado);
-
-    if (membroEncontrado) {
-        const funcaoDoBanco = membroEncontrado.funcao;
+        await _supabase.from('presencas').upsert(registrosPresenca, { onConflict: 'membro_id, data_culto, tipo_evento' });
+        await _supabase.from('resumo_culto').upsert([dadosAta], { onConflict: 'data_culto, tipo_evento, grupo' });
         
-        for (let i = 0; i < selectDestino.options.length; i++) {
-            if (selectDestino.options[i].value === funcaoDoBanco) {
-                selectDestino.selectedIndex = i;
-                break;
-            }
-        }
+        alert(`✅ Salvo com sucesso no Zorin OS!`);
+        btn.innerText = textoOriginal;
+        btn.disabled = false;
+    } catch (err) { 
+        alert(err.message); 
+        btn.disabled = false; 
+        btn.innerText = textoOriginal; 
     }
 }
 

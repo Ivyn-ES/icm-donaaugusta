@@ -366,15 +366,28 @@ async function gerarResumoWhatsApp() {
         const vAd = document.getElementById('cont_vis_adultos_display').innerText;
         const vCi = document.getElementById('cont_vis_cias_display').innerText;
 
-        // Pega apenas o primeiro nome ou apelido digitado
-        const pNome = (id) => {
-            const val = document.getElementById(id).value.trim();
-            return val ? val.split(" ")[0] : "";
+        // --- FUNÇÃO PARA BUSCAR O APELIDO REAL ---
+        const obterApelidoOuPrimeiroNome = (id) => {
+            const valorInput = document.getElementById(id).value.trim();
+            if (!valorInput) return "";
+
+            // Procura no cache de membros se o que foi digitado corresponde a um nome ou apelido
+            const membro = window.membrosCache.find(m => 
+                m.nome === valorInput || m.apelido === valorInput
+            );
+
+            // Se achou o membro e ele tem apelido, usa o apelido. 
+            // Se não, usa a primeira palavra do que foi digitado.
+            if (membro && membro.apelido) {
+                return membro.apelido;
+            } else {
+                return valorInput.split(" ")[0];
+            }
         };
 
-        const pregador = pNome('pregador_nome');
-        const louvor = pNome('louvor_nome');
-        const portao = pNome('portao_nome');
+        const pregador = obterApelidoOuPrimeiroNome('pregador_nome');
+        const louvor = obterApelidoOuPrimeiroNome('louvor_nome');
+        const portao = obterApelidoOuPrimeiroNome('portao_nome');
         const texto = document.getElementById('texto_biblico').value || "---";
 
         let msg = `*ICM - Dona Augusta*\n*📊 Resumo do Culto - ${dataFmt}*\n\n`;

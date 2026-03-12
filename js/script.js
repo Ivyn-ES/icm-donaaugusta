@@ -355,16 +355,46 @@ function ajustarVisitante(id, valor) {
 
 async function gerarResumoWhatsApp() {
     try {
-        const dataFmt = document.getElementById('data_chamada').value.split('-').reverse().join('/');
-        const total = document.getElementById('cont_total').innerText;
-        const pNome = (id) => document.getElementById(id).value.split(" ")[0] || "---";
+        const dataInput = document.getElementById('data_chamada').value;
+        const meses = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
+        const dataObj = new Date(dataInput + 'T12:00:00');
+        const dataFmt = `${dataObj.getDate()}/${meses[dataObj.getMonth()]}`;
 
-        let msg = `*ICM - Dona Augusta*\n*📊 RESUMO - ${dataFmt}*\n\n`;
-        msg += `*⭐ TOTAL GERAL: ${total}*\n\n`;
-        msg += `🎤 *Pregador:* ${document.getElementById('pregador_funcao').value} ${pNome('pregador_nome')}\n`;
-        msg += `🎶 *Louvor:* ${document.getElementById('louvor_funcao').value} ${pNome('louvor_nome')}\n`;
-        msg += `🚪 *Portão:* ${document.getElementById('portao_funcao').value} ${pNome('portao_nome')}\n`;
-        msg += `📖 *Texto:* ${document.getElementById('texto_biblico').value || "---"}\n`;
+        const total = document.getElementById('cont_total').innerText;
+        const mAd = document.getElementById('cont_membros_adultos').innerText;
+        const mCi = document.getElementById('cont_membros_cias').innerText;
+        const vAd = document.getElementById('cont_vis_adultos_display').innerText;
+        const vCi = document.getElementById('cont_vis_cias_display').innerText;
+
+        // Pega apenas o primeiro nome/apelido (Remove a função conforme pedido)
+        const pNome = (id) => {
+            const val = document.getElementById(id).value.trim();
+            return val ? val.split(" ")[0] : "";
+        };
+
+        const pregador = pNome('pregador_nome');
+        const louvor = pNome('louvor_nome');
+        const portao = pNome('portao_nome');
+        const texto = document.getElementById('texto_biblico').value || "---";
+
+        let msg = `*ICM - Dona Augusta*\n*📊 Resumo do Culto - ${dataFmt}*\n\n`;
+        msg += `*⭐ Total Geral: ${total}*\n\n`;
+        
+        msg += `*Público:*\n`;
+        msg += `- Membros (Ad/CIA): ${mAd}/${mCi}\n`;
+        msg += `- Visitantes (Ad/CIA): ${vAd}/${vCi}\n\n`;
+
+        msg += `*Responsáveis:*\n`;
+        // Lógica Inteligente: Dirigente ou Escala Separada
+        if (pregador !== "" && (pregador === louvor || louvor === "")) {
+            msg += `⭐ Dirigente: ${pregador}\n`;
+        } else {
+            if (pregador) msg += `🎤 Pregador: ${pregador}\n`;
+            if (louvor) msg += `🎶 Louvor: ${louvor}\n`;
+        }
+        if (portao) msg += `🚪 Portão: ${portao}\n`;
+        
+        msg += `\n📖 *Texto:* ${texto}\n`;
         
         const obs = document.getElementById('observacoes_culto').value;
         if(obs) msg += `\n📝 *Obs:* ${obs}`;
@@ -421,7 +451,7 @@ async function salvarChamada() {
 }
 
 // ==========================================
-// 6. RENDERIZAÇÃO E PLACAR (VERSÃO REVISADA)
+// 6. RENDERIZAÇÃO E PLACAR (VERSÃO FINAL 3 OPÇÕES)
 // ==========================================
 
 async function renderizarListaChamada() {
@@ -448,7 +478,6 @@ async function renderizarListaChamada() {
             const nomeDoisTermos = obterNomeResumido(m.nome);
             const tagVis = m.situacao === 'Visitante' ? '<span style="color:red; font-weight:bold; font-size:0.7rem;">Vis. </span>' : '';
 
-            // Adicionei a classe "btn-check" no primeiro botão para facilitar a vida do script
             card.innerHTML = `
                 <div style="flex: 1;">
                     <strong style="display:block; font-size: 1rem; color: #333;">${nomePrincipal}</strong>
@@ -456,8 +485,8 @@ async function renderizarListaChamada() {
                 </div>
                 <div class="botoes-status" style="display:flex; gap:12px; padding-right: 5px;">
                     <button type="button" class="btn-check" onclick="marcarStatus(this, 'Presente')" style="background:none; border:none; cursor:pointer; font-size:1.2rem; filter: grayscale(1); opacity: 0.4;">✅</button>
-                    <button type="button" onclick="marcarStatus(this, 'ICM')" style="background:none; border:none; cursor:pointer; font-size:1.2rem; filter: grayscale(1); opacity: 0.4;">🏠</button>
-                    <button type="button" onclick="marcarStatus(this, 'Maanaim')" style="background:none; border:none; cursor:pointer; font-size:1.2rem; filter: grayscale(1); opacity: 0.4;">⛰️</button>
+                    <button type="button" class="btn-icm" onclick="marcarStatus(this, 'ICM')" style="background:none; border:none; cursor:pointer; font-size:1.2rem; filter: grayscale(1); opacity: 0.4;">🏠</button>
+                    <button type="button" class="btn-maa" onclick="marcarStatus(this, 'Maanaim')" style="background:none; border:none; cursor:pointer; font-size:1.2rem; filter: grayscale(1); opacity: 0.4;">⛰️</button>
                 </div>
             `;
             listaContainer.appendChild(card);
@@ -472,11 +501,12 @@ async function renderizarListaChamada() {
 function marcarStatus(botao, novoStatus) {
     const card = botao.closest('.card-chamada');
     const statusAtual = card.getAttribute('data-status');
-    const statusFinal = (statusAtual === novoStatus) ? 'Faltou' : novoStatus;
     
+    // Se clicar no que já está selecionado, vira falta. Se não, troca o status.
+    const statusFinal = (statusAtual === novoStatus) ? 'Faltou' : novoStatus;
     card.setAttribute('data-status', statusFinal);
     
-    // Reset visual
+    // Reset visual total de todos os botões do card
     card.querySelectorAll('.botoes-status button').forEach(btn => {
         btn.style.filter = 'grayscale(1)';
         btn.style.opacity = '0.4';
@@ -484,7 +514,7 @@ function marcarStatus(botao, novoStatus) {
     });
 
     if (statusFinal !== 'Faltou') {
-        // Busca pela classe que criamos, muito mais seguro!
+        // REGRA MACGYVER: Sempre acende o ✅ (primeiro botão)
         const btnCheck = card.querySelector('.btn-check');
         if (btnCheck) {
             btnCheck.style.filter = 'none'; 
@@ -554,7 +584,6 @@ async function carregarDadosExistentes() {
 function atualizarContadores() {
     let mAd = 0, mCi = 0, vAd = 0, vCi = 0;
     document.querySelectorAll('.card-chamada').forEach(card => {
-        // Se o status for diferente de Faltou, ele CONTA (seja Presente, ICM ou Maanaim)
         if (card.getAttribute('data-status') !== 'Faltou') {
             const sit = card.getAttribute('data-situacao');
             const cat = (card.getAttribute('data-categoria') || "").toLowerCase();

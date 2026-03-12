@@ -474,7 +474,7 @@ async function salvarChamada() {
 }
 
 // ==========================================
-// 6. RENDERIZAÇÃO E PLACAR (VERSÃO FINAL 3 OPÇÕES)
+// 6. RENDERIZAÇÃO E PLACAR (REGRA: TUDO VIRA ✅)
 // ==========================================
 
 async function renderizarListaChamada() {
@@ -497,7 +497,6 @@ async function renderizarListaChamada() {
             card.setAttribute('data-categoria', m.categoria || "");
             card.setAttribute('data-situacao', m.situacao || "Membro");
 
-            // Prioriza Apelido na visualização da lista
             const nomePrincipal = m.apelido || m.nome;
             const nomeDoisTermos = obterNomeResumido(m.nome);
             const tagVis = m.situacao === 'Visitante' ? '<span style="color:red; font-weight:bold; font-size:0.7rem;">Vis. </span>' : '';
@@ -526,20 +525,19 @@ function marcarStatus(botao, novoStatus) {
     const card = botao.closest('.card-chamada');
     const statusAtual = card.getAttribute('data-status');
     
-    // Lógica de Escolha Única: 
-    // Se clicar no que já está selecionado, vira falta. Se não, troca o status.
+    // Lógica de Troca: Se clicar no mesmo, vira falta. Senão, assume o novo status.
     const statusFinal = (statusAtual === novoStatus) ? 'Faltou' : novoStatus;
     card.setAttribute('data-status', statusFinal);
     
-    // Reset visual total (limpa o brilho de todos)
+    // Reset visual: apaga todos os ícones
     card.querySelectorAll('.botoes-status button').forEach(btn => {
         btn.style.filter = 'grayscale(1)';
         btn.style.opacity = '0.4';
         btn.style.transform = 'scale(1)';
     });
 
+    // REGRA MACGYVER: Independente do status (Presente, ICM ou Maanaim), ACENDE O CHECK (✅)
     if (statusFinal !== 'Faltou') {
-        // REGRA MACGYVER: Sempre acende o ✅ (primeiro botão) para indicar presença
         const btnCheck = card.querySelector('.btn-check');
         if (btnCheck) {
             btnCheck.style.filter = 'none'; 
@@ -557,7 +555,6 @@ async function carregarDadosExistentes() {
     const dataCulto = document.getElementById('data_chamada').value;
     const tipoEvento = document.getElementById('tipo_evento').value;
 
-    // Limpeza visual preventiva
     document.querySelectorAll('.card-chamada').forEach(card => {
         card.setAttribute('data-status', 'Faltou');
         card.style.backgroundColor = 'transparent';
@@ -577,7 +574,8 @@ async function carregarDadosExistentes() {
                 const card = document.querySelector(`.card-chamada[data-id="${p.membro_id}"]`);
                 if (card) {
                     card.setAttribute('data-status', p.status);
-                    // Acende o ✅ se o status for qualquer um dos presentes (Presente, ICM ou Maanaim)
+                    
+                    // REGRA MACGYVER NO CARREGAMENTO: Se não for falta, acende o ✅
                     if (p.status !== 'Faltou') {
                         const btnCheck = card.querySelector('.btn-check');
                         if (btnCheck) {
@@ -613,7 +611,6 @@ async function carregarDadosExistentes() {
 function atualizarContadores() {
     let mAd = 0, mCi = 0, vAd = 0, vCi = 0;
     document.querySelectorAll('.card-chamada').forEach(card => {
-        // Se o status for QUALQUER UM diferente de 'Faltou', conta no placar
         if (card.getAttribute('data-status') !== 'Faltou') {
             const sit = card.getAttribute('data-situacao');
             const cat = (card.getAttribute('data-categoria') || "").toLowerCase();

@@ -474,7 +474,7 @@ async function salvarChamada() {
 }
 
 // ==========================================
-// 6. RENDERIZAÇÃO E PLACAR (O CHECK DE 3 OPÇÕES)
+// 6. RENDERIZAÇÃO E PLACAR (VERSÃO FINAL 3 OPÇÕES)
 // ==========================================
 
 async function renderizarListaChamada() {
@@ -493,7 +493,7 @@ async function renderizarListaChamada() {
             card.className = 'card-chamada';
             card.style = "display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #eee;";
             card.setAttribute('data-id', m.id);
-            card.setAttribute('data-status', 'Faltou'); // Status inicial
+            card.setAttribute('data-status', 'Faltou');
             card.setAttribute('data-categoria', m.categoria || "");
             card.setAttribute('data-situacao', m.situacao || "Membro");
 
@@ -507,9 +507,9 @@ async function renderizarListaChamada() {
                     <small style="color: #888; font-size: 0.8rem;">${tagVis}(${nomeDoisTermos})</small>
                 </div>
                 <div class="botoes-status" style="display:flex; gap:12px; padding-right: 5px;">
-                    <button type="button" class="btn-check" onclick="marcarStatus(this, 'Presente')" title="Presente">✅</button>
-                    <button type="button" class="btn-icm" onclick="marcarStatus(this, 'ICM')" title="ICM">🏠</button>
-                    <button type="button" class="btn-maa" onclick="marcarStatus(this, 'Maanaim')" title="Maanaim">⛰️</button>
+                    <button type="button" class="btn-check" onclick="marcarStatus(this, 'Presente')" style="background:none; border:none; cursor:pointer; font-size:1.2rem; filter: grayscale(1); opacity: 0.4;">✅</button>
+                    <button type="button" class="btn-icm" onclick="marcarStatus(this, 'ICM')" style="background:none; border:none; cursor:pointer; font-size:1.2rem; filter: grayscale(1); opacity: 0.4;">🏠</button>
+                    <button type="button" class="btn-maa" onclick="marcarStatus(this, 'Maanaim')" style="background:none; border:none; cursor:pointer; font-size:1.2rem; filter: grayscale(1); opacity: 0.4;">⛰️</button>
                 </div>
             `;
             listaContainer.appendChild(card);
@@ -525,33 +525,29 @@ function marcarStatus(botao, novoStatus) {
     const card = botao.closest('.card-chamada');
     const statusAtual = card.getAttribute('data-status');
     
-    // Lógica de Escolha Única:
-    // Se clicar no que já está selecionado, vira 'Faltou'.
-    // Se clicar em qualquer outro dos 3, assume o novo status.
+    // Lógica de Troca: Se clicar no mesmo, vira falta. Senão, assume o novo.
     const statusFinal = (statusAtual === novoStatus) ? 'Faltou' : novoStatus;
     card.setAttribute('data-status', statusFinal);
     
-    // Reset visual: apaga o brilho de todos os botões do card primeiro
-    const btnCheck = card.querySelector('.btn-check');
-    const btnIcm = card.querySelector('.btn-icm');
-    const btnMaa = card.querySelector('.btn-maa');
-    
-    [btnCheck, btnIcm, btnMaa].forEach(btn => {
+    // Reset visual de todos os botões do card
+    card.querySelectorAll('.botoes-status button').forEach(btn => {
         btn.style.filter = 'grayscale(1)';
         btn.style.opacity = '0.4';
         btn.style.transform = 'scale(1)';
     });
 
-    // Se o status final for uma presença (qualquer uma das 3), acendemos o ✅
+    // REGRA MACGYVER: Independente do status (Presente, ICM ou Maanaim), ACENDE O CHECK (✅)
     if (statusFinal !== 'Faltou') {
-        btnCheck.style.filter = 'none'; 
-        btnCheck.style.opacity = '1';
-        btnCheck.style.transform = 'scale(1.4)';
+        const btnCheck = card.querySelector('.btn-check');
+        if (btnCheck) {
+            btnCheck.style.filter = 'none'; 
+            btnCheck.style.opacity = '1';
+            btnCheck.style.transform = 'scale(1.4)';
+        }
         card.style.backgroundColor = '#f0f7ff';
     } else {
         card.style.backgroundColor = 'transparent';
     }
-    
     atualizarContadores();
 }
 
@@ -559,43 +555,52 @@ async function carregarDadosExistentes() {
     const dataCulto = document.getElementById('data_chamada').value;
     const tipoEvento = document.getElementById('tipo_evento').value;
 
+    // Reset geral antes de carregar
+    document.querySelectorAll('.card-chamada').forEach(card => {
+        card.setAttribute('data-status', 'Faltou');
+        card.style.backgroundColor = 'transparent';
+        card.querySelectorAll('.botoes-status button').forEach(btn => {
+            btn.style.filter = 'grayscale(1)';
+            btn.style.opacity = '0.4';
+            btn.style.transform = 'scale(1)';
+        });
+    });
+
     try {
         const { data: presencas } = await _supabase.from('presencas')
-            .select('membro_id, status')
-            .eq('data_culto', dataCulto)
-            .eq('tipo_evento', tipoEvento);
+            .select('membro_id, status').eq('data_culto', dataCulto).eq('tipo_evento', tipoEvento);
 
-        document.querySelectorAll('.card-chamada').forEach(card => {
-            const mId = card.getAttribute('data-id');
-            const p = presencas?.find(x => String(x.membro_id) === String(mId));
-            
-            const btnCheck = card.querySelector('.btn-check');
+        if (presencas) {
+            presencas.forEach(p => {
+                const card = document.querySelector(`.card-chamada[data-id="${p.membro_id}"]`);
+                if (card && p.status !== 'Faltou') {
+                    card.setAttribute('data-status', p.status);
+                    const btnCheck = card.querySelector('.btn-check');
+                    if (btnCheck) {
+                        btnCheck.style.filter = 'none';
+                        btnCheck.style.opacity = '1';
+                        btnCheck.style.transform = 'scale(1.4)';
+                        card.style.backgroundColor = '#f0f7ff';
+                    }
+                }
+            });
+        }
 
-            if (p && p.status !== 'Faltou') {
-                card.setAttribute('data-status', p.status);
-                btnCheck.style.filter = 'none';
-                btnCheck.style.opacity = '1';
-                btnCheck.style.transform = 'scale(1.4)';
-                card.style.backgroundColor = '#f0f7ff';
-            } else {
-                card.setAttribute('data-status', 'Faltou');
-                btnCheck.style.filter = 'grayscale(1)';
-                btnCheck.style.opacity = '0.4';
-                card.style.backgroundColor = 'transparent';
-            }
-        });
-
-        // (Aqui continua o carregamento do resumo_culto que já funciona)
         const { data: resumo } = await _supabase.from('resumo_culto')
             .select('*').eq('data_culto', dataCulto).eq('tipo_evento', tipoEvento).maybeSingle();
+
         if (resumo) {
             document.getElementById('vis_adultos').value = resumo.vis_adultos || 0;
             document.getElementById('vis_cias').value = resumo.vis_cias || 0;
             document.getElementById('pregador_nome').value = resumo.pregador_nome || "";
+            document.getElementById('pregador_funcao').value = resumo.pregador_funcao || "Membro";
             document.getElementById('texto_biblico').value = resumo.texto_biblico || "";
-            // ... demais campos ...
+            document.getElementById('louvor_nome').value = resumo.louvor_nome || "";
+            document.getElementById('louvor_funcao').value = resumo.louvor_funcao || "Membro";
+            document.getElementById('portao_nome').value = resumo.portao_nome || "";
+            document.getElementById('portao_funcao').value = resumo.portao_funcao || "Membro";
+            document.getElementById('observacoes_culto').value = resumo.observacoes || "";
         }
-
         atualizarContadores();
     } catch (e) { console.error(e); }
 }
@@ -603,8 +608,7 @@ async function carregarDadosExistentes() {
 function atualizarContadores() {
     let mAd = 0, mCi = 0, vAd = 0, vCi = 0;
     document.querySelectorAll('.card-chamada').forEach(card => {
-        const status = card.getAttribute('data-status');
-        if (status !== 'Faltou') {
+        if (card.getAttribute('data-status') !== 'Faltou') {
             const sit = card.getAttribute('data-situacao');
             const cat = (card.getAttribute('data-categoria') || "").toLowerCase();
             const eCia = (cat.includes('crian') || cat.includes('interme') || cat.includes('adolesc'));
@@ -612,7 +616,6 @@ function atualizarContadores() {
             else { if (eCia) mCi++; else mAd++; }
         }
     });
-    // ... resto da função de contagem ...
     const vAdExtra = parseInt(document.getElementById('vis_adultos').value) || 0;
     const vCiExtra = parseInt(document.getElementById('vis_cias').value) || 0;
     document.getElementById('cont_membros_adultos').innerText = mAd;

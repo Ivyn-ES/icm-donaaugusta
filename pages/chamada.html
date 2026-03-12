@@ -6,13 +6,12 @@
     <title>Chamada - ICM</title>
     <link rel="stylesheet" href="../css/style.css">
     <style>
-        /* Estilos dos botões de ajuste de visitantes */
+        /* Ajuste de botões de visitantes */
         .btn-ajuste { width: 35px; height: 35px; border: none; border-radius: 8px; font-size: 1.2rem; font-weight: bold; color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: opacity 0.2s; }
         .btn-menos { background-color: #e74c3c; }
         .btn-mais { background-color: #2ecc71; }
         .input-ajuste { width: 55px; text-align: center; font-size: 1.2rem; font-weight: bold; border: 1px solid #ddd; border-radius: 8px; background: #fdfdfd; }
         
-        /* Legenda de topo (fixa) */
         .legenda-status-topo {
             display: flex;
             justify-content: center;
@@ -26,7 +25,6 @@
             border: 1px dashed #ccc;
         }
 
-        /* Container do Título com as Colunas Alinhadas */
         .cabecalho-lista {
             display: flex; 
             justify-content: space-between; 
@@ -46,6 +44,7 @@
             padding-right: 5px;
         }
 
+        /* Largura fixa para os ícones baterem com os botões da lista */
         .colunas-nomes span {
             width: 35px; 
             text-align: center;
@@ -58,6 +57,15 @@
             border:1px solid #ccc; 
             background: white; 
             height: 40px; 
+        }
+
+        /* Estilo para garantir que o card do membro não quebre o layout */
+        .card-chamada {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid #eee;
         }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -139,7 +147,7 @@
             <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 10px; margin-bottom: 15px;">
                 <div>
                     <label style="display:block; font-weight:bold; margin-bottom:5px;">🎤 Pregador</label>
-                    <input type="search" id="pregador_nome" list="listaMembrosSugestao" oninput="identificarFuncao(this, 'pregador_funcao')" placeholder="Nome..." style="width:100%; padding:10px; border-radius:8px; border:1px solid #ccc;">
+                    <input type="search" id="pregador_nome" list="listaMembrosSugestao" oninput="identificarFuncao(this, 'pregador_funcao')" placeholder="Nome ou Apelido..." style="width:100%; padding:10px; border-radius:8px; border:1px solid #ccc;">
                 </div>
                 <div>
                     <label style="display:block; font-weight:bold; margin-bottom:5px;">Função</label>
@@ -154,7 +162,7 @@
 
             <div style="margin-bottom: 20px;">
                 <label style="display:block; font-weight:bold; margin-bottom:5px;">📖 Texto Bíblico</label>
-                <input type="text" id="texto_biblico" placeholder="Escreva o texto aqui..." style="width:100%; padding:10px; border-radius:8px; border:1px solid #ccc;">
+                <input type="text" id="texto_biblico" placeholder="Ex: Efésios 2:8" style="width:100%; padding:10px; border-radius:8px; border:1px solid #ccc;">
             </div>
 
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
@@ -182,7 +190,7 @@
 
             <div style="margin-bottom: 10px;">
                 <label style="display:block; font-weight:bold; margin-bottom:5px;">📝 Obs:</label>
-                <textarea id="observacoes_culto" rows="3" placeholder="Detalhes do culto..." style="width:100%; padding:10px; border-radius:8px; border:1px solid #ccc; font-family: inherit; resize: none;"></textarea>
+                <textarea id="observacoes_culto" rows="3" placeholder="Detalhes..." style="width:100%; padding:10px; border-radius:8px; border:1px solid #ccc; font-family: inherit; resize: none;"></textarea>
             </div>
         </section>
 
@@ -203,6 +211,7 @@
                 const hoje = new Date().toLocaleDateString('sv-SE');
                 campoData.value = hoje;
             }
+            // A ordem aqui garante que a lista e o datalist carreguem juntos
             await renderizarListaChamada();
         });
     </script>

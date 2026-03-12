@@ -474,12 +474,12 @@ async function salvarChamada() {
 }
 
 // ==========================================
-// 6. RENDERIZAÇÃO E PLACAR - VERSÃO LIMPEZA TOTAL
+// 6. RENDERIZAÇÃO, PLACAR E SUGESTÕES
 // ==========================================
 
 async function renderizarListaChamada() {
     const listaContainer = document.getElementById('listaChamada');
-    listaContainer.innerHTML = "<p style='text-align:center;'>Carregando lista...</p>";
+    listaContainer.innerHTML = "<p style='text-align:center;'>Carregando lista de membros...</p>";
 
     try {
         const { data: membros, error } = await _supabase.from('membros')
@@ -497,10 +497,14 @@ async function renderizarListaChamada() {
             card.setAttribute('data-categoria', m.categoria || "");
             card.setAttribute('data-situacao', m.situacao || "Membro");
 
+            const nomePrincipal = m.apelido || m.nome;
+            const nomeDoisTermos = obterNomeResumido(m.nome);
+            const tagVis = m.situacao === 'Visitante' ? '<span style="color:red; font-weight:bold; font-size:0.7rem;">Vis. </span>' : '';
+
             card.innerHTML = `
                 <div style="flex: 1;">
-                    <strong style="display:block; font-size: 1rem; color: #333;">${m.apelido || m.nome}</strong>
-                    <small style="color: #888; font-size: 0.8rem;">${m.situacao === 'Visitante' ? 'Vis. ' : ''}(${obterNomeResumido(m.nome)})</small>
+                    <strong style="display:block; font-size: 1rem; color: #333;">${nomePrincipal}</strong>
+                    <small style="color: #888; font-size: 0.8rem;">${tagVis}(${nomeDoisTermos})</small>
                 </div>
                 <div class="botoes-status" style="display:flex; gap:15px; padding-right: 10px;">
                     <span class="op-status btn-check" onclick="marcarStatus(this, 'Presente')" style="cursor:pointer; font-size:1.4rem; filter:grayscale(1); opacity:0.3;">✅</span>
@@ -511,9 +515,13 @@ async function renderizarListaChamada() {
             listaContainer.appendChild(card);
         });
         
+        // REATIVADO: Busca os dados salvos e religa as sugestões de nomes
         await carregarDadosExistentes(); 
+        if (typeof carregarSugestoesEFuncoes === "function") {
+            await carregarSugestoesEFuncoes(); 
+        }
         
-    } catch (err) { console.error("Erro:", err); }
+    } catch (err) { console.error("Erro na renderização:", err); }
 }
 
 function marcarStatus(elemento, novoStatus) {
@@ -523,13 +531,11 @@ function marcarStatus(elemento, novoStatus) {
     
     card.setAttribute('data-status', statusFinal);
 
-    // Reset visual da linha
     card.querySelectorAll('.op-status').forEach(i => {
         i.style.filter = 'grayscale(1)';
         i.style.opacity = '0.3';
     });
 
-    // Acende o escolhido
     if (statusFinal !== 'Faltou') {
         elemento.style.filter = 'none';
         elemento.style.opacity = '1';
@@ -545,36 +551,30 @@ async function carregarDadosExistentes() {
     const dataCulto = document.getElementById('data_chamada').value;
     const tipoEvento = document.getElementById('tipo_evento').value;
 
-    // Reset campos manuais
-    document.getElementById('vis_adultos').value = 0;
-    document.getElementById('vis_cias').value = 0;
+    // Reset de campos para evitar "fantasmas" de outras datas
+    const campos = ['vis_adultos', 'vis_cias', 'pregador_nome', 'texto_biblico', 'louvor_nome', 'portao_nome', 'observacoes_culto'];
+    campos.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = (el.type === 'number') ? 0 : "";
+    });
 
     try {
         const { data: presencas } = await _supabase.from('presencas')
             .select('membro_id, status').eq('data_culto', dataCulto).eq('tipo_evento', tipoEvento);
 
-        // Reset visual de todos antes de marcar
         document.querySelectorAll('.card-chamada').forEach(card => {
             card.setAttribute('data-status', 'Faltou');
             card.style.backgroundColor = 'transparent';
-            card.querySelectorAll('.op-status').forEach(i => {
-                i.style.filter = 'grayscale(1)';
-                i.style.opacity = '0.3';
-            });
-        });
+            card.querySelectorAll('.op-status').forEach(i => { i.style.filter = 'grayscale(1)'; i.style.opacity = '0.3'; });
 
-        // Marca quem veio
-        presencas?.forEach(p => {
-            const card = document.querySelector(`.card-chamada[data-id="${p.membro_id}"]`);
-            if (card) {
+            const mId = card.getAttribute('data-id');
+            const p = presencas?.find(x => String(x.membro_id) === String(mId));
+            
+            if (p && p.status !== 'Faltou') {
                 card.setAttribute('data-status', p.status);
-                let btn = p.status === 'Presente' ? '.btn-check' : (p.status === 'ICM' ? '.btn-icm' : '.btn-maa');
-                const icone = card.querySelector(btn);
-                if (icone) {
-                    icone.style.filter = 'none';
-                    icone.style.opacity = '1';
-                    card.style.backgroundColor = '#f0f7ff';
-                }
+                let btnClass = p.status === 'Presente' ? '.btn-check' : (p.status === 'ICM' ? '.btn-icm' : '.btn-maa');
+                const btn = card.querySelector(btnClass);
+                if (btn) { btn.style.filter = 'none'; btn.style.opacity = '1'; card.style.backgroundColor = '#f0f7ff'; }
             }
         });
 
@@ -582,10 +582,13 @@ async function carregarDadosExistentes() {
             .select('*').eq('data_culto', dataCulto).eq('tipo_evento', tipoEvento).maybeSingle();
         
         if (resumo) {
-            document.getElementById('vis_adultos').value = resumo.vis_adultos || 0;
-            document.getElementById('vis_cias').value = resumo.vis_cias || 0;
-            document.getElementById('pregador_nome').value = resumo.pregador_nome || "";
-            document.getElementById('texto_biblico').value = resumo.texto_biblico || "";
+            if(document.getElementById('vis_adultos')) document.getElementById('vis_adultos').value = resumo.vis_adultos || 0;
+            if(document.getElementById('vis_cias')) document.getElementById('vis_cias').value = resumo.vis_cias || 0;
+            if(document.getElementById('pregador_nome')) document.getElementById('pregador_nome').value = resumo.pregador_nome || "";
+            if(document.getElementById('texto_biblico')) document.getElementById('texto_biblico').value = resumo.texto_biblico || "";
+            if(document.getElementById('louvor_nome')) document.getElementById('louvor_nome').value = resumo.louvor_nome || "";
+            if(document.getElementById('portao_nome')) document.getElementById('portao_nome').value = resumo.portao_nome || "";
+            if(document.getElementById('observacoes_culto')) document.getElementById('observacoes_culto').value = resumo.observacoes || "";
         }
         
         atualizarContadores();
@@ -603,14 +606,14 @@ function atualizarContadores() {
             else { if (eCia) mCi++; else mAd++; }
         }
     });
-    const vAdExtra = parseInt(document.getElementById('vis_adultos').value) || 0;
-    const vCiExtra = parseInt(document.getElementById('vis_cias').value) || 0;
+    const vA = parseInt(document.getElementById('vis_adultos')?.value) || 0;
+    const vC = parseInt(document.getElementById('vis_cias')?.value) || 0;
     
-    document.getElementById('cont_membros_adultos').innerText = mAd;
-    document.getElementById('cont_membros_cias').innerText = mCi;
-    document.getElementById('cont_vis_adultos_display').innerText = vAd + vAdExtra;
-    document.getElementById('cont_vis_cias_display').innerText = vCi + vCiExtra;
-    document.getElementById('cont_total').innerText = mAd + mCi + vAd + vAdExtra + vCi + vCiExtra;
+    if(document.getElementById('cont_membros_adultos')) document.getElementById('cont_membros_adultos').innerText = mAd;
+    if(document.getElementById('cont_membros_cias')) document.getElementById('cont_membros_cias').innerText = mCi;
+    if(document.getElementById('cont_vis_adultos_display')) document.getElementById('cont_vis_adultos_display').innerText = vAd + vA;
+    if(document.getElementById('cont_vis_cias_display')) document.getElementById('cont_vis_cias_display').innerText = vCi + vC;
+    if(document.getElementById('cont_total')) document.getElementById('cont_total').innerText = mAd + mCi + vAd + vA + vCi + vC;
 }
 
 // ==========================================

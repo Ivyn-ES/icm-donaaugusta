@@ -302,12 +302,12 @@ function selecionarStatus(membroId, novoStatus) {
 }
 
 // ==========================================
-// 5. MÓDULO DE AUTOMAÇÃO E WHATSAPP (TURBINADO)
+// 5. MÓDULO DE AUTOMAÇÃO E WHATSAPP
 // ==========================================
 
-// Variável global para busca rápida (cache)
-window.membrosCache = [];
+window.membrosCache = []; // Para busca rápida de funções
 
+// Carrega os nomes na lista de sugestão e guarda no cache
 async function carregarSugestoesEFuncoes() {
     try {
         const { data: membros, error } = await _supabase.from('membros')
@@ -315,16 +315,30 @@ async function carregarSugestoesEFuncoes() {
             .eq('status_registro', 'Ativo');
 
         if (error) throw error;
-        window.membrosCache = membros; // Salva para o auto-selecionar
+        window.membrosCache = membros;
 
         const datalist = document.getElementById('listaMembrosSugestao');
         if (datalist) {
-            datalist.innerHTML = membros.map(m => {
-                const funcao = m.cargo || m.categoria || 'Membro';
-                return `<option value="${m.nome}">${funcao}</option>`;
-            }).join('');
+            datalist.innerHTML = membros.map(m => `<option value="${m.nome}">${m.cargo || m.categoria || 'Membro'}</option>`).join('');
         }
-    } catch (err) { console.error("Erro ao carregar sugestões:", err); }
+    } catch (err) { console.error("Erro nas sugestões:", err); }
+}
+
+// Mágica: Identifica a função ao digitar/selecionar o nome
+function identificarFuncao(input) {
+    const nomeDigitado = input.value.trim();
+    if (!window.membrosCache || nomeDigitado === "") return;
+
+    const membro = window.membrosCache.find(m => m.nome === nomeDigitado);
+
+    if (membro) {
+        const selectFuncao = document.getElementById('pregador_funcao');
+        if (selectFuncao) {
+            // Ajusta o valor para bater com as opções do Select
+            const cargo = membro.cargo || membro.categoria || "Membro";
+            selectFuncao.value = cargo;
+        }
+    }
 }
 
 function formatarDataBR(dataString) {
@@ -339,69 +353,52 @@ function encurtarNome(nomeCompleto) {
     const partes = nomeCompleto.trim().split(" ");
     if (partes.length <= 1) return partes[0];
     const primeiroNome = partes[0];
-    let ultimoSobrenome = partes[partes.length - 1];
-    // Se o último for um conectivo, pega o anterior
-    if (["de", "da", "do", "dos", "das"].includes(ultimoSobrenome.toLowerCase()) && partes.length > 2) {
-        ultimoSobrenome = partes[partes.length - 2];
+    let ultimo = partes[partes.length - 1];
+    if (["de", "da", "do", "dos", "das"].includes(ultimo.toLowerCase()) && partes.length > 2) {
+        ultimo = partes[partes.length - 2];
     }
-    return `${primeiroNome} ${ultimoSobrenome[0]}.`;
+    return `${primeiroNome} ${ultimo[0]}.`;
 }
 
 async function gerarResumoWhatsApp() {
     const nomeIgreja = "ICM - Dona Augusta";
     const tipoEvento = document.getElementById('tipo_evento')?.value || "Evento";
-    const dataRaw = document.getElementById('data_chamada')?.value || "";
-    const dataFormatada = formatarDataBR(dataRaw);
+    const dataFormatada = formatarDataBR(document.getElementById('data_chamada')?.value);
 
-    // Contadores do Placar
-    const mAd = parseInt(document.getElementById('cont_membros_adultos')?.innerText) || 0;
-    const mCi = parseInt(document.getElementById('cont_membros_cias')?.innerText) || 0;
-    const vAd = parseInt(document.getElementById('cont_vis_adultos_display')?.innerText) || 0;
-    const vCi = parseInt(document.getElementById('cont_vis_cias_display')?.innerText) || 0;
+    const mAd = document.getElementById('cont_membros_adultos')?.innerText || 0;
+    const mCi = document.getElementById('cont_membros_cias')?.innerText || 0;
+    const vAd = document.getElementById('cont_vis_adultos_display')?.innerText || 0;
+    const vCi = document.getElementById('cont_vis_cias_display')?.innerText || 0;
     const totalGeral = document.getElementById('cont_total')?.innerText || 0;
 
-    // Novos Contadores: ICM e Maanaim
-    let contICM = 0;
-    let contMaan = 0;
+    let contICM = 0, contMaan = 0;
     document.querySelectorAll('.card-chamada').forEach(card => {
         const st = card.getAttribute('data-status');
         if (st === 'ICM') contICM++;
         if (st === 'Maanaim') contMaan++;
     });
 
-    // Escala
     const pregador = encurtarNome(document.getElementById('pregador_nome')?.value);
+    const funcao   = document.getElementById('pregador_funcao')?.value || "Membro";
     const louvor   = encurtarNome(document.getElementById('louvor_nome')?.value);
     const portao   = encurtarNome(document.getElementById('portao_nome')?.value);
     const texto    = document.getElementById('texto_biblico')?.value || "Não informado";
 
-    let mensagem = `*${nomeIgreja}*\n`;
-    mensagem += `*📊 RESUMO ${tipoEvento.toUpperCase()} - ${dataFormatada}*\n\n`;
-    mensagem += `*PÚBLICO:*\n`;
-    mensagem += `• Membros (Ad/Cia): ${mAd} / ${mCi}\n`;
+    let mensagem = `*${nomeIgreja}*\n*📊 RESUMO ${tipoEvento.toUpperCase()} - ${dataFormatada}*\n\n`;
+    mensagem += `*PÚBLICO:*\n• Membros (Ad/Cia): ${mAd} / ${mCi}\n`;
     mensagem += `• Visitantes (Ad/Cia): ${vAd} / ${vCi}\n`;
-    
-    if (contICM > 0 || contMaan > 0) {
-        mensagem += `• Assistência (ICM/Maan): ${contICM} / ${contMaan}\n`;
-    }
-
+    if (contICM > 0 || contMaan > 0) mensagem += `• Assistência (ICM/Maan): ${contICM} / ${contMaan}\n`;
     mensagem += `*⭐ TOTAL GERAL: ${totalGeral}*\n\n`;
-    mensagem += `*ESCALA:*\n`;
-    mensagem += `🎤 *Pregador:* ${pregador}\n`;
+    mensagem += `*ESCALA:*\n🎤 *Pregador:* ${funcao} ${pregador}\n`;
     mensagem += `🎶 *Louvor:* ${louvor}\n`;
     mensagem += `🚪 *Portão:* ${portao}\n`;
     mensagem += `📖 *Texto:* ${texto}\n`;
     
-    const obs = document.getElementById('observacoes_culto')?.value;
-    if (obs) mensagem += `\n📝 *Obs:* ${obs}\n`;
-
-    mensagem += `\n_Gerado Sistema Local ICM-Dona Augusta_`;
-
     window.location.href = `https://api.whatsapp.com/send?text=${encodeURIComponent(mensagem)}`;
 }
 
 // ==========================================
-// 6. PLACAR E CONTADORES (REVISADO)
+// 6. PLACAR E CONTADORES
 // ==========================================
 
 function ajustarVisitante(id, delta) {
@@ -413,30 +410,23 @@ function ajustarVisitante(id, delta) {
 }
 
 function atualizarContadores() {
-    let mAd = 0, mCi = 0, mICM = 0, mMaan = 0;
+    let mAd = 0, mCi = 0;
     const vAd = parseInt(document.getElementById('vis_adultos')?.value) || 0;
     const vCi = parseInt(document.getElementById('vis_cias')?.value) || 0;
 
     document.querySelectorAll('.card-chamada').forEach(card => {
-        const status = card.getAttribute('data-status');
-        
-        if (status === 'Presente') {
+        if (card.getAttribute('data-status') === 'Presente') {
             const cat = (card.getAttribute('data-categoria') || "").toLowerCase();
-            // Lógica para CIAs
             const eCia = (cat.includes('crianca') || cat.includes('intermediario') || cat.includes('adolescente'));
             if (eCia) mCi++; else mAd++;
         }
     });
 
-    // Atualiza os displays do placar
-    if(document.getElementById('cont_membros_adultos')) document.getElementById('cont_membros_adultos').innerText = mAd;
-    if(document.getElementById('cont_membros_cias')) document.getElementById('cont_membros_cias').innerText = mCi;
-    if(document.getElementById('cont_vis_adultos_display')) document.getElementById('cont_vis_adultos_display').innerText = vAd;
-    if(document.getElementById('cont_vis_cias_display')) document.getElementById('cont_vis_cias_display').innerText = vCi;
-    
-    // Total Geral (Soma tudo)
-    const totalLocal = mAd + mCi + vAd + vCi;
-    if(document.getElementById('cont_total')) document.getElementById('cont_total').innerText = totalLocal;
+    document.getElementById('cont_membros_adultos').innerText = mAd;
+    document.getElementById('cont_membros_cias').innerText = mCi;
+    document.getElementById('cont_vis_adultos_display').innerText = vAd;
+    document.getElementById('cont_vis_cias_display').innerText = vCi;
+    document.getElementById('cont_total').innerText = mAd + mCi + vAd + vCi;
 }
 
 async function salvarChamada() {
@@ -445,13 +435,11 @@ async function salvarChamada() {
     const tipoEvento = document.getElementById('tipo_evento').value;
     const user = JSON.parse(localStorage.getItem('usuarioLogado'));
     
-    if (!dataCulto) return alert("Selecione a data!");
-    
     btn.disabled = true;
-    const textoOriginal = btn.innerText;
+    const original = btn.innerText;
     btn.innerText = "⌛ Salvando...";
 
-    const registrosPresenca = Array.from(document.querySelectorAll('.card-chamada')).map(card => ({
+    const registros = Array.from(document.querySelectorAll('.card-chamada')).map(card => ({
         membro_id: card.getAttribute('data-id'), 
         data_culto: dataCulto, 
         tipo_evento: tipoEvento, 
@@ -460,35 +448,24 @@ async function salvarChamada() {
     }));
 
     const dadosAta = {
-        data_culto: dataCulto, 
-        tipo_evento: tipoEvento, 
-        grupo: user.grupo_vinculado || 'Geral',
+        data_culto: dataCulto, tipo_evento: tipoEvento, grupo: user.grupo_vinculado || 'Geral',
         vis_adultos: parseInt(document.getElementById('vis_adultos').value) || 0,
         vis_cias: parseInt(document.getElementById('vis_cias').value) || 0,
         pregador_nome: document.getElementById('pregador_nome').value, 
         texto_biblico: document.getElementById('texto_biblico').value, 
         louvor_nome: document.getElementById('louvor_nome').value,
-        portao_nome: document.getElementById('portao_nome').value,
-        observacoes: document.getElementById('observacoes_culto')?.value || ""
+        portao_nome: document.getElementById('portao_nome').value
     };
 
     try {
-        const { error: pErr } = await _supabase.from('presencas').upsert(registrosPresenca, { onConflict: 'membro_id, data_culto, tipo_evento' });
-        if (pErr) throw pErr;
-
-        const { error: aErr } = await _supabase.from('resumo_culto').upsert([dadosAta], { onConflict: 'data_culto, tipo_evento, grupo' });
-        if (aErr) throw aErr;
-        
-        alert(`✅ Salvo com sucesso no Zorin OS!`);
-    } catch (err) { 
-        alert("Erro ao salvar: " + err.message); 
-    } finally {
-        btn.disabled = false;
-        btn.innerText = textoOriginal;
-    }
+        await _supabase.from('presencas').upsert(registros, { onConflict: 'membro_id, data_culto, tipo_evento' });
+        await _supabase.from('resumo_culto').upsert([dadosAta], { onConflict: 'data_culto, tipo_evento, grupo' });
+        alert(`✅ Salvo com sucesso!`);
+    } catch (err) { alert("Erro: " + err.message); }
+    finally { btn.disabled = false; btn.innerText = original; }
 }
 
-// Inicializar sugestões
+// Inicia as sugestões ao carregar o arquivo
 carregarSugestoesEFuncoes();
 
 // ==========================================

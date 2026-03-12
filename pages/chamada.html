@@ -59,8 +59,6 @@
     <div class="container">
         <header style="text-align: center; margin-bottom: 15px;">
             <h1>📋 Fazer Chamada</h1>
-            <p id="infoChamada" style="margin-bottom: 12px; font-weight: bold; color: #555;"></p>
-            
             <div class="legenda-status-topo">
                 <span>✅ Presente</span>
                 <span>🏠 Outra ICM</span>
@@ -96,7 +94,6 @@
         <section style="margin-bottom: 30px;">
             <div class="cabecalho-lista">
                 <h3 style="margin: 0; color: #007bff;">👥 Lista de Membros</h3>
-                
                 <div class="colunas-nomes">
                     <span>Presente</span>
                     <span>ICM</span>
@@ -110,7 +107,7 @@
         </section>
 
         <section id="ataCulto" style="background: #ffffff; padding: 20px; border-radius: 15px; border: 1px solid #ddd;">
-            <h3 style="margin-top:0; color: #2ecc71; border-bottom: 2px solid #2ecc71; padding-bottom: 8px;">📊 Resumo do Trabalho</h3>
+            <h3 style="margin-top:0; color: #2ecc71; border-bottom: 2px solid #2ecc71; padding-bottom: 8px;">📊 Resumo do Culto</h3>
             
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 25px; margin-top: 20px;">
                 <div style="text-align: center;">
@@ -131,14 +128,25 @@
                 </div>
             </div>
 
-            <div style="margin-bottom: 15px;">
-                <label style="display:block; font-weight:bold; margin-bottom:5px;">Pregador</label>
-                <input type="search" id="pregador_nome" list="listaMembrosSugestao" placeholder="Nome do pregador..." style="width:100%; padding:12px; border-radius:8px; border:1px solid #ccc;">
+            <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 10px; margin-bottom: 15px;">
+                <div>
+                    <label style="display:block; font-weight:bold; margin-bottom:5px;">Pregador</label>
+                    <input type="search" id="pregador_nome" list="listaMembrosSugestao" oninput="identificarFuncao(this)" placeholder="Nome..." style="width:100%; padding:10px; border-radius:8px; border:1px solid #ccc;">
+                </div>
+                <div>
+                    <label style="display:block; font-weight:bold; margin-bottom:5px;">Função</label>
+                    <select id="pregador_funcao" style="width:100%; padding:10px; border-radius:8px; border:1px solid #ccc; background: white; height: 40px;">
+                        <option value="Membro">Membro</option>
+                        <option value="Obreiro">Obreiro</option>
+                        <option value="Diácono">Diácono</option>
+                        <option value="Pastor">Pastor</option>
+                    </select>
+                </div>
             </div>
 
             <div style="margin-bottom: 20px;">
                 <label style="display:block; font-weight:bold; margin-bottom:5px;">📖 Texto Bíblico</label>
-                <input type="text" id="texto_biblico" placeholder="Ex: João 3:16" style="width:100%; padding:12px; border-radius:8px; border:1px solid #ccc;">
+                <input type="text" id="texto_biblico" placeholder="Ex: Efésios 2:8" style="width:100%; padding:10px; border-radius:8px; border:1px solid #ccc;">
             </div>
 
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
@@ -155,22 +163,19 @@
 
         <div style="margin-top: 30px; display: flex; flex-direction: column; gap: 12px;">
             <button onclick="salvarChamada()" class="btn-salvar" id="btnFinalizar" style="padding: 18px; font-size: 1.2rem; font-weight: bold; background-color: #007bff; color: white; border: none; border-radius: 10px; cursor: pointer;">Atualizar Dados</button>
-            
             <button onclick="gerarResumoWhatsApp()" style="background-color: #25d366; width: 100%; padding: 15px; color: white; border: none; border-radius: 10px; font-weight: bold; display: flex; align-items: center; justify-content: center; gap: 10px; cursor: pointer;">
                 <span>📱 Gerar Resumo para WhatsApp</span>
             </button>
-            
             <a href="dashboard.html" class="btn-voltar" style="text-align: center; text-decoration: none; padding: 12px; background: #f1f1f1; border-radius: 8px; color: #555; font-weight: bold;">⬅ Voltar ao Painel</a>
         </div>
     </div>
 
     <script src="../js/script.js"></script>
     <script>
-        // Inicialização ao carregar a página
         document.addEventListener('DOMContentLoaded', async () => {
             const campoData = document.getElementById('data_chamada');
             if (campoData) {
-                const hoje = new Date().toLocaleDateString('sv-SE'); // Formato YYYY-MM-DD
+                const hoje = new Date().toLocaleDateString('sv-SE');
                 campoData.value = hoje;
             }
             await renderizarListaChamada();

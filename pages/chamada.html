@@ -56,16 +56,17 @@
             border-radius:8px; 
             border:1px solid #ccc; 
             background: white; 
-            height: 40px; 
+            height: 45px; 
         }
 
-        /* Estilo para garantir que o card do membro não quebre o layout */
+        /* Card do membro: ajuste para não quebrar em telas pequenas */
         .card-chamada {
             display: flex;
             justify-content: space-between;
             align-items: center;
             padding: 10px 0;
             border-bottom: 1px solid #eee;
+            transition: background 0.2s;
         }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -118,7 +119,7 @@
                 </div>
             </div>
             <div id="listaChamada" style="display: flex; flex-direction: column; margin-top: 5px;">
-                <p style="text-align:center; padding: 20px; color: #888;">Buscando lista no banco...</p>
+                <p style="text-align:center; padding: 20px; color: #888;">Carregando lista...</p>
             </div>
         </section>
 
@@ -162,7 +163,7 @@
 
             <div style="margin-bottom: 20px;">
                 <label style="display:block; font-weight:bold; margin-bottom:5px;">📖 Texto Bíblico</label>
-                <input type="text" id="texto_biblico" placeholder="Ex: Efésios 2:8" style="width:100%; padding:10px; border-radius:8px; border:1px solid #ccc;">
+                <input type="text" id="texto_biblico" placeholder="Referência bíblica..." style="width:100%; padding:10px; border-radius:8px; border:1px solid #ccc;">
             </div>
 
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
@@ -189,8 +190,8 @@
             </div>
 
             <div style="margin-bottom: 10px;">
-                <label style="display:block; font-weight:bold; margin-bottom:5px;">📝 Obs:</label>
-                <textarea id="observacoes_culto" rows="3" placeholder="Detalhes..." style="width:100%; padding:10px; border-radius:8px; border:1px solid #ccc; font-family: inherit; resize: none;"></textarea>
+                <label style="display:block; font-weight:bold; margin-bottom:5px;">📝 Observações:</label>
+                <textarea id="observacoes_culto" rows="3" placeholder="Ocorrências ou detalhes importantes..." style="width:100%; padding:10px; border-radius:8px; border:1px solid #ccc; font-family: inherit; resize: none;"></textarea>
             </div>
         </section>
 
@@ -208,10 +209,14 @@
         document.addEventListener('DOMContentLoaded', async () => {
             const campoData = document.getElementById('data_chamada');
             if (campoData) {
-                const hoje = new Date().toLocaleDateString('sv-SE');
-                campoData.value = hoje;
+                // Ajuste preciso para data local (sem fuso horário)
+                const hoje = new Date();
+                const offset = hoje.getTimezoneOffset();
+                const dataLocal = new Date(hoje.getTime() - (offset * 60 * 1000));
+                campoData.value = dataLocal.toISOString().split('T')[0];
             }
-            // A ordem aqui garante que a lista e o datalist carreguem juntos
+            
+            // Inicia o processo de busca de dados
             await renderizarListaChamada();
         });
     </script>

@@ -302,7 +302,7 @@ function selecionarStatus(membroId, novoStatus) {
 }
 
 // ==========================================
-// 5. MÓDULO DE AUTOMAÇÃO E WHATSAPP
+// 5. MÓDULO DE SUGESTÕES E ESCALA
 // ==========================================
 
 window.membrosCache = []; 
@@ -310,7 +310,7 @@ window.membrosCache = [];
 async function carregarSugestoesEFuncoes() {
     try {
         const { data: membros, error } = await _supabase.from('membros')
-            .select('nome, apelido, cargo, categoria')
+            .select('nome, apelido, funcao, situacao')
             .eq('status_registro', 'Ativo');
 
         if (error) throw error;
@@ -319,118 +319,123 @@ async function carregarSugestoesEFuncoes() {
         const datalist = document.getElementById('listaMembrosSugestao');
         if (datalist) {
             datalist.innerHTML = membros.map(m => {
-                // PRIORIDADE PARA APELIDO: Se tiver, ele vira o valor principal
-                const sugestaoPrincipal = m.apelido ? m.apelido : m.nome;
-                const legenda = m.cargo || m.categoria || 'Membro';
-                return `<option value="${sugestaoPrincipal}">${legenda} - ${m.nome}</option>`;
+                const valorBusca = m.apelido || m.nome;
+                const situacaoDestaque = m.situacao === 'Visitante' ? '(VIS) ' : '';
+                return `<option value="${valorBusca}">${situacaoDestaque}${m.funcao} - ${m.nome}</option>`;
             }).join('');
         }
-        console.log("✅ Motor de sugestões pronto!");
     } catch (err) { console.error("Erro nas sugestões:", err); }
 }
 
-// Mágica: Agora recebe o ID do select para saber quem preencher (Pregador, Louvor ou Portão)
 function identificarFuncao(input, idSelectAlvo) {
-    const termoDigitado = input.value.trim().toLowerCase();
-    if (!window.membrosCache || termoDigitado === "") return;
+    const termo = input.value.trim().toLowerCase();
+    if (!window.membrosCache || termo === "") return;
 
-    // Procura por apelido ou nome
+    // Busca no cache por apelido ou nome
     const membro = window.membrosCache.find(m => 
-        (m.apelido && m.apelido.toLowerCase() === termoDigitado) || 
-        (m.nome.toLowerCase() === termoDigitado)
+        (m.apelido && m.apelido.toLowerCase() === termo) || 
+        (m.nome.toLowerCase() === termo)
     );
 
     if (membro) {
-        const selectFuncao = document.getElementById(idSelectAlvo);
-        if (selectFuncao) {
-            const cargo = membro.cargo || membro.categoria || "Membro";
-            // Ajusta para as opções oficiais da ICM
-            if (cargo.includes("Pastor")) selectFuncao.value = "Pastor";
-            else if (cargo.includes("Diácono")) selectFuncao.value = "Diácono";
-            else if (cargo.includes("Obreiro")) selectFuncao.value = "Obreiro";
-            else selectFuncao.value = "Membro";
+        const select = document.getElementById(idSelectAlvo);
+        if (select) {
+            // Usa a coluna 'funcao' do seu banco
+            const f = membro.funcao || "Membro";
+            if (["Pastor", "Diácono", "Obreiro", "Membro"].includes(f)) {
+                select.value = f;
+            } else {
+                select.value = "Membro";
+            }
         }
     }
 }
 
-function formatarDataBR(dataString) {
-    if (!dataString) return "";
-    const meses = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
-    const partes = dataString.split("-");
-    return `${partes[2]}/${meses[parseInt(partes[1]) - 1]}`;
-}
-
-async function gerarResumoWhatsApp() {
-    const tipoEvento = document.getElementById('tipo_evento')?.value || "Evento";
-    const dataFmt = formatarDataBR(document.getElementById('data_chamada')?.value);
-
-    const mAd = document.getElementById('cont_membros_adultos')?.innerText || 0;
-    const mCi = document.getElementById('cont_membros_cias')?.innerText || 0;
-    const vAd = document.getElementById('cont_vis_adultos_display')?.innerText || 0;
-    const vCi = document.getElementById('cont_vis_cias_display')?.innerText || 0;
-    const totalGeral = document.getElementById('cont_total')?.innerText || 0;
-
-    // Pegando Escala com as Funções do Select
-    const pregador = document.getElementById('pregador_nome')?.value || "---";
-    const fPregador = document.getElementById('pregador_funcao')?.value;
-    
-    const louvor = document.getElementById('louvor_nome')?.value || "---";
-    const fLouvor = document.getElementById('louvor_funcao')?.value;
-    
-    const portao = document.getElementById('portao_nome')?.value || "---";
-    const fPortao = document.getElementById('portao_funcao')?.value;
-
-    const texto = document.getElementById('texto_biblico')?.value || "Não informado";
-    const obs = document.getElementById('observacoes_culto')?.value || "";
-
-    let msg = `*ICM - Dona Augusta*\n*📊 RESUMO ${tipoEvento.toUpperCase()} - ${dataFmt}*\n\n`;
-    msg += `*PÚBLICO:*\n• Membros (Ad/Cia): ${mAd} / ${mCi}\n`;
-    msg += `• Visitantes (Ad/Cia): ${vAd} / ${vCi}\n`;
-    msg += `*⭐ TOTAL GERAL: ${totalGeral}*\n\n`;
-    msg += `*ESCALA:*\n`;
-    msg += `🎤 *Pregador:* ${fPregador} ${pregador}\n`;
-    msg += `🎶 *Louvor:* ${fLouvor} ${louvor}\n`;
-    msg += `🚪 *Portão:* ${fPortao} ${portao}\n`;
-    msg += `📖 *Texto:* ${texto}\n`;
-    if(obs) msg += `\n📝 *Obs:* ${obs}`;
-    
-    window.location.href = `https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`;
-}
-
 // ==========================================
-// 6. PLACAR E CONTADORES
+// 6. RENDERIZAÇÃO DA LISTA E CONTADORES
 // ==========================================
 
-function ajustarVisitante(id, delta) {
-    const campo = document.getElementById(id);
-    if (!campo) return;
-    let novoValor = (parseInt(campo.value) || 0) + delta;
-    campo.value = novoValor < 0 ? 0 : novoValor;
-    atualizarContadores();
+// Função que cria os cards na lista de presença
+async function renderizarListaChamada() {
+    const listaContainer = document.getElementById('listaChamada');
+    listaContainer.innerHTML = "<p style='text-align:center;'>Carregando lista...</p>";
+
+    try {
+        const { data: membros, error } = await _supabase.from('membros')
+            .select('*')
+            .eq('status_registro', 'Ativo')
+            .order('nome', { ascending: true });
+
+        if (error) throw error;
+
+        listaContainer.innerHTML = ""; // Limpa para renderizar
+
+        membros.forEach(m => {
+            const card = document.createElement('div');
+            card.className = 'card-chamada';
+            card.setAttribute('data-id', m.id);
+            card.setAttribute('data-status', 'Faltou');
+            card.setAttribute('data-categoria', m.categoria);
+            card.setAttribute('data-situacao', m.situacao); // Importante para o placar!
+
+            // Lógica visual que você pediu
+            const exibicaoPrincipal = m.apelido ? m.apelido : m.nome;
+            const subNome = m.nome;
+            const tagVis = m.situacao === 'Visitante' ? '<span style="color:red; font-weight:bold; font-size:0.7rem;">Vis. </span>' : '';
+
+            card.innerHTML = `
+                <div style="flex: 1;">
+                    <strong style="display:block; font-size: 1.1rem;">${exibicaoPrincipal}</strong>
+                    <small style="color: #666;">${tagVis}(${subNome})</small>
+                </div>
+                <div class="botoes-status" style="display:flex; gap:8px;">
+                    <button type="button" onclick="marcarStatus(this, 'Presente')">✅</button>
+                    <button type="button" onclick="marcarStatus(this, 'ICM')">🏠</button>
+                    <button type="button" onclick="marcarStatus(this, 'Maanaim')">⛰️</button>
+                </div>
+            `;
+            listaContainer.appendChild(card);
+        });
+        
+        atualizarContadores();
+
+    } catch (err) {
+        listaContainer.innerHTML = "<p>Erro ao carregar.</p>";
+    }
 }
 
 function atualizarContadores() {
-    let mAd = 0, mCi = 0;
-    const vAd = parseInt(document.getElementById('vis_adultos')?.value) || 0;
-    const vCi = parseInt(document.getElementById('vis_cias')?.value) || 0;
+    let mAd = 0, mCi = 0, vAd_lista = 0, vCi_lista = 0;
 
+    // 1. Conta quem está na lista (cards)
     document.querySelectorAll('.card-chamada').forEach(card => {
         if (card.getAttribute('data-status') === 'Presente') {
             const cat = (card.getAttribute('data-categoria') || "").toLowerCase();
+            const sit = card.getAttribute('data-situacao');
             const eCia = (cat.includes('crianca') || cat.includes('intermediario') || cat.includes('adolescente'));
-            if (eCia) mCi++; else mAd++;
+
+            if (sit === 'Visitante') {
+                if (eCia) vCi_lista++; else vAd_lista++;
+            } else {
+                if (eCia) mCi_lista++; // Você usa mCi para membros CIAs
+                if (eCia) mCi++; else mAd++;
+            }
         }
     });
 
+    // 2. Soma com os contadores manuais de visitantes de fora
+    const vAd_extra = parseInt(document.getElementById('vis_adultos')?.value) || 0;
+    const vCi_extra = parseInt(document.getElementById('vis_cias')?.value) || 0;
+
     document.getElementById('cont_membros_adultos').innerText = mAd;
     document.getElementById('cont_membros_cias').innerText = mCi;
-    document.getElementById('cont_vis_adultos_display').innerText = vAd;
-    document.getElementById('cont_vis_cias_display').innerText = vCi;
-    document.getElementById('cont_total').innerText = mAd + mCi + vAd + vCi;
-}
+    
+    // Mostra o total de visitantes (Lista + Manuais)
+    document.getElementById('cont_vis_adultos_display').innerText = vAd_lista + vAd_extra;
+    document.getElementById('cont_vis_cias_display').innerText = vCi_lista + vCi_extra;
 
-// Inicia as sugestões ao carregar
-carregarSugestoesEFuncoes();
+    document.getElementById('cont_total').innerText = mAd + mCi + vAd_lista + vAd_extra + vCi_lista + vCi_extra;
+}
 
 // ==========================================
 // 7. MÓDULO ADMINISTRATIVO

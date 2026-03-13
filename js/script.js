@@ -1392,41 +1392,51 @@ function ajustarInterfacePorPerfil() {
     const user = usuarioJson ? JSON.parse(usuarioJson) : null;
     if (!user) return;
 
-    // Pega o nível/permissão de forma segura
     const nivel = (user.permissao || user.nivel || "").toLowerCase();
 
-    // 1. Localizando os botões do seu dashboard.html pelos IDs
+    // 1. Botões Mestres
+    const mestreSecretaria = document.getElementById('btn-mestre-secretaria');
+    const mestreConsultas = document.getElementById('btn-mestre-consultas');
+    const mestreRelatorios = document.getElementById('btn-mestre-relatorios');
+    const mestreAdmin = document.getElementById('btn-mestre-admin');
+
+    // 2. Botões Internos
     const btnChamada = document.getElementById('btnChamada');
     const btnAniversariantes = document.getElementById('btnAniversariantes');
-    const btnEventos = document.getElementById('btnEventos'); // Módulo CIAs
+    const btnEventos = document.getElementById('btnEventos'); 
     const btnCadastro = document.getElementById('idBtnCadastro');
     const btnLista = document.getElementById('btnLista');
     const btnRelatorios = document.getElementById('btnRelatorios');
-    const btnLocais = document.getElementById('btnLocais');   // Botão📍 (Locais)
+    const btnLocais = document.getElementById('btnLocais');   
     const btnGrupos = document.getElementById('btnGrupos');
     const btnUsuarios = document.getElementById('btnUsuarios');
+    const btnPermissoes = document.getElementById('btnPermissoes');
 
-    // 2. REGRA PARA RESPONSÁVEL (Acesso limitado ao operacional do grupo)
+    // --- REGRAS DE VISIBILIDADE ---
+
     if (nivel === 'responsavel') {
+        if (mestreRelatorios) mestreRelatorios.style.display = 'none';
+        if (mestreAdmin) mestreAdmin.style.display = 'none';
+        
         if (btnEventos) btnEventos.style.display = 'none';   
         if (btnCadastro) btnCadastro.style.display = 'none'; 
         if (btnGrupos) btnGrupos.style.display = 'none';
         if (btnUsuarios) btnUsuarios.style.display = 'none';
         if (btnLocais) btnLocais.style.display = 'none';
-        // Ele mantém Chamada, Aniversariantes e Lista (já filtrados por grupo no SQL)
     }
 
-    // 3. REGRA PARA APOIO (Operacional da Igreja)
-    if (nivel === 'apoio') {
+    else if (nivel === 'apoio') {
+        if (mestreAdmin) mestreAdmin.style.display = 'none';
+        
         if (btnGrupos) btnGrupos.style.display = 'none';
         if (btnUsuarios) btnUsuarios.style.display = 'none';
         if (btnLocais) btnLocais.style.display = 'none';
         if (btnCadastro) btnCadastro.style.display = 'none';
-        // Apoio vê Chamada, CIAs e Aniversariantes
     }
 
-    // 4. REGRA PARA COORDENADORA (Supervisão)
-    if (nivel === 'coordenadora') {
+    else if (nivel === 'coordenadora') {
+        if (mestreAdmin) mestreAdmin.style.display = 'none';
+
         if (btnChamada) btnChamada.style.display = 'none';
         if (btnEventos) btnEventos.style.display = 'none';
         if (btnLocais) btnLocais.style.display = 'none';
@@ -1434,13 +1444,31 @@ function ajustarInterfacePorPerfil() {
         if (btnUsuarios) btnUsuarios.style.display = 'none';
     }
 
-    // 5. REGRA PARA GESTÃO TOTAL (Secretário / Admin / Master)
-    const ehGestao = ['admin', 'master', 'secretario'].includes(nivel);
-    if (ehGestao) {
-        if (btnLocais) btnLocais.style.display = 'block';
-        if (btnUsuarios) btnUsuarios.style.display = 'block';
-        if (btnGrupos) btnGrupos.style.display = 'block';
-        if (btnEventos) btnEventos.style.display = 'block';
-        if (btnCadastro) btnCadastro.style.display = 'block';
+    else if (['admin', 'master', 'secretario'].includes(nivel)) {
+        const todos = [
+            mestreSecretaria, mestreConsultas, mestreRelatorios, mestreAdmin,
+            btnChamada, btnAniversariantes, btnEventos, btnCadastro, 
+            btnLista, btnRelatorios, btnLocais, btnGrupos, btnUsuarios, btnPermissoes
+        ];
+        todos.forEach(btn => { if (btn) btn.style.display = 'flex'; });
     }
 }
+
+// ==========================================
+// 16. INICIALIZAÇÃO DA PÁGINA (DOM CONTENT LOADED)
+// ==========================================
+document.addEventListener('DOMContentLoaded', () => {
+    // 1. Verifica se o usuário está logado
+    const user = verificarAcesso(); 
+    
+    if (user) {
+        // 2. Exibe mensagem de boas-vindas
+        const elBoasVindas = document.getElementById('boasVindas');
+        if (elBoasVindas) {
+            elBoasVindas.innerText = `Logado como: ${user.nome} (${user.nivel || user.permissao})`;
+        }
+
+        // 3. ATIVA O FILTRO DE PERMISSÕES (Módulo 15)
+        ajustarInterfacePorPerfil();
+    }
+});

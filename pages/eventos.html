@@ -3,11 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Eventos e CIAs - ICM</title>
+    <title>CIAs - ICM</title>
     <link rel="stylesheet" href="../css/style.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        /* Estilo para deixar os contadores bem visíveis no celular */
         .contador-group {
             display: flex;
             align-items: center;
@@ -64,6 +63,7 @@
             border: 1px solid #ccc;
             border-radius: 8px;
             font-size: 1rem;
+            background-color: white;
         }
     </style>
 </head>
@@ -71,18 +71,20 @@
     <div class="container">
         <header style="display: flex; align-items: center; margin-bottom: 20px;">
             <a href="dashboard.html" class="btn-voltar" style="text-decoration: none;">← Voltar</a>
-            <h1 style="flex-grow: 1; text-align: center; margin-right: 60px;">📊 Eventos e CIAs</h1>
+            <h1 style="flex-grow: 1; text-align: center; margin-right: 60px;">📊 CIAs</h1>
         </header>
 
         <section class="card-header-event">
             <label>📅 Data do Evento</label>
             <input type="date" id="data_especial" class="input-evento">
             
-            <label>📍 Local (Igreja Sede)</label>
-            <input type="text" id="local_evento" placeholder="Ex: Polo Vila Velha, Igreja Sede..." class="input-evento">
+            <label>📍 Local Evento (Igreja)</label>
+            <select id="local_evento" class="input-evento">
+                <option value="">Carregando igrejas...</option>
+            </select>
 
-            <label>📝 Descrição do Evento</label>
-            <input type="text" id="desc_evento" placeholder="Ex: Seminário de Crianças, Batismo..." class="input-evento">
+            <label>📝 Descrição (Ex: Seminário, Ensaio...)</label>
+            <input type="text" id="desc_evento" placeholder="Ex: Crianças, Intermediários ou Adolescentes" class="input-evento">
         </section>
 
         <h3 class="section-title">👥 MEMBROS</h3>
@@ -99,11 +101,35 @@
 
     <script src="../js/script.js"></script>
     <script>
+    // Função para buscar as igrejas que o secretário cadastrou
+    async function carregarIgrejas() {
+        const select = document.getElementById('local_evento');
+        try {
+            const { data, error } = await _supabase
+                .from('igrejas_locais')
+                .select('nome_igreja')
+                .order('nome_igreja', { ascending: true });
+
+            if (error) throw error;
+
+            if (data && data.length > 0) {
+                select.innerHTML = '<option value="">Selecione a Igreja...</option>' + 
+                    data.map(i => `<option value="${i.nome_igreja}">${i.nome_igreja}</option>`).join('');
+            } else {
+                select.innerHTML = '<option value="">Nenhuma igreja cadastrada</option>';
+            }
+        } catch (err) {
+            console.error("Erro ao carregar igrejas:", err);
+            select.innerHTML = '<option value="">Erro na conexão</option>';
+        }
+    }
+
     window.onload = async () => {
-        // 1. Define as categorias (Exatamente como no Banco)
+        // Carrega as opções do Select primeiro
+        await carregarIgrejas();
+
         const categorias = ["Varões", "Senhoras", "Jovens", "Adolescentes", "Intermediários", "Crianças", "Crianças de Colo"];
         
-        // 2. Função para desenhar os botões + e -
         const renderContadores = (containerId, prefixo) => {
             const container = document.getElementById(containerId);
             container.innerHTML = categorias.map(cat => `
@@ -121,12 +147,11 @@
         renderContadores('grupoMembros', 'membro');
         renderContadores('grupoVisitantes', 'vis');
 
-        // 3. VERIFICAÇÃO DE EDIÇÃO (O segredo do MacGyver)
         const urlParams = new URLSearchParams(window.location.search);
         const idEvento = urlParams.get('id');
 
         if (idEvento) {
-            document.querySelector('h1').innerText = "📝 Editar Evento";
+            document.querySelector('h1').innerText = "📝 Editar CIAs";
             try {
                 const { data, error } = await _supabase
                     .from('eventos_especiais')
@@ -136,45 +161,44 @@
 
                 if (error) throw error;
 
-                // Preenche os campos de texto
                 document.getElementById('data_especial').value = data.data_evento;
-                document.getElementById('local_evento').value = data.local_evento;
                 document.getElementById('desc_evento').value = data.descricao;
+                
+                // Pequeno delay para o select carregar as opções antes de selecionar a correta
+                setTimeout(() => {
+                    document.getElementById('local_evento').value = data.local_evento;
+                }, 500);
 
-                // Preenche os números salvos (Membros)
-                document.getElementById('val_membro_Varões').innerText = data.m_varoes;
-                document.getElementById('val_membro_Senhoras').innerText = data.m_senhoras;
-                document.getElementById('val_membro_Jovens').innerText = data.m_jovens;
-                document.getElementById('val_membro_Adolescentes').innerText = data.m_adolescentes;
-                document.getElementById('val_membro_Intermediários').innerText = data.m_intermediarios;
-                document.getElementById('val_membro_Crianças').innerText = data.m_criancas;
-                document.getElementById('val_membro_Crianças de Colo').innerText = data.m_colo;
+                // Membros
+                document.getElementById('val_membro_Varões').innerText = data.m_varoes || 0;
+                document.getElementById('val_membro_Senhoras').innerText = data.m_senhoras || 0;
+                document.getElementById('val_membro_Jovens').innerText = data.m_jovens || 0;
+                document.getElementById('val_membro_Adolescentes').innerText = data.m_adolescentes || 0;
+                document.getElementById('val_membro_Intermediários').innerText = data.m_intermediarios || 0;
+                document.getElementById('val_membro_Crianças').innerText = data.m_criancas || 0;
+                document.getElementById('val_membro_Crianças de Colo').innerText = data.m_colo || 0;
 
-                // Preenche os números salvos (Visitantes)
-                document.getElementById('val_vis_Varões').innerText = data.v_varoes;
-                document.getElementById('val_vis_Senhoras').innerText = data.v_senhoras;
-                document.getElementById('val_vis_Jovens').innerText = data.v_jovens;
-                document.getElementById('val_vis_Adolescentes').innerText = data.v_adolescentes;
-                document.getElementById('val_vis_Intermediários').innerText = data.v_intermediarios;
-                document.getElementById('val_vis_Crianças').innerText = data.v_criancas;
-                document.getElementById('val_vis_Crianças de Colo').innerText = data.v_colo;
+                // Visitantes
+                document.getElementById('val_vis_Varões').innerText = data.v_varoes || 0;
+                document.getElementById('val_vis_Senhoras').innerText = data.v_senhoras || 0;
+                document.getElementById('val_vis_Jovens').innerText = data.v_jovens || 0;
+                document.getElementById('val_vis_Adolescentes').innerText = data.v_adolescentes || 0;
+                document.getElementById('val_vis_Intermediários').innerText = data.v_intermediarios || 0;
+                document.getElementById('val_vis_Crianças').innerText = data.v_criancas || 0;
+                document.getElementById('val_vis_Crianças de Colo').innerText = data.v_colo || 0;
 
-                // Cria o campo invisível para marcar que é EDIÇÃO
                 garantirCampoEdicao(idEvento);
 
             } catch (err) {
-                console.error("Erro ao carregar:", err);
-                alert("Erro ao recuperar os dados salvos.");
+                console.error("Erro ao carregar dados de edição:", err);
             }
         } else {
-            // CORREÇÃO DA DATA: Pega a data local (evita pular para o dia seguinte)
             const hoje = new Date();
-            const dataLocal = hoje.toLocaleDateString('sv-SE'); // Formato AAAA-MM-DD
+            const dataLocal = hoje.toLocaleDateString('sv-SE');
             document.getElementById('data_especial').value = dataLocal;
         }
     };
 
-    // Função auxiliar para criar/atualizar o ID de edição sem recarregar a página
     function garantirCampoEdicao(id) {
         let hiddenId = document.getElementById('id_evento_edicao');
         if (!hiddenId) {
@@ -192,7 +216,6 @@
         atual = Math.max(0, atual + delta);
         el.innerText = atual;
     }
-</script>
-
+    </script>
 </body>
 </html>

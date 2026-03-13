@@ -7,27 +7,37 @@
     <link rel="stylesheet" href="../css/style.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        /* Estilo dos Botões Grandes (Menu Principal e Sub-menus) */
+        /* Padronização de tamanhos para evitar o exagero visual */
         .grid-menu-limpo {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-            gap: 20px;
+            grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); /* Reduzi o mínimo para caber 3 na maioria dos celulares */
+            gap: 15px;
             padding: 10px;
         }
 
         .btn-principal {
-            aspect-ratio: 1 / 1; /* Faz o botão ser quadrado */
+            aspect-ratio: 1 / 1;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             border: none;
-            border-radius: 15px;
+            border-radius: 12px; /* Cantos levemente menos arredondados para um ar mais sério */
             color: white;
             font-weight: bold;
-            font-size: 1.1rem;
+            font-size: 0.9rem; /* Fonte um pouco menor para ficar proporcional */
             cursor: pointer;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.08);
+            transition: transform 0.1s;
+        }
+
+        .btn-principal:active {
+            transform: scale(0.95);
+        }
+
+        .btn-principal span {
+            font-size: 2rem !important; /* Tamanho fixo para os ícones */
+            margin-bottom: 5px;
         }
 
         /* Cores dos Botões Mestres */
@@ -38,7 +48,7 @@
         
         .btn-voltar {
             width: 100%;
-            padding: 15px;
+            padding: 12px;
             margin-bottom: 20px;
             background-color: #7f8c8d;
             color: white;
@@ -46,6 +56,21 @@
             border-radius: 8px;
             font-weight: bold;
             cursor: pointer;
+        }
+
+        /* O Botão Sair - Agora como uma faixa vermelha comportada */
+        .btn-sair-faixa {
+            width: 100%;
+            padding: 15px;
+            margin-top: 20px;
+            background-color: #c0392b;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+            font-size: 1rem;
+            cursor: pointer;
+            text-align: center;
         }
 
         /* Esconde as sub-telas por padrão */
@@ -59,58 +84,58 @@
             <p id="boasVindas" style="font-weight: bold; color: #555;"></p>
         </header>
 
-        <div id="menu-principal" class="grid-menu-limpo">
-            <button class="btn-principal" id="btn-mestre-secretaria" onclick="abrirSubMenu('view-secretaria', 'Secretaria')">
-                <span style="font-size: 2.5rem;">💼</span><br>Secretaria
-            </button>
-            <button class="btn-principal" id="btn-mestre-consultas" onclick="abrirSubMenu('view-consultas', 'Consultas')">
-                <span style="font-size: 2.5rem;">🔍</span><br>Consultas
-            </button>
-            <button class="btn-principal" id="btn-mestre-relatorios" onclick="abrirSubMenu('view-relatorios', 'Relatórios')">
-                <span style="font-size: 2.5rem;">📊</span><br>Relatórios
-            </button>
-            <button class="btn-principal" id="btn-mestre-admin" onclick="abrirSubMenu('view-admin', 'Administração')">
-                <span style="font-size: 2.5rem;">⚙️</span><br>Admin
-            </button>
-            <button class="btn-principal" style="background-color: #c0392b;" onclick="logout()">
-                <span style="font-size: 2.5rem;">🚪</span><br>Sair
-            </button>
+        <div id="menu-principal">
+            <div class="grid-menu-limpo">
+                <button class="btn-principal" id="btn-mestre-secretaria" onclick="abrirSubMenu('view-secretaria', 'Secretaria')">
+                    <span>💼</span>Secretaria
+                </button>
+                <button class="btn-principal" id="btn-mestre-consultas" onclick="abrirSubMenu('view-consultas', 'Consultas')">
+                    <span>🔍</span>Consultas
+                </button>
+                <button class="btn-principal" id="btn-mestre-relatorios" onclick="abrirSubMenu('view-relatorios', 'Relatórios')">
+                    <span>📊</span>Relatórios
+                </button>
+                <button class="btn-principal" id="btn-mestre-admin" onclick="abrirSubMenu('view-admin', 'Administração')">
+                    <span>⚙️</span>Admin
+                </button>
+            </div>
+            
+            <button class="btn-sair-faixa" onclick="logout()">Sair</button>
         </div>
 
         <div id="view-secretaria" class="sub-dashboard">
             <button class="btn-voltar" onclick="voltarAoPrincipal()">⬅️ Voltar ao Início</button>
             <div class="grid-menu-limpo">
-                <button id="btnChamada" class="btn-principal" style="background-color: #27ae60;" onclick="window.location.href='chamada.html'">🗓️ Chamada</button>
-                <button id="btnEventos" class="btn-principal" style="background-color: #e67e22;" onclick="window.location.href='eventos.html'">⭐ CIAs</button>
-                <button id="idBtnCadastro" class="btn-principal" style="background-color: #34495e;" onclick="window.location.href='cadastro-membro.html'">👤 Cadastrar</button>
-                <button id="btnLocais" class="btn-principal" style="background-color: #2c3e50;" onclick="window.location.href='admin-locais.html'">📍 Locais</button>
-                <button id="btnGrupos" class="btn-principal" style="background-color: #5765f2;" onclick="window.location.href='admin-grupos.html'">📂 Grupos</button>
+                <button id="btnChamada" class="btn-principal" style="background-color: #27ae60;" onclick="window.location.href='chamada.html'"><span>🗓️</span>Chamada</button>
+                <button id="btnEventos" class="btn-principal" style="background-color: #e67e22;" onclick="window.location.href='eventos.html'"><span>⭐</span>CIAs</button>
+                <button id="idBtnCadastro" class="btn-principal" style="background-color: #34495e;" onclick="window.location.href='cadastro-membro.html'"><span>👤</span>Cadastrar</button>
+                <button id="btnLocais" class="btn-principal" style="background-color: #2c3e50;" onclick="window.location.href='admin-locais.html'"><span>📍</span>Locais</button>
+                <button id="btnGrupos" class="btn-principal" style="background-color: #5765f2;" onclick="window.location.href='admin-grupos.html'"><span>📂</span>Grupos</button>
             </div>
         </div>
 
         <div id="view-consultas" class="sub-dashboard">
             <button class="btn-voltar" onclick="voltarAoPrincipal()">⬅️ Voltar ao Início</button>
             <div class="grid-menu-limpo">
-                <button id="btnAniversariantes" class="btn-principal" style="background-color: #3498db;" onclick="window.location.href='aniversariantes.html'">🎂 Niver</button>
-                <button id="btnLista" class="btn-principal" style="background-color: #57606f;" onclick="window.location.href='lista-membros.html'">📋 Lista</button>
+                <button id="btnAniversariantes" class="btn-principal" style="background-color: #3498db;" onclick="window.location.href='aniversariantes.html'"><span>🎂</span>Niver</button>
+                <button id="btnLista" class="btn-principal" style="background-color: #57606f;" onclick="window.location.href='lista-membros.html'"><span>📋</span>Lista</button>
             </div>
         </div>
 
         <div id="view-relatorios" class="sub-dashboard">
             <button class="btn-voltar" onclick="voltarAoPrincipal()">⬅️ Voltar ao Início</button>
             <div class="grid-menu-limpo">
-                <button id="btnRelatorios" class="btn-principal" style="background-color: #ffa502;" onclick="window.location.href='relatorio-presenca.html'">📊 Presença</button>
+                <button id="btnRelatorios" class="btn-principal" style="background-color: #ffa502;" onclick="window.location.href='relatorio-presenca.html'"><span>📊</span>Presença</button>
             </div>
         </div>
 
         <div id="view-admin" class="sub-dashboard">
             <button class="btn-voltar" onclick="voltarAoPrincipal()">⬅️ Voltar ao Início</button>
             <div class="grid-menu-limpo">
-                <button id="btnUsuarios" class="btn-principal" style="background-color: #8e44ad;" onclick="window.location.href='admin-usuarios.html'">🔑 Usuários</button>
-                <button id="btnPermissoes" class="btn-principal" style="background-color: #c0392b;">🛡️ Permissões</button>
+                <button id="btnUsuarios" class="btn-principal" style="background-color: #8e44ad;" onclick="window.location.href='admin-usuarios.html'"><span>🔑</span>Usuários</button>
+                <button id="btnPermissoes" class="btn-principal" style="background-color: #c0392b;"><span>🛡️</span>Permissões</button>
             </div>
         </div>
-
     </div>
 
     <script src="../js/script.js"></script>
@@ -122,10 +147,8 @@
         }
 
         function voltarAoPrincipal() {
-            // Esconde todas as sub-views
             document.querySelectorAll('.sub-dashboard').forEach(view => view.style.display = 'none');
-            // Mostra o principal
-            document.getElementById('menu-principal').style.display = 'grid';
+            document.getElementById('menu-principal').style.display = 'block';
             document.getElementById('titulo-painel').innerText = 'Painel Administrativo';
         }
 

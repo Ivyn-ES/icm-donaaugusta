@@ -27,7 +27,7 @@
 
             <button id="btnEventos" onclick="window.location.href='eventos.html'" class="btn-menu" style="background-color: #e67e22;">
                 <span style="font-size: 2rem; display: block;">⭐</span>
-                Eventos / CIAs
+                CIAs (Eventos)
             </button>
 
             <button id="idBtnCadastro" onclick="window.location.href='cadastro-membro.html'" class="btn-menu" style="background-color: #57606f;">
@@ -43,6 +43,11 @@
             <button id="btnRelatorios" onclick="window.location.href='relatorio-presenca.html'" class="btn-menu" style="background-color: #ffa502;">
                 <span style="font-size: 2rem; display: block;">📊</span>
                 Acompanhamento
+            </button>
+
+            <button id="btnLocais" onclick="window.location.href='admin-locais.html'" class="btn-menu" style="display: none; background-color: #2f3542;">
+                <span style="font-size: 2rem; display: block;">📍</span>
+                Gerenciar Locais
             </button>
 
             <button id="btnGrupos" onclick="window.location.href='admin-groups.html'" class="btn-menu" style="display: none; background-color: #5765f2;">
@@ -69,8 +74,11 @@
             
             if (user) {
                 const saudacao = document.getElementById('boasVindas');
-                saudacao.innerText = `Logado como: ${user.nome} | Nível: ${user.nivel}`;
+                // Mantive o fallback para .nivel caso .permissao não esteja no objeto
+                const nivelExibicao = user.permissao || user.nivel || "N/A";
+                saudacao.innerText = `Logado como: ${user.nome} | Nível: ${nivelExibicao}`;
 
+                // Chama a função que você acabou de substituir no script.js
                 if (typeof ajustarInterfacePorPerfil === "function") {
                     ajustarInterfacePorPerfil();
                 }

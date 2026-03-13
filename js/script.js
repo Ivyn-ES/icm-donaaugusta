@@ -1385,73 +1385,59 @@ function prepararReenvioWhats(ev) {
 }
 
 // ==========================================
-// 15. CONTROLE DE VISIBILIDADE DO DASHBOARD
+// 15. CONTROLE DE VISIBILIDADE DINÂMICO
 // ==========================================
-function ajustarInterfacePorPerfil() {
+async function ajustarInterfacePorPerfil() {
     const usuarioJson = localStorage.getItem('usuarioLogado');
     const user = usuarioJson ? JSON.parse(usuarioJson) : null;
     if (!user) return;
 
+    // Pegamos o nível (ex: coord, apoio, secre)
     const nivel = (user.permissao || user.nivel || "").toLowerCase();
 
-    // 1. Botões Mestres
-    const mestreSecretaria = document.getElementById('btn-mestre-secretaria');
-    const mestreConsultas = document.getElementById('btn-mestre-consultas');
-    const mestreRelatorios = document.getElementById('btn-mestre-relatorios');
+    // 1. BUSCA AS PERMISSÕES NO SUPABASE
+    const { data: p, error } = await _supabase
+        .from('niveis_acesso')
+        .select('*')
+        .eq('nivel_nome', nivel)
+        .single();
+
+    if (error || !p) {
+        console.warn("Usando regras padrão pois não achei o nível no banco.");
+        return; // Se der erro, ele mantém como está no HTML
+    }
+
+    // 2. MAPEAMENTO (ID do seu HTML : Coluna do Banco)
+    const mapa = {
+        'btnChamada': p.p_chamada,
+        'btnEventos': p.p_cias,
+        'btnHistorico': p.p_historico, // Verifique se tem esse ID no HTML
+        'idBtnCadastro': p.p_cadastro,
+        'btnLista': p.p_membros,
+        'btnAniversariantes': p.p_niver,
+        'btnLocais': p.p_igrejas,
+        'btnGrupos': p.p_grupos,
+        'btnUsuarios': p.p_usuarios,
+        'btnPermissoes': p.p_permissoes
+    };
+
+    // 3. APLICA A VISIBILIDADE NOS BOTÕES INTERNOS
+    for (const id in mapa) {
+        const el = document.getElementById(id);
+        if (el) {
+            el.style.display = mapa[id] ? 'flex' : 'none';
+        }
+    }
+
+    // 4. LÓGICA DOS "MESTRES" (SEÇÕES)
+    // Se todos os botões de uma seção sumirem, podemos esconder o título/mestre dela
     const mestreAdmin = document.getElementById('btn-mestre-admin');
-
-    // 2. Botões Internos
-    const btnChamada = document.getElementById('btnChamada');
-    const btnAniversariantes = document.getElementById('btnAniversariantes');
-    const btnEventos = document.getElementById('btnEventos'); 
-    const btnCadastro = document.getElementById('idBtnCadastro');
-    const btnLista = document.getElementById('btnLista');
-    const btnRelatorios = document.getElementById('btnRelatorios');
-    const btnLocais = document.getElementById('btnLocais');   
-    const btnGrupos = document.getElementById('btnGrupos');
-    const btnUsuarios = document.getElementById('btnUsuarios');
-    const btnPermissoes = document.getElementById('btnPermissoes');
-
-    // --- REGRAS DE VISIBILIDADE ---
-
-    if (nivel === 'responsavel') {
-        if (mestreRelatorios) mestreRelatorios.style.display = 'none';
-        if (mestreAdmin) mestreAdmin.style.display = 'none';
-        
-        if (btnEventos) btnEventos.style.display = 'none';   
-        if (btnCadastro) btnCadastro.style.display = 'none'; 
-        if (btnGrupos) btnGrupos.style.display = 'none';
-        if (btnUsuarios) btnUsuarios.style.display = 'none';
-        if (btnLocais) btnLocais.style.display = 'none';
+    if (mestreAdmin) {
+        // Só mostra o menu Admin se tiver permissão de Usuários OU Permissões
+        mestreAdmin.style.display = (p.p_usuarios || p.p_permissoes) ? 'block' : 'none';
     }
-
-    else if (nivel === 'apoio') {
-        if (mestreAdmin) mestreAdmin.style.display = 'none';
-        
-        if (btnGrupos) btnGrupos.style.display = 'none';
-        if (btnUsuarios) btnUsuarios.style.display = 'none';
-        if (btnLocais) btnLocais.style.display = 'none';
-        if (btnCadastro) btnCadastro.style.display = 'none';
-    }
-
-    else if (nivel === 'coordenadora') {
-        if (mestreAdmin) mestreAdmin.style.display = 'none';
-
-        if (btnChamada) btnChamada.style.display = 'none';
-        if (btnEventos) btnEventos.style.display = 'none';
-        if (btnLocais) btnLocais.style.display = 'none';
-        if (btnGrupos) btnGrupos.style.display = 'none';
-        if (btnUsuarios) btnUsuarios.style.display = 'none';
-    }
-
-    else if (['admin', 'master', 'secretario'].includes(nivel)) {
-        const todos = [
-            mestreSecretaria, mestreConsultas, mestreRelatorios, mestreAdmin,
-            btnChamada, btnAniversariantes, btnEventos, btnCadastro, 
-            btnLista, btnRelatorios, btnLocais, btnGrupos, btnUsuarios, btnPermissoes
-        ];
-        todos.forEach(btn => { if (btn) btn.style.display = 'flex'; });
-    }
+    
+    // Você pode repetir a lógica acima para os outros "Mestres" se desejar
 }
 
 // ==========================================

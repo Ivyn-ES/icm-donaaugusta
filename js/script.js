@@ -366,13 +366,18 @@ async function gerarResumoWhatsApp() {
         const vAd = document.getElementById('cont_vis_adultos_display').innerText;
         const vCi = document.getElementById('cont_vis_cias_display').innerText;
 
-        // --- CÁLCULO DA PORCENTAGEM PARA O WHATSAPP ---
-        const totalMembrosAtivos = document.querySelectorAll('.card-chamada').length;
+        // --- CÁLCULO DA PORCENTAGEM (PRECISÃO TOTAL) ---
+        // Aqui filtramos apenas quem é 'Membro' para a base do cálculo (o seu 46)
+        const cardsMembros = Array.from(document.querySelectorAll('.card-chamada'))
+                                  .filter(c => c.getAttribute('data-situacao') === 'Membro');
+        
+        const totalMembrosAtivos = cardsMembros.length; 
         const totalPresentesMembros = parseInt(mAd) + parseInt(mCi);
+        
+        // Se 25 presentes de 46 ativos, o percentual será 54%
         const percentual = totalMembrosAtivos > 0 ? Math.round((totalPresentesMembros / totalMembrosAtivos) * 100) : 0;
         const emojiCor = percentual < 50 ? '🔴' : '🟢';
 
-        // --- FUNÇÃO PARA BUSCAR O APELIDO REAL NO CACHE ---
         const obterApelidoOuPrimeiroNome = (id) => {
             const el = document.getElementById(id);
             if (!el) return "";
@@ -399,7 +404,6 @@ async function gerarResumoWhatsApp() {
         let msg = `*ICM - Dona Augusta*\n*📊 Resumo do Culto - ${dataFmt}*\n\n`;
         
         msg += `*Público:*\n`;
-        // LINHA AJUSTADA COM A PORCENTAGEM E EMOJI
         msg += `- Membros (Ad/CIA): ${mAd}/${mCi} - ${emojiCor} ${percentual}%\n`;
         msg += `- Visitantes (Ad/CIA): ${vAd}/${vCi}\n`;
         msg += `*⭐ Total Geral: ${total}*\n\n`;
@@ -439,7 +443,6 @@ async function salvarChamada() {
         const dataCulto = document.getElementById('data_chamada').value;
         const tipoEvento = document.getElementById('tipo_evento').value;
 
-        // Captura quem não está como "Faltou" (ou seja: Presente, ICM ou Maanaim)
         const registros = Array.from(document.querySelectorAll('.card-chamada'))
             .filter(card => card.getAttribute('data-status') !== 'Faltou')
             .map(card => ({
@@ -464,7 +467,7 @@ async function salvarChamada() {
             observacoes: document.getElementById('observacoes_culto').value
         };
 
-        // Deleta os antigos e insere os novos (Sincronização limpa)
+        // UPSERT com Trava: Deletar e inserir presenças garante limpeza de duplicados
         await _supabase.from('presencas').delete().eq('data_culto', dataCulto).eq('tipo_evento', tipoEvento);
         
         if (registros.length > 0) {

@@ -269,24 +269,35 @@ async function excluirMembro(id) {
 }
 
 // ==========================================
-// 4. MÓDULO DE CHAMADA (PRESENÇA) - VERSÃO ESPAÇO OTIMIZADO
+// 4. MÓDULO DE CHAMADA (PRESENÇA) - ATUALIZADO COM FILTRO
 // ==========================================
-
 async function renderizarListaChamada() {
     const container = document.getElementById('listaChamada');
     const dataSelecionada = document.getElementById('data_chamada')?.value;
     const eventoSelecionado = document.getElementById('tipo_evento')?.value;
     
-    // 1. Localizamos o título para injetar os nomes lá em cima
-    const areaTitulo = document.querySelector('.titulo-chamada-container'); 
-    // Nota: Se você não tiver essa classe, pode ajustar o seletor acima.
-
     if (!container) return;
 
+    const user = verificarAcesso();
+    if (!user) return;
+
+    const nivel = (user.permissao || user.nivel || "").toLowerCase();
+    // Definimos quem pode ver a igreja toda
+    const vêTudo = ['admin', 'master', 'secretario', 'apoio', 'coordenadora'].includes(nivel);
+
     try {
-        const { data: membros, error: errM } = await _supabase.from('membros')
+        // --- INÍCIO DO FILTRO INTELIGENTE ---
+        let consulta = _supabase.from('membros')
             .select('id, nome, apelido, grupo, categoria, situacao') 
-            .eq('status_registro', 'Ativo').order('nome');
+            .eq('status_registro', 'Ativo');
+
+        // Se for Responsável, ele só faz chamada do grupo dele
+        if (!vêTudo && user.grupo) {
+            consulta = consulta.eq('grupo', user.grupo);
+        }
+
+        const { data: membros, error: errM } = await consulta.order('nome', { ascending: true });
+        // --- FIM DO FILTRO ---
         
         if (errM) throw errM;
 
@@ -299,10 +310,13 @@ async function renderizarListaChamada() {
             jaRegistrados = pres || [];
         }
 
-        // 2. Limpamos o container para a nova lista
         container.innerHTML = "";
 
-        // 3. Geramos os Cards um por um
+        if (!membros || membros.length === 0) {
+            container.innerHTML = "<p style='text-align:center; padding:20px;'>Nenhum membro encontrado para este grupo.</p>";
+            return;
+        }
+
         container.innerHTML = membros.map(m => {
             const reg = jaRegistrados.find(r => r.membro_id === m.id);
             let statusAtual = 'Ausente';
@@ -319,6 +333,7 @@ async function renderizarListaChamada() {
                     
                     <div style="flex:1;">
                         <span style="font-size:1.05rem;">${nomeExibicao}</span>
+                        <br><small style="color: #888;">${m.categoria} ${vêTudo ? ` - ${m.grupo}` : ''}</small>
                     </div>
 
                     <div style="display:flex; gap:20px; align-items:center;">
@@ -341,10 +356,11 @@ async function renderizarListaChamada() {
                 </div>`;
         }).join('');
         
-        atualizarContadores();
-    } catch (err) { console.error(err); }
+        if (typeof atualizarContadores === "function") atualizarContadores();
+    } catch (err) { console.error("Erro Chamada:", err); }
 }
 
+// A função selecionarStatus permanece a mesma que você enviou, sem alterações.
 function selecionarStatus(membroId, novoStatus) {
     const card = document.querySelector(`.card-chamada[data-id="${membroId}"]`);
     const btnP = document.getElementById(`btn_P_${membroId}`);
@@ -352,7 +368,6 @@ function selecionarStatus(membroId, novoStatus) {
     const btnM = document.getElementById(`btn_M_${membroId}`);
     const statusAnterior = card.getAttribute('data-status');
 
-    // RESET: Volta ao quadradinho no Presente e ícones nos outros
     btnP.innerText = ''; 
     btnP.style.border = '1px solid #ccc';
     btnI.innerText = '🏠'; 
@@ -376,7 +391,7 @@ function selecionarStatus(membroId, novoStatus) {
             card.style.background = '#fffaf0'; 
         }
     }
-    atualizarContadores();
+    if (typeof atualizarContadores === "function") atualizarContadores();
 }
 
 // ==========================================

@@ -907,15 +907,16 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // ==========================================
-// 11. EVENTOS ESPECIAIS (SALVAR / ATUALIZAR)
+// 11. CIAs (SALVAR / ATUALIZAR)
 // ==========================================
 async function salvarEventoEspecial() {
     const data_evento = document.getElementById('data_especial').value;
     const local = document.getElementById('local_evento').value.trim();
     const descricao = document.getElementById('desc_evento').value.trim();
     
+    // Mudamos o alerta para ser mais amigável conforme o novo foco
     if (!data_evento || !local || !descricao) {
-        return alert("⚠️ Preencha Data, Local e Descrição do Evento.");
+        return alert("⚠️ Por favor, informe a Data, o Local e a Descrição (ex: Crianças).");
     }
 
     const dados = {
@@ -938,12 +939,11 @@ async function salvarEventoEspecial() {
         v_colo: parseInt(document.getElementById('val_vis_Crianças de Colo').innerText) || 0
     };
 
-    // --- O Pulo do Gato para Edição (ID de Edição) ---
+    // Pega o ID caso seja uma edição para não duplicar
     const idEdicao = document.getElementById('id_evento_edicao')?.value;
     if (idEdicao) dados.id = idEdicao; 
 
     try {
-        // Usamos UPSERT e .select() para capturar o ID caso seja um registro novo
         const { data, error } = await _supabase
             .from('eventos_especiais')
             .upsert([dados])
@@ -951,15 +951,14 @@ async function salvarEventoEspecial() {
 
         if (error) throw error;
 
-        // Se for um novo registro, "carimbamos" o ID na página para os dados permanecerem editáveis
+        // "Carimbamos" o ID na página para as próximas clicadas serem atualizações
         if (data && data[0].id) {
             if (typeof garantirCampoEdicao === "function") {
                 garantirCampoEdicao(data[0].id);
             }
         }
 
-        alert(idEdicao ? "✅ Evento atualizado com sucesso!" : "✅ Evento salvo com sucesso!");
-        // REMOVIDO: qualquer recarregamento de página para manter os dados na tela
+        alert(idEdicao ? "✅ Informações atualizadas com sucesso!" : "✅ Informações salvas com sucesso!");
     } catch (err) { 
         console.error("Erro Supabase:", err);
         alert("❌ Erro ao salvar."); 
@@ -968,17 +967,18 @@ async function salvarEventoEspecial() {
 
 function gerarWhatsEspecial() {
     const nomeIgreja = "ICM - Dona Augusta";
-    const local = document.getElementById('local_evento').value.trim() || "Não informado";
-    const desc = document.getElementById('desc_evento').value.trim() || "Evento Especial";
+    const local = document.getElementById('local_evento').value.trim() || "Não selecionado";
+    const desc = document.getElementById('desc_evento').value.trim() || "CIAs";
     const dataRaw = document.getElementById('data_especial').value;
     const dataFmt = dataRaw ? dataRaw.split('-').reverse().join('/') : "--/--/----";
 
     const obterListaCompleta = (prefixo) => {
         const cats = ["Varões", "Senhoras", "Jovens", "Adolescentes", "Intermediários", "Crianças", "Crianças de Colo"];
-        let lista = ""; let total = 0;
+        let lista = ""; 
+        let total = 0;
         cats.forEach(c => {
             const val = parseInt(document.getElementById(`val_${prefixo}_${c}`).innerText) || 0;
-            // Agora SEM o 'if (val > 0)', para mostrar inclusive os zerados
+            // Mantendo todos os campos visíveis (inclusive os zerados) para conferência total
             lista += `   • ${c}: ${val}\n`;
             total += val;
         });
@@ -988,11 +988,12 @@ function gerarWhatsEspecial() {
     const membros = obterListaCompleta('membro');
     const visitantes = obterListaCompleta('vis');
 
-    let msg = `*📊 RELATÓRIO DE EVENTO - ${nomeIgreja.toUpperCase()}*\n\n`;
+    // Montagem da Mensagem - Estilo CIAs
+    let msg = `*📊 RELATÓRIO CIAs - ${nomeIgreja.toUpperCase()}*\n\n`;
     msg += `📅 *DATA:* ${dataFmt}\n`;
     msg += `📍 *LOCAL:* ${local}\n`;
-    msg += `📝 *EVENTO:* ${desc.toUpperCase()}\n\n`;
-    msg += `--- \n\n`;
+    msg += `📝 *GRUPO:* ${desc.toUpperCase()}\n\n`;
+    msg += `--------------------------------\n\n`;
     msg += `*👥 MEMBROS: (${membros.total})*\n${membros.lista}`;
     msg += `\n*🌟 VISITANTES: (${visitantes.total})*\n${visitantes.lista}`;
     msg += `\n*📉 TOTAL GERAL: ${membros.total + visitantes.total}*\n\n`;

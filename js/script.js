@@ -366,22 +366,27 @@ async function gerarResumoWhatsApp() {
         const vAd = document.getElementById('cont_vis_adultos_display').innerText;
         const vCi = document.getElementById('cont_vis_cias_display').innerText;
 
-        // --- FUNÇÃO PARA BUSCAR O APELIDO REAL NO CACHE (CORRIGIDA) ---
+        // --- CÁLCULO DA PORCENTAGEM PARA O WHATSAPP ---
+        const totalMembrosAtivos = document.querySelectorAll('.card-chamada').length;
+        const totalPresentesMembros = parseInt(mAd) + parseInt(mCi);
+        const percentual = totalMembrosAtivos > 0 ? Math.round((totalPresentesMembros / totalMembrosAtivos) * 100) : 0;
+        const emojiCor = percentual < 50 ? '🔴' : '🟢';
+
+        // --- FUNÇÃO PARA BUSCAR O APELIDO REAL NO CACHE ---
         const obterApelidoOuPrimeiroNome = (id) => {
-            const valorInput = document.getElementById(id).value.trim();
+            const el = document.getElementById(id);
+            if (!el) return "";
+            const valorInput = el.value.trim();
             if (!valorInput) return "";
 
-            // Busca no cache ignorando maiúsculas/minúsculas
-            const membro = window.membrosCache.find(m => 
+            const membro = window.membrosCache?.find(m => 
                 (m.nome && m.nome.toLowerCase() === valorInput.toLowerCase()) || 
                 (m.apelido && m.apelido.toLowerCase() === valorInput.toLowerCase())
             );
 
-            // Se achou na tabela e tem apelido preenchido, retorna o apelido
             if (membro && membro.apelido && membro.apelido.trim() !== "") {
                 return membro.apelido;
             } else {
-                // Se não achou ou não tem apelido, pega só a primeira palavra do que foi digitado
                 return valorInput.split(" ")[0];
             }
         };
@@ -394,13 +399,13 @@ async function gerarResumoWhatsApp() {
         let msg = `*ICM - Dona Augusta*\n*📊 Resumo do Culto - ${dataFmt}*\n\n`;
         
         msg += `*Público:*\n`;
-        msg += `- Membros (Ad/CIA): ${mAd}/${mCi}\n`;
+        // LINHA AJUSTADA COM A PORCENTAGEM E EMOJI
+        msg += `- Membros (Ad/CIA): ${mAd}/${mCi} - ${emojiCor} ${percentual}%\n`;
         msg += `- Visitantes (Ad/CIA): ${vAd}/${vCi}\n`;
         msg += `*⭐ Total Geral: ${total}*\n\n`;
 
         msg += `*Responsáveis:*\n`;
         
-        // Lógica de Dirigente / Pregador + Texto Bíblico logo abaixo
         if (pregador !== "" && (pregador === louvor || louvor === "")) {
             msg += `⭐ Dirigente: ${pregador}\n`;
             msg += `📖 Texto: ${texto}\n`;

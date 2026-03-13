@@ -7,7 +7,7 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // ==========================================
-// 2. SEGURANÇA E ACESSO
+// 2. SEGURANÇA E ACESSO (VERSÃO INTEGRAL)
 // ==========================================
 function verificarAcesso() {
     const usuarioJson = localStorage.getItem('usuarioLogado');
@@ -21,23 +21,40 @@ function verificarAcesso() {
     }
 
     const urlAtual = window.location.href;
-    const nivel = (usuario.nivel || "").toLowerCase();
+    const nivel = (usuario.permissao || usuario.nivel || "").toLowerCase();
 
-    if (nivel === 'livre') {
-        const proibidas = ['dashboard.html', 'cadastro-membro.html', 'admin-usuarios.html', 'admin-grupos.html', 'chamada.html', 'lista-membros.html', 'relatorio-presenca.html', 'relatorio-aniversariantes.html'];
+    // 1. BLOQUEIO PARA NÍVEL LIVRE / MEMBRO
+    if (nivel === 'livre' || nivel === 'membro') {
+        const proibidas = [
+            'dashboard.html', 'cadastro-membro.html', 'admin-usuarios.html', 
+            'admin-grupos.html', 'admin-locais.html', 'chamada.html', 
+            'lista-membros.html', 'relatorio-presenca.html', 'eventos.html'
+        ];
         if (proibidas.some(p => urlAtual.includes(p))) {
             window.location.href = 'livre.html';
             return usuario;
         }
     }
 
-    if (nivel === 'user' || nivel === 'apoio' || nivel === 'coordenadora') {
-        const adminPaginas = ['admin-usuarios.html', 'admin-grupos.html'];
+    // 2. PROTEÇÃO DE PÁGINAS ADMINISTRATIVAS
+    // Apenas Admin, Master e Secretário entram aqui
+    const adminPaginas = ['admin-usuarios.html', 'admin-grupos.html', 'admin-locais.html'];
+    const ehAdminOuSecretario = (nivel === 'admin' || nivel === 'master' || nivel === 'secretario');
+
+    if (!ehAdminOuSecretario) {
         if (adminPaginas.some(p => urlAtual.includes(p))) {
             window.location.href = 'dashboard.html';
             return usuario;
         }
     }
+
+    // 3. RESTRIÇÃO DO RESPONSÁVEL (Não acessa módulo consolidado de CIAs)
+    if (nivel === 'responsavel' && urlAtual.includes('eventos.html')) {
+        alert("⚠️ Este módulo é restrito ao Apoio e Secretaria.");
+        window.location.href = 'dashboard.html';
+        return usuario;
+    }
+
     return usuario;
 }
 
@@ -55,6 +72,7 @@ async function realizarLogin(usuarioDigitado, senhaDigitada) {
             return;
         }
 
+        // Padronização da sessão (usando permissão do banco)
         localStorage.setItem('usuarioLogado', JSON.stringify({
             nome: data.login.toLowerCase(),
             login: data.login.toLowerCase(),
@@ -63,14 +81,15 @@ async function realizarLogin(usuarioDigitado, senhaDigitada) {
             grupo: data.grupo_vinculado
         }));
 
-        if (data.permissao.toLowerCase() === 'livre') {
+        const perm = data.permissao.toLowerCase();
+        if (perm === 'livre' || perm === 'membro') {
             window.location.href = 'pages/livre.html';
         } else {
             window.location.href = 'pages/dashboard.html';
         }
     } catch (err) {
         console.error('Erro de Login:', err);
-        alert('⚠️ Erro ao conectar.');
+        alert('⚠️ Erro ao conectar ao servidor.');
     }
 }
 
@@ -80,7 +99,7 @@ function logout() {
 }
 
 // ==========================================
-// 3. MÓDULO DE MEMBROS
+// 3. MÓDULO DE MEMBROS (VERSÃO INTEGRAL)
 // ==========================================
 async function renderizarListaMembros() {
     const corpoTabela = document.getElementById('corpoTabelaMembros');
@@ -90,18 +109,24 @@ async function renderizarListaMembros() {
     if (!user) return;
 
     const nivel = (user.permissao || user.nivel || "").toLowerCase();
-    const ehPrivilegiado = (nivel === 'admin' || nivel === 'master' || nivel === 'coordenadora');
-    const ehAdminMaster = (nivel === 'admin' || nivel === 'master');
+    
+    // Definição de Privilégios (Secretário incluído)
+    const ehPrivilegiado = ['admin', 'master', 'coordenadora', 'secretario', 'pastor'].includes(nivel);
+    const ehAdminMasterSecretario = ['admin', 'master', 'secretario'].includes(nivel);
 
     try {
         let consulta = _supabase.from('membros').select('*').eq('status_registro', 'Ativo');
-        if (!ehPrivilegiado) consulta = consulta.eq('grupo', user.grupo); 
+        
+        // Filtro de Grupo: Se não for privilegiado, vê apenas o seu grupo
+        if (!ehPrivilegiado) {
+            consulta = consulta.eq('grupo', user.grupo); 
+        }
 
         const { data, error } = await consulta.order('nome', { ascending: true });
         if (error) throw error;
 
         if (!data || data.length === 0) {
-            corpoTabela.innerHTML = "<tr><td colspan='5' style='text-align:center;'>Nenhum membro encontrado.</td></tr>";
+            corpoTabela.innerHTML = "<tr><td colspan='5' style='text-align:center;'>Nenhum membro ativo encontrado.</td></tr>";
             return;
         }
 
@@ -112,66 +137,107 @@ async function renderizarListaMembros() {
                 <td>${m.grupo || 'Sem Grupo'}</td>
                 <td>${m.situacao}</td>
                 <td style="text-align:center;">
-                    ${ehAdminMaster ? `
-                        <button onclick="prepararEdicao('${m.id}')" style="background:none; border:none; cursor:pointer;">✏️</button>
-                        <button onclick="excluirMembro('${m.id}')" style="background:none; border:none; cursor:pointer;">🗑️</button>
+                    ${ehAdminMasterSecretario ? `
+                        <button onclick="prepararEdicao('${m.id}')" style="background:none; border:none; cursor:pointer;" title="Editar">✏️</button>
+                        <button onclick="excluirMembro('${m.id}')" style="background:none; border:none; cursor:pointer;" title="Excluir">🗑️</button>
                     ` : (ehPrivilegiado ? '👁️' : '🔒')}
                 </td>
             </tr>`).join('');
     } catch (err) { 
-        console.error("Erro:", err);
-        corpoTabela.innerHTML = "<tr><td colspan='5'>Erro ao carregar os dados.</td></tr>"; 
+        console.error("Erro ao renderizar lista:", err);
+        corpoTabela.innerHTML = "<tr><td colspan='5' style='color:red;'>Erro ao carregar os dados.</td></tr>"; 
     }
 }
 
 async function cadastrarMembro(dados) {
     const user = verificarAcesso();
     const nivel = (user?.permissao || user?.nivel || "").toLowerCase();
-    if (nivel !== 'admin' && nivel !== 'master' && nivel !== 'coordenadora' && nivel !== 'pastor') {
-        alert("❌ Sem permissão.");
+    
+    // Apenas quem tem permissão de escrita
+    const podeCadastrar = ['admin', 'master', 'coordenadora', 'pastor', 'secretario'].includes(nivel);
+    
+    if (!podeCadastrar) {
+        alert("❌ Você não tem permissão para cadastrar novos membros.");
         return false;
     }
+
     try {
         const { error } = await _supabase.from('membros').insert([{
-            nome: dados.nome, apelido: dados.apelido, funcao: dados.funcao,
-            situacao: dados.situacao, categoria: dados.categoria, sexo: dados.sexo,
-            eh_idoso: dados.eh_idoso, grupo: dados.grupo, dia: parseInt(dados.niver_dia) || 0, 
-            mes: dados.niver_mes, familia_id: dados.familia_vinculo || crypto.randomUUID(), 
+            nome: dados.nome, 
+            apelido: dados.apelido, 
+            funcao: dados.funcao,
+            situacao: dados.situacao, 
+            categoria: dados.categoria, 
+            sexo: dados.sexo,
+            eh_idoso: dados.eh_idoso, 
+            grupo: dados.grupo, 
+            dia: parseInt(dados.niver_dia) || 0, 
+            mes: dados.niver_mes, 
+            familia_id: dados.familia_vinculo || crypto.randomUUID(), 
             status_registro: 'Ativo'
         }]);
+
         if (error) throw error;
-        alert("✅ Cadastrado!");
+        alert("✅ Membro cadastrado com sucesso!");
         return true; 
-    } catch (err) { alert("Erro: " + err.message); return false; }
+    } catch (err) { 
+        alert("Erro no cadastro: " + err.message); 
+        return false; 
+    }
 }
 
 async function atualizarMembro(id, dados) {
     const user = verificarAcesso();
     const nivel = (user?.permissao || user?.nivel || "").toLowerCase();
-    if (nivel !== 'admin' && nivel !== 'master' && nivel !== 'coordenadora' && nivel !== 'pastor') return false;
+    const podeEditar = ['admin', 'master', 'coordenadora', 'pastor', 'secretario'].includes(nivel);
+
+    if (!podeEditar) {
+        alert("❌ Sem permissão para atualizar dados.");
+        return false;
+    }
+
     try {
         const { error } = await _supabase.from('membros').update({
-            nome: dados.nome, apelido: dados.apelido, funcao: dados.funcao,
-            situacao: dados.situacao, categoria: dados.categoria, sexo: dados.sexo,
-            eh_idoso: dados.eh_idoso, grupo: dados.grupo, dia: parseInt(dados.niver_dia) || 0,
-            mes: dados.niver_mes, familia_id: dados.familia_vinculo || crypto.randomUUID()
+            nome: dados.nome, 
+            apelido: dados.apelido, 
+            funcao: dados.funcao,
+            situacao: dados.situacao, 
+            categoria: dados.categoria, 
+            sexo: dados.sexo,
+            eh_idoso: dados.eh_idoso, 
+            grupo: dados.grupo, 
+            dia: parseInt(dados.niver_dia) || 0,
+            mes: dados.niver_mes, 
+            familia_id: dados.familia_vinculo || crypto.randomUUID()
         }).eq('id', id);
+
         if (error) throw error;
-        alert("✅ Atualizado!");
+        alert("✅ Dados atualizados!");
         return true;
-    } catch (err) { alert("Erro: " + err.message); return false; }
+    } catch (err) { 
+        alert("Erro na atualização: " + err.message); 
+        return false; 
+    }
 }
 
 async function carregarMembrosParaVinculo() {
     const selectFamilia = document.getElementById('vinculo_familia');
     if (!selectFamilia) return;
     try {
-        const { data, error } = await _supabase.from('membros').select('nome, familia_id').eq('status_registro', 'Ativo').order('nome');
+        const { data, error } = await _supabase
+            .from('membros')
+            .select('nome, familia_id')
+            .eq('status_registro', 'Ativo')
+            .order('nome');
+
         if (error) throw error;
+        
         let html = '<option value="">Ninguém (Membro Individual / Novo Responsável)</option>';
         if (data) html += data.map(m => `<option value="${m.familia_id}">${m.nome}</option>`).join('');
         selectFamilia.innerHTML = html;
-    } catch (err) { console.error(err); }
+    } catch (err) { 
+        console.error("Erro ao carregar vínculos:", err); 
+    }
 }
 
 function prepararEdicao(id) {
@@ -181,13 +247,25 @@ function prepararEdicao(id) {
 
 async function excluirMembro(id) {
     const user = verificarAcesso();
-    if (!confirm("Deseja excluir?")) return;
+    const nivel = (user?.permissao || user?.nivel || "").toLowerCase();
+    
+    if (nivel !== 'admin' && nivel !== 'master' && nivel !== 'secretario') {
+        alert("❌ Apenas administradores podem excluir registros.");
+        return;
+    }
+
+    if (!confirm("Tem certeza que deseja remover este membro definitivamente?")) return;
+
     try {
+        // Sugestão: Você pode mudar para .update({status_registro: 'Excluído'}) em vez de delete se quiser manter histórico
         const { error } = await _supabase.from('membros').delete().eq('id', id);
         if (error) throw error;
-        alert("✅ Removido!");
+        
+        alert("✅ Membro removido!");
         renderizarListaMembros();
-    } catch (err) { alert(err.message); }
+    } catch (err) { 
+        alert("Erro ao excluir: " + err.message); 
+    }
 }
 
 // ==========================================

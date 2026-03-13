@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gerenciar Locais - ICM</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <div class="container">
+        <header style="display: flex; align-items: center; margin-bottom: 20px;">
+            <a href="dashboard.html" class="btn-voltar" style="text-decoration: none;">← Voltar</a>
+            <h1 style="flex-grow: 1; text-align: center; margin-right: 60px;">📍 Locais (Igrejas)</h1>
+        </header>
+
+        <section class="card">
+            <h3>Cadastrar Novo Local</h3>
+            <p style="font-size: 0.9rem; color: #666; margin-bottom: 10px;">Esses nomes aparecerão no módulo de CIAs.</p>
+            <div style="display: flex; gap: 10px;">
+                <input type="text" id="novo_local" placeholder="Ex: Polo Vila Velha" class="input-evento" style="margin:0; flex-grow: 1;">
+                <button onclick="salvarLocal()" class="btn-salvar" style="width: auto; padding: 10px 20px; background-color: #2ecc71;">➕</button>
+            </div>
+        </section>
+
+        <h3 class="section-title">Igrejas Cadastradas</h3>
+        <div id="listaLocais" class="card" style="padding: 0;">
+            <p style="padding: 20px;">Carregando locais...</p>
+        </div>
+    </div>
+
+    <script src="../js/script.js"></script>
+    <script>
+        async function carregarTabelaLocais() {
+            const container = document.getElementById('listaLocais');
+            try {
+                const { data, error } = await _supabase
+                    .from('igrejas_locais')
+                    .select('*')
+                    .order('nome_igreja', { ascending: true });
+                
+                if (error) throw error;
+                
+                if (data.length === 0) {
+                    container.innerHTML = "<p style='padding: 20px;'>Nenhuma igreja cadastrada.</p>";
+                    return;
+                }
+
+                container.innerHTML = data.map(l => `
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 15px; border-bottom: 1px solid #eee;">
+                        <span style="font-weight: 500; color: #333;">${l.nome_igreja}</span>
+                        <button onclick="excluirLocal('${l.id}', '${l.nome_igreja}')" style="background:none; border:none; cursor:pointer; font-size: 1.2rem;">🗑️</button>
+                    </div>
+                `).join('');
+            } catch (err) {
+                container.innerHTML = "<p style='padding: 20px; color: red;'>Erro ao carregar dados.</p>";
+            }
+        }
+
+        async function salvarLocal() {
+            const input = document.getElementById('novo_local');
+            const nome = input.value.trim();
+            if (!nome) return alert("Digite o nome da igreja.");
+
+            try {
+                const { error } = await _supabase.from('igrejas_locais').insert([{ nome_igreja: nome }]);
+                if (error) throw error;
+                
+                input.value = '';
+                carregarTabelaLocais();
+            } catch (err) {
+                alert("Erro ao salvar: " + err.message);
+            }
+        }
+
+        async function excluirLocal(id, nome) {
+            if (!confirm(`Deseja remover "${nome}" da lista?`)) return;
+            try {
+                const { error } = await _supabase.from('igrejas_locais').delete().eq('id', id);
+                if (error) throw error;
+                carregarTabelaLocais();
+            } catch (err) {
+                alert("Erro ao excluir.");
+            }
+        }
+
+        window.onload = carregarTabelaLocais;
+    </script>
+</body>
+</html>

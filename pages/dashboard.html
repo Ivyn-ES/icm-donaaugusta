@@ -6,6 +6,30 @@
     <title>Dashboard - ICM</title>
     <link rel="stylesheet" href="../css/style.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        /* Estilos para manter o visual limpo e organizado por blocos */
+        .secao-grupo {
+            margin-bottom: 25px;
+            padding: 15px;
+            border-radius: 10px;
+            background-color: #f9f9f9;
+            border: 1px solid #eee;
+        }
+        .secao-titulo {
+            font-size: 1.1rem;
+            font-weight: bold;
+            color: #444;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #ddd;
+            padding-bottom: 5px;
+        }
+        /* Mantendo o grid original para não quebrar seus botões */
+        .grid-menu-ajustado {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+        }
+    </style>
 </head>
 <body>
     <div class="container">
@@ -14,56 +38,74 @@
             <p id="boasVindas" style="font-weight: bold; color: #555;">Bem-vindo!</p>
         </header>
 
-        <div class="grid-menu">
-            <button id="btnChamada" onclick="window.location.href='chamada.html'" class="btn-menu" style="background-color: #2ed573;">
-                <span style="font-size: 2rem; display: block;">🗓️</span>
-                Fazer Chamada
-            </button>
+        <div class="secao-grupo" id="secao-secretaria">
+            <div class="secao-titulo">💼 Secretaria</div>
+            <div class="grid-menu-ajustado">
+                <button id="btnChamada" onclick="window.location.href='chamada.html'" class="btn-menu" style="background-color: #2ed573;">
+                    <span style="font-size: 2rem; display: block;">🗓️</span>
+                    Fazer Chamada
+                </button>
 
-            <button id="btnAniversariantes" onclick="window.location.href='aniversariantes.html'" class="btn-menu" style="background-color: #3498db;">
-                <span style="font-size: 2rem; display: block;">🎂</span>
-                Aniversariantes
-            </button>
+                <button id="btnEventos" onclick="window.location.href='eventos.html'" class="btn-menu" style="background-color: #e67e22;">
+                    <span style="font-size: 2rem; display: block;">⭐</span>
+                    CIAs (Eventos)
+                </button>
 
-            <button id="btnEventos" onclick="window.location.href='eventos.html'" class="btn-menu" style="background-color: #e67e22;">
-                <span style="font-size: 2rem; display: block;">⭐</span>
-                CIAs (Eventos)
-            </button>
+                <button id="idBtnCadastro" onclick="window.location.href='cadastro-membro.html'" class="btn-menu" style="background-color: #57606f;">
+                    <span style="font-size: 2rem; display: block;">👤</span>
+                    Cadastrar Membro
+                </button>
 
-            <button id="idBtnCadastro" onclick="window.location.href='cadastro-membro.html'" class="btn-menu" style="background-color: #57606f;">
-                <span style="font-size: 2rem; display: block;">👤</span>
-                Cadastrar Membro
-            </button>
+                <button id="btnLocais" onclick="window.location.href='admin-locais.html'" class="btn-menu" style="display: none; background-color: #2f3542;">
+                    <span style="font-size: 2rem; display: block;">📍</span>
+                    Gerenciar Locais
+                </button>
 
-            <button id="btnLista" onclick="window.location.href='lista-membros.html'" class="btn-menu" style="background-color: #57606f;">
-                <span style="font-size: 2rem; display: block;">📋</span>
-                Lista de Membros
-            </button>
+                <button id="btnGrupos" onclick="window.location.href='admin-grupos.html'" class="btn-menu" style="display: none; background-color: #5765f2;">
+                    <span style="font-size: 2rem; display: block;">📂</span>
+                    Gerenciar Grupos
+                </button>
+            </div>
+        </div>
 
-            <button id="btnRelatorios" onclick="window.location.href='relatorio-presenca.html'" class="btn-menu" style="background-color: #ffa502;">
-                <span style="font-size: 2rem; display: block;">📊</span>
-                Acompanhamento
-            </button>
+        <div class="secao-grupo" id="secao-consultas">
+            <div class="secao-titulo">🔍 Consultas</div>
+            <div class="grid-menu-ajustado">
+                <button id="btnAniversariantes" onclick="window.location.href='aniversariantes.html'" class="btn-menu" style="background-color: #3498db;">
+                    <span style="font-size: 2rem; display: block;">🎂</span>
+                    Aniversariantes
+                </button>
 
-            <button id="btnLocais" onclick="window.location.href='admin-locais.html'" class="btn-menu" style="display: none; background-color: #2f3542;">
-                <span style="font-size: 2rem; display: block;">📍</span>
-                Gerenciar Locais
-            </button>
+                <button id="btnLista" onclick="window.location.href='lista-membros.html'" class="btn-menu" style="background-color: #57606f;">
+                    <span style="font-size: 2rem; display: block;">📋</span>
+                    Lista de Membros
+                </button>
+            </div>
+        </div>
 
-            <button id="btnGrupos" onclick="window.location.href='admin-grupos.html'" class="btn-menu" style="display: none; background-color: #5765f2;">
-                <span style="font-size: 2rem; display: block;">📂</span>
-                Gerenciar Grupos
-            </button>
+        <div class="secao-grupo" id="secao-relatorios">
+            <div class="secao-titulo">📊 Relatórios</div>
+            <div class="grid-menu-ajustado">
+                <button id="btnRelatorios" onclick="window.location.href='relatorio-presenca.html'" class="btn-menu" style="background-color: #ffa502;">
+                    <span style="font-size: 2rem; display: block;">📊</span>
+                    Acompanhamento
+                </button>
+            </div>
+        </div>
 
-            <button id="btnUsuarios" onclick="window.location.href='admin-usuarios.html'" class="btn-menu" style="display: none; background-color: #5765f2;">
-                <span style="font-size: 2rem; display: block;">🔑</span>
-                Gerenciar Usuários
-            </button>
+        <div class="secao-grupo" id="secao-admin">
+            <div class="secao-titulo">⚙️ Administração</div>
+            <div class="grid-menu-ajustado">
+                <button id="btnUsuarios" onclick="window.location.href='admin-usuarios.html'" class="btn-menu" style="display: none; background-color: #5765f2;">
+                    <span style="font-size: 2rem; display: block;">🔑</span>
+                    Gerenciar Usuários
+                </button>
 
-            <button onclick="logout()" class="btn-menu" style="background-color: #ff4757;">
-                <span style="font-size: 2rem; display: block;">🚪</span>
-                Sair
-            </button>
+                <button onclick="logout()" class="btn-menu" style="background-color: #ff4757;">
+                    <span style="font-size: 2rem; display: block;">🚪</span>
+                    Sair
+                </button>
+            </div>
         </div>
     </div>
 
@@ -74,11 +116,9 @@
             
             if (user) {
                 const saudacao = document.getElementById('boasVindas');
-                // Mantive o fallback para .nivel caso .permissao não esteja no objeto
                 const nivelExibicao = user.permissao || user.nivel || "N/A";
                 saudacao.innerText = `Logado como: ${user.nome} | Nível: ${nivelExibicao}`;
 
-                // Chama a função que você acabou de substituir no script.js
                 if (typeof ajustarInterfacePorPerfil === "function") {
                     ajustarInterfacePorPerfil();
                 }

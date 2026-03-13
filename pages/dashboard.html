@@ -7,121 +7,132 @@
     <link rel="stylesheet" href="../css/style.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        /* Estilos para manter o visual limpo e organizado por blocos */
-        .secao-grupo {
-            margin-bottom: 25px;
-            padding: 15px;
-            border-radius: 10px;
-            background-color: #f9f9f9;
-            border: 1px solid #eee;
-        }
-        .secao-titulo {
-            font-size: 1.1rem;
-            font-weight: bold;
-            color: #444;
-            margin-bottom: 15px;
-            border-bottom: 2px solid #ddd;
-            padding-bottom: 5px;
-        }
-        /* Mantendo o grid original para não quebrar seus botões */
-        .grid-menu-ajustado {
+        /* Estilo dos Botões Grandes (Menu Principal e Sub-menus) */
+        .grid-menu-limpo {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 15px;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 20px;
+            padding: 10px;
         }
+
+        .btn-principal {
+            aspect-ratio: 1 / 1; /* Faz o botão ser quadrado */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border: none;
+            border-radius: 15px;
+            color: white;
+            font-weight: bold;
+            font-size: 1.1rem;
+            cursor: pointer;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+        /* Cores dos Botões Mestres */
+        #btn-mestre-secretaria { background-color: #2c3e50; }
+        #btn-mestre-consultas { background-color: #2980b9; }
+        #btn-mestre-relatorios { background-color: #f39c12; }
+        #btn-mestre-admin { background-color: #8e44ad; }
+        
+        .btn-voltar {
+            width: 100%;
+            padding: 15px;
+            margin-bottom: 20px;
+            background-color: #7f8c8d;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        /* Esconde as sub-telas por padrão */
+        .sub-dashboard { display: none; }
     </style>
 </head>
 <body>
     <div class="container">
-        <header style="text-align: center; margin-bottom: 30px;">
-            <h1>Painel Administrativo</h1>
-            <p id="boasVindas" style="font-weight: bold; color: #555;">Bem-vindo!</p>
+        <header style="text-align: center; margin-bottom: 20px;">
+            <h1 id="titulo-painel">Painel Administrativo</h1>
+            <p id="boasVindas" style="font-weight: bold; color: #555;"></p>
         </header>
 
-        <div class="secao-grupo" id="secao-secretaria">
-            <div class="secao-titulo">💼 Secretaria</div>
-            <div class="grid-menu-ajustado">
-                <button id="btnChamada" onclick="window.location.href='chamada.html'" class="btn-menu" style="background-color: #2ed573;">
-                    <span style="font-size: 2rem; display: block;">🗓️</span>
-                    Fazer Chamada
-                </button>
+        <div id="menu-principal" class="grid-menu-limpo">
+            <button class="btn-principal" id="btn-mestre-secretaria" onclick="abrirSubMenu('view-secretaria', 'Secretaria')">
+                <span style="font-size: 2.5rem;">💼</span><br>Secretaria
+            </button>
+            <button class="btn-principal" id="btn-mestre-consultas" onclick="abrirSubMenu('view-consultas', 'Consultas')">
+                <span style="font-size: 2.5rem;">🔍</span><br>Consultas
+            </button>
+            <button class="btn-principal" id="btn-mestre-relatorios" onclick="abrirSubMenu('view-relatorios', 'Relatórios')">
+                <span style="font-size: 2.5rem;">📊</span><br>Relatórios
+            </button>
+            <button class="btn-principal" id="btn-mestre-admin" onclick="abrirSubMenu('view-admin', 'Administração')">
+                <span style="font-size: 2.5rem;">⚙️</span><br>Admin
+            </button>
+            <button class="btn-principal" style="background-color: #c0392b;" onclick="logout()">
+                <span style="font-size: 2.5rem;">🚪</span><br>Sair
+            </button>
+        </div>
 
-                <button id="btnEventos" onclick="window.location.href='eventos.html'" class="btn-menu" style="background-color: #e67e22;">
-                    <span style="font-size: 2rem; display: block;">⭐</span>
-                    CIAs (Eventos)
-                </button>
-
-                <button id="idBtnCadastro" onclick="window.location.href='cadastro-membro.html'" class="btn-menu" style="background-color: #57606f;">
-                    <span style="font-size: 2rem; display: block;">👤</span>
-                    Cadastrar Membro
-                </button>
-
-                <button id="btnLocais" onclick="window.location.href='admin-locais.html'" class="btn-menu" style="display: none; background-color: #2f3542;">
-                    <span style="font-size: 2rem; display: block;">📍</span>
-                    Gerenciar Locais
-                </button>
-
-                <button id="btnGrupos" onclick="window.location.href='admin-grupos.html'" class="btn-menu" style="display: none; background-color: #5765f2;">
-                    <span style="font-size: 2rem; display: block;">📂</span>
-                    Gerenciar Grupos
-                </button>
+        <div id="view-secretaria" class="sub-dashboard">
+            <button class="btn-voltar" onclick="voltarAoPrincipal()">⬅️ Voltar ao Início</button>
+            <div class="grid-menu-limpo">
+                <button id="btnChamada" class="btn-principal" style="background-color: #27ae60;" onclick="window.location.href='chamada.html'">🗓️ Chamada</button>
+                <button id="btnEventos" class="btn-principal" style="background-color: #e67e22;" onclick="window.location.href='eventos.html'">⭐ CIAs</button>
+                <button id="idBtnCadastro" class="btn-principal" style="background-color: #34495e;" onclick="window.location.href='cadastro-membro.html'">👤 Cadastrar</button>
+                <button id="btnLocais" class="btn-principal" style="background-color: #2c3e50;" onclick="window.location.href='admin-locais.html'">📍 Locais</button>
+                <button id="btnGrupos" class="btn-principal" style="background-color: #5765f2;" onclick="window.location.href='admin-grupos.html'">📂 Grupos</button>
             </div>
         </div>
 
-        <div class="secao-grupo" id="secao-consultas">
-            <div class="secao-titulo">🔍 Consultas</div>
-            <div class="grid-menu-ajustado">
-                <button id="btnAniversariantes" onclick="window.location.href='aniversariantes.html'" class="btn-menu" style="background-color: #3498db;">
-                    <span style="font-size: 2rem; display: block;">🎂</span>
-                    Aniversariantes
-                </button>
-
-                <button id="btnLista" onclick="window.location.href='lista-membros.html'" class="btn-menu" style="background-color: #57606f;">
-                    <span style="font-size: 2rem; display: block;">📋</span>
-                    Lista de Membros
-                </button>
+        <div id="view-consultas" class="sub-dashboard">
+            <button class="btn-voltar" onclick="voltarAoPrincipal()">⬅️ Voltar ao Início</button>
+            <div class="grid-menu-limpo">
+                <button id="btnAniversariantes" class="btn-principal" style="background-color: #3498db;" onclick="window.location.href='aniversariantes.html'">🎂 Niver</button>
+                <button id="btnLista" class="btn-principal" style="background-color: #57606f;" onclick="window.location.href='lista-membros.html'">📋 Lista</button>
             </div>
         </div>
 
-        <div class="secao-grupo" id="secao-relatorios">
-            <div class="secao-titulo">📊 Relatórios</div>
-            <div class="grid-menu-ajustado">
-                <button id="btnRelatorios" onclick="window.location.href='relatorio-presenca.html'" class="btn-menu" style="background-color: #ffa502;">
-                    <span style="font-size: 2rem; display: block;">📊</span>
-                    Acompanhamento
-                </button>
+        <div id="view-relatorios" class="sub-dashboard">
+            <button class="btn-voltar" onclick="voltarAoPrincipal()">⬅️ Voltar ao Início</button>
+            <div class="grid-menu-limpo">
+                <button id="btnRelatorios" class="btn-principal" style="background-color: #ffa502;" onclick="window.location.href='relatorio-presenca.html'">📊 Presença</button>
             </div>
         </div>
 
-        <div class="secao-grupo" id="secao-admin">
-            <div class="secao-titulo">⚙️ Administração</div>
-            <div class="grid-menu-ajustado">
-                <button id="btnUsuarios" onclick="window.location.href='admin-usuarios.html'" class="btn-menu" style="display: none; background-color: #5765f2;">
-                    <span style="font-size: 2rem; display: block;">🔑</span>
-                    Gerenciar Usuários
-                </button>
-
-                <button onclick="logout()" class="btn-menu" style="background-color: #ff4757;">
-                    <span style="font-size: 2rem; display: block;">🚪</span>
-                    Sair
-                </button>
+        <div id="view-admin" class="sub-dashboard">
+            <button class="btn-voltar" onclick="voltarAoPrincipal()">⬅️ Voltar ao Início</button>
+            <div class="grid-menu-limpo">
+                <button id="btnUsuarios" class="btn-principal" style="background-color: #8e44ad;" onclick="window.location.href='admin-usuarios.html'">🔑 Usuários</button>
+                <button id="btnPermissoes" class="btn-principal" style="background-color: #c0392b;">🛡️ Permissões</button>
             </div>
         </div>
+
     </div>
 
     <script src="../js/script.js"></script>
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const user = verificarAcesso(); 
-            
-            if (user) {
-                const saudacao = document.getElementById('boasVindas');
-                const nivelExibicao = user.permissao || user.nivel || "N/A";
-                saudacao.innerText = `Logado como: ${user.nome} | Nível: ${nivelExibicao}`;
+        function abrirSubMenu(idSub, nomeTitulo) {
+            document.getElementById('menu-principal').style.display = 'none';
+            document.getElementById(idSub).style.display = 'grid';
+            document.getElementById('titulo-painel').innerText = nomeTitulo;
+        }
 
-                if (typeof ajustarInterfacePorPerfil === "function") {
-                    ajustarInterfacePorPerfil();
-                }
+        function voltarAoPrincipal() {
+            // Esconde todas as sub-views
+            document.querySelectorAll('.sub-dashboard').forEach(view => view.style.display = 'none');
+            // Mostra o principal
+            document.getElementById('menu-principal').style.display = 'grid';
+            document.getElementById('titulo-painel').innerText = 'Painel Administrativo';
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const user = verificarAcesso();
+            if (user) {
+                document.getElementById('boasVindas').innerText = `Logado como: ${user.nome}`;
             }
         });
     </script>

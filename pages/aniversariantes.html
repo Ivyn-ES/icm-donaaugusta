@@ -119,7 +119,7 @@
                     <tr>
                         <th style="text-align: center; width: 60px;">Dia</th>
                         <th>Nome / Apelido</th>
-                        <th style="text-align: center; width: 80px;">Sexo</th>
+                        <th style="text-align: center; width: 80px;">Opção</th>
                     </tr>
                 </thead>
                 <tbody id="corpoTabelaAniversarios"></tbody>
@@ -138,8 +138,19 @@
     <script>
         let aniversariantesFiltrados = [];
 
+        // Função auxiliar para definir o emoji baseado em Sexo e Categoria
+        function obterEmoji(sexo, categoria) {
+            const cat = (categoria || "").toUpperCase();
+            const ehCia = cat.includes("CIA") || cat.includes("ADOLESCENTE") || cat.includes("CRIANÇA");
+
+            if (sexo === 'Masculino') {
+                return ehCia ? "👕" : "👔";
+            } else {
+                return ehCia ? "🌷" : "💐";
+            }
+        }
+
         async function gerarRelatorioAniversariantes() {
-            // Agora o valor é o texto do mês (Janeiro, Fevereiro...)
             const mesBusca = document.getElementById('filtroMes').value;
             const sexoBusca = document.getElementById('filtroSexo').value;
             const corpo = document.getElementById('corpoTabelaAniversarios');
@@ -149,21 +160,18 @@
             corpo.innerHTML = "<tr><td colspan='3' style='text-align:center;'>Buscando...</td></tr>";
 
             try {
-                // Busca usando as colunas reais: dia e mes
                 let { data: membros, error } = await _supabase
                     .from('membros')
-                    .select('nome, apelido, dia, mes, sexo')
+                    .select('nome, apelido, dia, mes, sexo, categoria')
                     .eq('status_registro', 'Ativo')
-                    .eq('mes', mesBusca); // Filtra direto no banco pelo nome do mês
+                    .eq('mes', mesBusca);
 
                 if (error) throw error;
 
-                // Filtro adicional de sexo no JS
                 aniversariantesFiltrados = membros.filter(m => {
                     return (sexoBusca === 'Todos' || m.sexo === sexoBusca);
                 });
 
-                // Ordena pelo número do dia
                 aniversariantesFiltrados.sort((a, b) => (a.dia || 0) - (b.dia || 0));
 
                 if (aniversariantesFiltrados.length === 0) {
@@ -174,13 +182,15 @@
 
                 msgVazia.style.display = 'none';
                 corpo.innerHTML = aniversariantesFiltrados.map(m => {
-                    const nomeExibir = m.apelido || m.nome;
-                    const iconSexo = m.sexo === 'Masculino' ? '👨‍🦱' : '👩‍🦰';
+                    // Prioriza apelido, se não tiver usa o primeiro nome
+                    const nomeExibir = m.apelido || m.nome.split(' ')[0];
+                    const iconDiferenciado = obterEmoji(m.sexo, m.categoria);
+
                     return `
                         <tr>
                             <td style="text-align: center; font-weight: bold;">${m.dia || '--'}</td>
                             <td>${nomeExibir}</td>
-                            <td style="text-align: center;">${iconSexo}</td>
+                            <td style="text-align: center; font-size: 1.2rem;">${iconDiferenciado}</td>
                         </tr>
                     `;
                 }).join('');
@@ -201,8 +211,9 @@
             let msg = `🎂 *Aniversariantes de ${mesNome} - ICM*\n\n`;
 
             aniversariantesFiltrados.forEach(m => {
-                const nome = m.apelido || m.nome.split(' ')[0];
-                msg += `*${m.dia}* - ${nome}\n`;
+                const nomeZap = m.apelido || m.nome.split(' ')[0];
+                const emojiZap = obterEmoji(m.sexo, m.categoria);
+                msg += `*${m.dia}* - ${nomeZap} ${emojiZap}\n`;
             });
 
             msg += `\n_Parabéns a todos! Que o Senhor os abençoe!_ 🙌`;

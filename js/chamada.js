@@ -1,5 +1,5 @@
 // ==========================================
-// SOLDADO: js/chamada.js - VERSÃO INTEGRAL COM ORDEM E DIRIGENTE CORRIGIDOS
+// SOLDADO: js/chamada.js - VERSÃO INTEGRAL COM APELIDO E LÓGICA DE DIRIGENTE
 // ==========================================
 
 let listaMembrosCache = [];
@@ -284,18 +284,30 @@ function prepararResumoWhatsApp() {
     const porcentagem = Math.round(((mAd + mCia) / totalMembrosCadastrados) * 100);
     const emojiPerto = porcentagem >= 50 ? "🟢" : "🔴";
 
-    // FUNÇÃO AUXILIAR PARA LIMPAR E PEGAR SÓ PRIMEIRO NOME
-    const pNome = (str) => str ? str.trim().split(' ')[0] : "";
-    const normalizar = (str) => str ? str.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim() : "";
+    // --- FUNÇÃO PARA PEGAR APELIDO (NOVO AJUSTE) ---
+    const obterApelidoOuNome = (valorInput) => {
+        if (!valorInput) return "";
+        const termo = valorInput.trim().toLowerCase();
+        // Busca na cache se existe membro com esse nome ou apelido
+        const m = listaMembrosCache.find(x => 
+            (x.nome && x.nome.toLowerCase() === termo) || 
+            (x.apelido && x.apelido.toLowerCase() === termo)
+        );
+        // Retorna apelido se existir, senão o primeiro nome do que foi digitado
+        return (m && m.apelido) ? m.apelido : valorInput.trim().split(' ')[0];
+    };
 
     // COLETA RESPONSÁVEIS
     const pregadorRaw = document.getElementById('pregador_nome').value.trim();
     const louvorRaw = document.getElementById('louvor_nome').value.trim();
     const obsRaw = document.getElementById('observacoes_culto').value.trim();
     
-    const pregadorPrimeiroNome = pNome(pregadorRaw);
-    const louvorPrimeiroNome = pNome(louvorRaw);
-    const portaoPrimeiroNome = pNome(document.getElementById('portao_nome').value);
+    // Lógica de Dirigente: Se nomes são iguais OU se louvor está vazio
+    const isDirigente = (pregadorRaw !== "" && (louvorRaw === "" || pregadorRaw.toLowerCase() === louvorRaw.toLowerCase()));
+
+    const pregadorExibir = obterApelidoOuNome(pregadorRaw);
+    const louvorExibir = obterApelidoOuNome(louvorRaw);
+    const portaoExibir = obterApelidoOuNome(document.getElementById('portao_nome').value);
     const texto = document.getElementById('texto_biblico').value.trim();
 
     // MONTAGEM DA MENSAGEM
@@ -309,27 +321,18 @@ function prepararResumoWhatsApp() {
     
     msg += `*Responsáveis:*\n`;
     
-    // Lógica de Dirigente Blindada
-    let isDirigente = false;
-    if (pregadorPrimeiroNome !== "") {
-        const pNorm = normalizar(pregadorPrimeiroNome);
-        const lNorm = normalizar(louvorRaw); 
-        const oNorm = normalizar(obsRaw);
-        
-        // Se o primeiro nome do pregador está contido no louvor OU nas observações
-        isDirigente = (lNorm.includes(pNorm) || oNorm.includes(pNorm));
-        
-        msg += `${isDirigente ? "🌟 Dirigente" : "🎤 Pregador"}: ${pregadorPrimeiroNome}\n`;
+    if (pregadorExibir) {
+        msg += `${isDirigente ? "🌟 Dirigente" : "🎤 Pregador"}: ${pregadorExibir}\n`;
     }
     
     if (texto) msg += `📖 Texto: ${texto}\n`;
     
-    // Só exibe louvor se não for o próprio dirigente/pregador
-    if (louvorPrimeiroNome && normalizar(louvorPrimeiroNome) !== normalizar(pregadorPrimeiroNome)) {
-        msg += `🎶 Louvor: ${louvorPrimeiroNome}\n`;
+    // Só aparece o louvor se não for Dirigente (para não repetir o nome)
+    if (louvorExibir && !isDirigente) {
+        msg += `🎶 Louvor: ${louvorExibir}\n`;
     }
     
-    if (portaoPrimeiroNome) msg += `🚪 Portão: ${portaoPrimeiroNome}\n`;
+    if (portaoExibir) msg += `🚪 Portão: ${portaoExibir}\n`;
     
     if (obsRaw) msg += `\n*Obs.:* ${obsRaw}`;
 

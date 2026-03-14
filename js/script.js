@@ -8,16 +8,12 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // ==========================================
-// 2. SEGURANÇA E ACESSO (VERSÃO DINÂMICA)
+// 2. SEGURANÇA E ACESSO
 // ==========================================
-
-// Função que vigia quem está logado
 function verificarAcesso() {
     const usuarioJson = localStorage.getItem('usuarioLogado');
     const usuario = usuarioJson ? JSON.parse(usuarioJson) : null;
-    
     if (!usuario) {
-        // Se não tem usuário e não estou na index, volta pro início
         if (!window.location.href.includes('index.html')) {
             window.location.href = '../index.html';
         }
@@ -26,53 +22,35 @@ function verificarAcesso() {
     return usuario;
 }
 
-// O SOLDADO DA SAÍDA: Função para deslogar
 function realizarLogout() {
-    console.log("Iniciando saída do sistema...");
-    
-    // 1. Limpa o "crachá" do navegador
+    console.log("Encerrando sessão...");
     localStorage.removeItem('usuarioLogado');
-    
-    // 2. Garante que o histórico não permita voltar com o botão "voltar" do navegador
-    window.location.replace('../index.html'); 
+    window.location.replace('../index.html');
 }
 
 // ==========================================
-// 3. FUNÇÃO DE LOGIN (VERSÃO FINAL)
+// 3. FUNÇÃO DE LOGIN (BLINDADA)
 // ==========================================
 async function realizarLogin(e) {
     if (e && typeof e.preventDefault === 'function') e.preventDefault();
     
-    console.log("Tentando realizar login...");
+    const elLogin = document.getElementById('login') || document.getElementById('usuario');
+    const elSenha = document.getElementById('senha');
 
-    // Pegamos os elementos para checar se existem
-    const campoLogin = document.getElementById('login') || document.getElementById('usuario');
-    const campoSenha = document.getElementById('senha');
-
-    if (!campoLogin || !campoSenha) {
-        console.error("Erro: Campos de login ou senha não encontrados no HTML!");
-        return;
-    }
-
-    const loginInput = campoLogin.value.trim();
-    const senhaInput = campoSenha.value.trim();
-
-    console.log("Dados capturados, consultando Supabase para:", loginInput);
+    if (!elLogin || !elSenha) return;
 
     const { data: usuario, error } = await _supabase
         .from('usuarios')
         .select('*')
-        .eq('login', loginInput)
-        .eq('senha', senhaInput)
+        .eq('login', elLogin.value.trim())
+        .eq('senha', elSenha.value.trim())
         .single();
 
     if (error || !usuario) {
-        console.error("Erro na consulta ou usuário inválido:", error);
         alert('Login ou senha incorretos!');
         return;
     }
 
-    console.log("Sucesso! Redirecionando...");
     localStorage.setItem('usuarioLogado', JSON.stringify(usuario));
     window.location.href = 'pages/dashboard.html';
 }
@@ -1128,94 +1106,62 @@ function prepararReenvioWhats(ev) {
 }
 
 // ==========================================
-// 15. CONTROLE DE VISIBILIDADE DINÂMICO
+// 15. O GENERAL (CONTROLE DE PERMISSÕES)
 // ==========================================
 async function ajustarInterfacePorPerfil() {
-    const usuarioJson = localStorage.getItem('usuarioLogado');
-    const user = usuarioJson ? JSON.parse(usuarioJson) : null;
+    const user = verificarAcesso();
     if (!user) return;
 
-    // Pegamos o nível (ex: coord, apoio, secre)
-    const nivel = (user.permissao || user.nivel || "").toLowerCase();
-
-    // 1. BUSCA AS PERMISSÕES NO SUPABASE
+    const nivel = (user.permissao || "").toLowerCase().trim();
     const { data: p, error } = await _supabase
         .from('niveis_acesso')
         .select('*')
         .eq('nivel_nome', nivel)
         .single();
 
-    if (error || !p) {
-        console.warn("Usando regras padrão pois não achei o nível no banco.");
-        return; // Se der erro, ele mantém como está no HTML
-    }
+    if (error || !p) return;
 
-// 2. MAPEAMENTO (ID do seu HTML : Coluna do Banco)
+    // IDs dos botões conforme seu Dashboard
     const mapa = {
         'btnChamada': p.p_chamada,
-        'btnEventos': p.p_cias,         // No HTML é btnEventos, no banco é p_cias
-        'idBtnCadastro': p.p_cadastro,   // Mantive o "id" no início como no seu HTML
         'btnLista': p.p_membros,
-        'btnAniversariantes': p.p_niver,
-        'btnLocais': p.p_igrejas,       // No HTML é btnLocais, no banco é p_igrejas
-        'btnGrupos': p.p_grupos,
+        'idBtnCadastro': p.p_cadastro,
         'btnUsuarios': p.p_usuarios,
         'btnPermissoes': p.p_permissoes,
-        'btnRelatorios': p.p_relatorios  // Adicionei este que estava no seu Modulo 8
+        'btnRelatorios': p.p_relatorios
     };
 
-    // 3. APLICA A VISIBILIDADE NOS BOTÕES INTERNOS
     for (const id in mapa) {
         const el = document.getElementById(id);
-        if (el) {
-            el.style.display = mapa[id] ? 'flex' : 'none';
-        }
+        if (el) el.style.display = mapa[id] ? 'flex' : 'none';
     }
 
-    // 4. LÓGICA DOS "MESTRES" (SEÇÕES)
-    // Se todos os botões de uma seção sumirem, podemos esconder o título/mestre dela
+    // Controle dos Mestres (Seções)
     const mestreAdmin = document.getElementById('btn-mestre-admin');
     if (mestreAdmin) {
-        // Só mostra o menu Admin se tiver permissão de Usuários OU Permissões
         mestreAdmin.style.display = (p.p_usuarios || p.p_permissoes) ? 'block' : 'none';
     }
-    
-    // Você pode repetir a lógica acima para os outros "Mestres" se desejar
 }
 
 // ==========================================
-// 16. INICIALIZAÇÃO DA PÁGINA
+// 16. INICIALIZAÇÃO ÚNICA
 // ==========================================
 document.addEventListener('DOMContentLoaded', () => {
-    console.log("DOM Carregado. Iniciando verificações...");
+    console.log("🚀 Sistema Iniciado");
+    const user = verificarAcesso();
+    const url = window.location.href;
 
-    const user = verificarAcesso(); 
-    const urlAtual = window.location.href;
-    
-    // 1. Lógica para a Página de Login
+    // Gatilho de Login
     const formLogin = document.getElementById('loginForm');
-    if (formLogin) {
-        console.log("Formulário de login detetado.");
-        formLogin.addEventListener('submit', realizarLogin);
-    }
+    if (formLogin) formLogin.addEventListener('submit', realizarLogin);
 
-    // 2. Lógica para páginas internas
+    // Gatilho de Logout (Ajustado para seu ID btnSair)
+    const btnSair = document.getElementById('btnSair');
+    if (btnSair) btnSair.addEventListener('click', realizarLogout);
+
     if (user) {
-        console.log("Usuário logado:", user.login);
         const elBoasVindas = document.getElementById('boasVindas');
-        if (elBoasVindas) {
-            elBoasVindas.innerText = `Olá, ${user.login}!`;
-        }
-
-        // Executa o Módulo 15
-        if (typeof ajustarInterfacePorPerfil === 'function') {
-            ajustarInterfacePorPerfil();
-        }
+        if (elBoasVindas) elBoasVindas.innerText = `Logado como: ${user.login}`;
+        ajustarInterfacePorPerfil();
     }
-    // Ativador do botão Sair
-    const btnSair = document.getElementById('btnSair'); 
-    if (btnSair) {
-        btnSair.addEventListener('click', realizarLogout);
-    }
-    
 });

@@ -1,5 +1,5 @@
 // ==========================================
-// SOLDADO: js/chamada.js - VERSÃO INTEGRAL
+// SOLDADO: js/chamada.js - VERSÃO INTEGRAL CORRIGIDA
 // ==========================================
 
 let listaMembrosCache = [];
@@ -24,14 +24,14 @@ async function renderizarListaChamada() {
         if (errM) throw errM;
         listaMembrosCache = membros;
 
-        // B. BUSCA PRESENÇAS (QUADRADINHOS - Tabela: presencas)
+        // B. BUSCA PRESENÇAS (Tabela: presencas)
         const { data: presencasExistentes } = await _supabase
             .from('presencas')
             .select('*')
             .eq('data_culto', dataSelecionada)
             .eq('tipo_evento', tipoEvento);
 
-        // C. BUSCA RESUMO DO CULTO (TEXTOS - Tabela: resumo_culto)
+        // C. BUSCA RESUMO DO CULTO (Tabela: resumo_culto)
         const { data: resumoDados } = await _supabase
             .from('resumo_culto')
             .select('*')
@@ -39,7 +39,7 @@ async function renderizarListaChamada() {
             .eq('tipo_evento', tipoEvento)
             .maybeSingle();
 
-        // D. PREENCHE OS CAMPOS DO RESUMO (O QUE JÁ FUNCIONAVA)
+        // D. PREENCHE OS CAMPOS DO RESUMO
         if (resumoDados) {
             document.getElementById('vis_adultos').value = resumoDados.vis_adultos || 0;
             document.getElementById('vis_cias').value = resumoDados.vis_cias || 0;
@@ -52,10 +52,14 @@ async function renderizarListaChamada() {
             document.getElementById('portao_funcao').value = resumoDados.portao_funcao || 'Membro';
             document.getElementById('observacoes_culto').value = resumoDados.observacoes || '';
         } else {
-            // Reseta se for data sem registro
+            // Limpa campos se for registro novo
             ['pregador_nome', 'texto_biblico', 'louvor_nome', 'portao_nome', 'observacoes_culto'].forEach(id => {
                 const el = document.getElementById(id);
                 if(el) el.value = '';
+            });
+            ['pregador_funcao', 'louvor_funcao', 'portao_funcao'].forEach(id => {
+                const el = document.getElementById(id);
+                if(el) el.value = 'Membro';
             });
             document.getElementById('vis_adultos').value = 0;
             document.getElementById('vis_cias').value = 0;
@@ -65,22 +69,18 @@ async function renderizarListaChamada() {
         const datalist = document.getElementById('listaMembrosSugestao');
         if(datalist) datalist.innerHTML = membros.map(m => `<option value="${m.apelido || m.nome}">`).join('');
 
-        // F. RENDERIZA LISTA NOMINAL (CRUZANDO COM TABELA PRESENCAS)
+        // F. RENDERIZA LISTA NOMINAL
         container.innerHTML = membros.map(m => {
-            // AQUI ESTÁ A CHAVE: Comparamos o ID do membro com o membro_id da tabela presencas
-            // Forçamos String para garantir que IDs como 123 coincidam com "123"
             const registro = presencasExistentes?.find(p => String(p.membro_id) === String(m.id));
-            
             const isVisitante = m.situacao === 'Visitante';
-            const partesNome = m.nome.split(' ');
-            const apelidoExibir = m.apelido || partesNome[0];
+            const apelidoExibir = m.apelido || m.nome.split(' ')[0];
 
             return `
             <div class="card-chamada">
                 <div style="flex: 1;">
                     <strong style="font-size: 1.1rem; color: #2c3e50; display: block;">${apelidoExibir}</strong>
                     <div style="display: flex; gap: 5px; align-items: center;">
-                        <small style="color: #7f8c8d;">(${partesNome.slice(0,2).join(' ')})</small>
+                        <small style="color: #7f8c8d;">(${m.nome.split(' ').slice(0,2).join(' ')})</small>
                         ${isVisitante ? '<small style="color: #e74c3c; font-weight: bold;">• Vis.</small>' : ''}
                     </div>
                 </div>
@@ -103,12 +103,10 @@ async function renderizarListaChamada() {
             </div>`;
         }).join('');
 
-        // G. ATUALIZA O PLACAR (Para que Ad: 0 mude para o valor correto assim que carregar)
         atualizarPlacar();
 
     } catch (err) {
         console.error("Erro na renderização:", err);
-        container.innerHTML = "<p style='text-align:center; padding:20px;'>Erro ao carregar dados.</p>";
     }
 }
 
@@ -122,7 +120,7 @@ function marcarExclusivo(el) {
     atualizarPlacar();
 }
 
-// 3. AUTO-COMPLETAR FUNÇÃO (VINCULADO AO CAMPO FUNÇÃO DA TABELA MEMBROS)
+// 3. AUTO-COMPLETAR FUNÇÃO
 function vincularAutoCompletar(idInput) {
     const input = document.getElementById(idInput);
     if (!input) return;
@@ -155,7 +153,7 @@ function vincularAutoCompletar(idInput) {
 }
 ['pregador_nome', 'louvor_nome', 'portao_nome'].forEach(vincularAutoCompletar);
 
-// 4. PLACAR (CATEGORIAS EXATAS)
+// 4. PLACAR
 function atualizarPlacar() {
     let mAd = 0, mCia = 0, vAdL = 0, vCiaL = 0;
     const listaCias = ['Adolescente', 'Intermediário', 'Criança'];
@@ -185,11 +183,12 @@ function atualizarPlacar() {
     document.getElementById('cont_total').innerText = mAd + mCia + vAdL + vAdM + vCiaL + vCiaM;
 }
 
-// 5. SALVAR TUDO
+// 5. SALVAR TUDO (CORREÇÃO DO ERRO 400 E PERSISTÊNCIA DE TEXTO)
 async function salvarChamada() {
     const data_culto = document.getElementById('data_chamada').value;
     const tipo_evento = document.getElementById('tipo_evento').value;
 
+    // A. Coleta Presenças
     const presencas = [];
     document.querySelectorAll('.card-chamada').forEach(card => {
         const ck = card.querySelector('input[type="checkbox"]:checked');
@@ -206,8 +205,10 @@ async function salvarChamada() {
         }
     });
 
+    // B. Objeto Resumo (Atenção aos nomes exatos da sua tabela resumo_culto)
     const resumo = {
-        data_culto, tipo_evento,
+        data_culto,
+        tipo_evento,
         vis_adultos: parseInt(document.getElementById('vis_adultos').value) || 0,
         vis_cias: parseInt(document.getElementById('vis_cias').value) || 0,
         pregador_nome: document.getElementById('pregador_nome').value,
@@ -221,12 +222,22 @@ async function salvarChamada() {
     };
 
     try {
+        // 1. Salvar Presenças (Limpa e Insere)
         await _supabase.from('presencas').delete().eq('data_culto', data_culto).eq('tipo_evento', tipo_evento);
-        if (presencas.length > 0) await _supabase.from('presencas').insert(presencas);
-        await _supabase.from('resumo_culto').upsert(resumo, { onConflict: 'data_culto, tipo_evento' });
-        alert("✅ Salvo com sucesso!");
+        if (presencas.length > 0) {
+            await _supabase.from('presencas').insert(presencas);
+        }
+
+        // 2. Salvar Resumo (Limpa e Insere para evitar erro 400 do Upsert)
+        await _supabase.from('resumo_culto').delete().eq('data_culto', data_culto).eq('tipo_evento', tipo_evento);
+        const { error: errorResumo } = await _supabase.from('resumo_culto').insert([resumo]);
+        
+        if (errorResumo) throw errorResumo;
+
+        alert("✅ Registro do Culto salvo com sucesso!");
     } catch (e) {
-        alert("❌ Erro ao salvar.");
+        console.error("Erro ao salvar:", e);
+        alert("❌ Erro ao salvar dados. Verifique a conexão.");
     }
 }
 

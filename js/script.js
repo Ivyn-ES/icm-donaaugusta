@@ -1,59 +1,42 @@
 console.log("🚀 O Script carregou com sucesso!");
-// ==========================================
-// 1. CONFIGURAÇÃO E CONEXÃO
-// ==========================================
-const SUPABASE_URL = 'https://pxjczmjhzopfxwlmpjfv.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB4amN6bWpoem9wZnh3bG1wamZ2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE1MjUzMjYsImV4cCI6MjA4NzEwMTMyNn0.OfekQPuYUwsZu5X9_lPDGBbVTZYBvAQ5KdiFx3TFOCY';
-
-const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // ==========================================
-// 2. SEGURANÇA E ACESSO
+// 16. INICIALIZAÇÃO (O MAESTRO)
 // ==========================================
-function verificarAcesso() {
-    const usuarioJson = localStorage.getItem('usuarioLogado');
-    const usuario = usuarioJson ? JSON.parse(usuarioJson) : null;
-    if (!usuario) {
-        if (!window.location.href.includes('index.html')) {
-            window.location.href = '../index.html';
+document.addEventListener('DOMContentLoaded', async () => {
+    console.log("🚀 Sistema ICM Dona Augusta: Inicializando...");
+
+    // 1. O soldado 'auth.js' verifica se o usuário pode estar aqui
+    const user = verificarAcesso(); 
+
+    // 2. Se for a página de Login (index), ativa o formulário
+    const formLogin = document.getElementById('loginForm');
+    if (formLogin) {
+        formLogin.addEventListener('submit', realizarLogin);
+    }
+
+    // 3. Se o usuário estiver logado (Dashboard e outras páginas)
+    if (user) {
+        console.log("✅ Usuário validado:", user.login);
+
+        // Exibe o nome no cabeçalho (se o elemento existir)
+        const elBoasVindas = document.getElementById('boasVindas');
+        if (elBoasVindas) {
+            elBoasVindas.innerText = `Logado como: ${user.nome || user.login}`;
         }
-        return null;
+
+        // Se o soldado 'permissoes.js' estiver presente, ele ajusta os botões
+        if (typeof ajustarInterfacePorPerfil === 'function') {
+            await ajustarInterfacePorPerfil();
+        }
+
+        // Ativa o botão de Sair (ID btnSair do seu Dashboard)
+        const btnSair = document.getElementById('btnSair');
+        if (btnSair) {
+            btnSair.addEventListener('click', logout);
+        }
     }
-    return usuario;
-}
-
-function realizarLogout() {
-    console.log("Encerrando sessão...");
-    localStorage.removeItem('usuarioLogado');
-    window.location.replace('../index.html');
-}
-
-// ==========================================
-// 3. FUNÇÃO DE LOGIN (BLINDADA)
-// ==========================================
-async function realizarLogin(e) {
-    if (e && typeof e.preventDefault === 'function') e.preventDefault();
-    
-    const elLogin = document.getElementById('login') || document.getElementById('usuario');
-    const elSenha = document.getElementById('senha');
-
-    if (!elLogin || !elSenha) return;
-
-    const { data: usuario, error } = await _supabase
-        .from('usuarios')
-        .select('*')
-        .eq('login', elLogin.value.trim())
-        .eq('senha', elSenha.value.trim())
-        .single();
-
-    if (error || !usuario) {
-        alert('Login ou senha incorretos!');
-        return;
-    }
-
-    localStorage.setItem('usuarioLogado', JSON.stringify(usuario));
-    window.location.href = 'pages/dashboard.html';
-}
+});
 
 // ==========================================
 // 4. MÓDULO DE CHAMADA (PRESENÇA) - ATUALIZADO COM FILTRO
@@ -1143,25 +1126,3 @@ async function ajustarInterfacePorPerfil() {
     }
 }
 
-// ==========================================
-// 16. INICIALIZAÇÃO ÚNICA
-// ==========================================
-document.addEventListener('DOMContentLoaded', () => {
-    console.log("🚀 Sistema Iniciado");
-    const user = verificarAcesso();
-    const url = window.location.href;
-
-    // Gatilho de Login
-    const formLogin = document.getElementById('loginForm');
-    if (formLogin) formLogin.addEventListener('submit', realizarLogin);
-
-    // Gatilho de Logout (Ajustado para seu ID btnSair)
-    const btnSair = document.getElementById('btnSair');
-    if (btnSair) btnSair.addEventListener('click', realizarLogout);
-
-    if (user) {
-        const elBoasVindas = document.getElementById('boasVindas');
-        if (elBoasVindas) elBoasVindas.innerText = `Logado como: ${user.login}`;
-        ajustarInterfacePorPerfil();
-    }
-});

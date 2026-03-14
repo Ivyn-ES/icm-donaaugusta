@@ -1,41 +1,44 @@
 // ==========================================
-// 2. SEGURANÇA E AUTENTICAÇÃO
+// SOLDADO: js/auth.js
 // ==========================================
 
-// Verifica se o usuário tem permissão para estar na página
 function verificarAcesso() {
     const usuarioJson = localStorage.getItem('usuarioLogado');
     const usuario = usuarioJson ? JSON.parse(usuarioJson) : null;
     
-    if (!usuario && !window.location.href.includes('index.html')) {
-        // Se não houver sessão, manda para a raiz (index.html)
-        const path = window.location.href.includes('/pages/') ? '../index.html' : 'index.html';
-        window.location.href = path;
+    if (!usuario) {
+        if (!window.location.href.includes('index.html')) {
+            // Verifica se está na pasta pages para saber como voltar
+            const naPastaPages = window.location.pathname.includes('/pages/');
+            window.location.href = naPastaPages ? '../index.html' : 'index.html';
+        }
         return null;
     }
     return usuario;
 }
 
-// A função que o seu botão "Sair" do Dashboard chama
-function logout() {
+// Criamos os dois nomes para garantir que seu HTML funcione de qualquer jeito
+function logout() { realizarLogout(); }
+
+function realizarLogout() {
     console.log("Encerrando sessão...");
     localStorage.removeItem('usuarioLogado');
-    
-    // Identifica se estamos dentro da pasta /pages/ ou na raiz
     const naPastaPages = window.location.pathname.includes('/pages/');
     const destino = naPastaPages ? '../index.html' : 'index.html';
-    
     window.location.replace(destino);
 }
 
-// Função de Login (Usada na index.html)
 async function realizarLogin(e) {
-    if (e) e.preventDefault();
+    if (e && typeof e.preventDefault === 'function') e.preventDefault();
     
-    const elLogin = document.getElementById('login') || document.getElementById('usuario');
+    // Procura por qualquer um dos IDs que você costuma usar
+    const elLogin = document.getElementById('usuario') || document.getElementById('login');
     const elSenha = document.getElementById('senha');
 
-    if (!elLogin || !elSenha) return;
+    if (!elLogin || !elSenha) {
+        console.error("Campos de login não encontrados no HTML!");
+        return;
+    }
 
     const { data: usuario, error } = await _supabase
         .from('usuarios')
@@ -50,5 +53,7 @@ async function realizarLogin(e) {
     }
 
     localStorage.setItem('usuarioLogado', JSON.stringify(usuario));
+    
+    // Se logou com sucesso, vai para o dashboard
     window.location.href = 'pages/dashboard.html';
 }

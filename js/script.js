@@ -7,12 +7,13 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // ==========================================
-// 2. SEGURANÇA E ACESSO (VERSÃO INTEGRAL)
+// 2. SEGURANÇA E ACESSO (VERSÃO DINÂMICA)
 // ==========================================
 function verificarAcesso() {
     const usuarioJson = localStorage.getItem('usuarioLogado');
     const usuario = usuarioJson ? JSON.parse(usuarioJson) : null;
     
+    // 1. Se não houver usuário logado, manda para o Login
     if (!usuario) {
         if (!window.location.href.includes('index.html')) {
             window.location.href = '../index.html';
@@ -20,82 +21,9 @@ function verificarAcesso() {
         return null;
     }
 
-    const urlAtual = window.location.href;
-    const nivel = (usuario.permissao || usuario.nivel || "").toLowerCase();
-
-    // 1. BLOQUEIO PARA NÍVEL LIVRE / MEMBRO
-    if (nivel === 'livre' || nivel === 'membro') {
-        const proibidas = [
-            'dashboard.html', 'cadastro-membro.html', 'admin-usuarios.html', 
-            'admin-grupos.html', 'admin-locais.html', 'chamada.html', 
-            'lista-membros.html', 'relatorio-presenca.html', 'eventos.html'
-        ];
-        if (proibidas.some(p => urlAtual.includes(p))) {
-            window.location.href = 'livre.html';
-            return usuario;
-        }
-    }
-
-    // 2. PROTEÇÃO DE PÁGINAS ADMINISTRATIVAS
-    // Apenas Admin, Master e Secretário entram aqui
-    const adminPaginas = ['admin-usuarios.html', 'admin-grupos.html', 'admin-locais.html'];
-    const ehAdminOuSecretario = (nivel === 'admin' || nivel === 'master' || nivel === 'secretario');
-
-    if (!ehAdminOuSecretario) {
-        if (adminPaginas.some(p => urlAtual.includes(p))) {
-            window.location.href = 'dashboard.html';
-            return usuario;
-        }
-    }
-
-    // 3. RESTRIÇÃO DO RESPONSÁVEL (Não acessa módulo consolidado de CIAs)
-    if (nivel === 'responsavel' && urlAtual.includes('eventos.html')) {
-        alert("⚠️ Este módulo é restrito ao Apoio e Secretaria.");
-        window.location.href = 'dashboard.html';
-        return usuario;
-    }
-
+    // 2. O acesso agora é controlado dinamicamente pelos botões do Dashboard.
+    // O sistema apenas garante que a pessoa está autenticada.
     return usuario;
-}
-
-async function realizarLogin(usuarioDigitado, senhaDigitada) {
-    try {
-        const { data, error } = await _supabase
-            .from('usuarios')
-            .select('*')
-            .ilike('login', usuarioDigitado.trim()) 
-            .eq('senha', senhaDigitada.trim())
-            .single();
-
-        if (error || !data) {
-            alert('❌ Login falhou! Usuário ou senha incorretos.');
-            return;
-        }
-
-        // Padronização da sessão (usando permissão do banco)
-        localStorage.setItem('usuarioLogado', JSON.stringify({
-            nome: data.login.toLowerCase(),
-            login: data.login.toLowerCase(),
-            nivel: data.permissao.toLowerCase(),
-            permissao: data.permissao.toLowerCase(),
-            grupo: data.grupo_vinculado
-        }));
-
-        const perm = data.permissao.toLowerCase();
-        if (perm === 'livre' || perm === 'membro') {
-            window.location.href = 'pages/livre.html';
-        } else {
-            window.location.href = 'pages/dashboard.html';
-        }
-    } catch (err) {
-        console.error('Erro de Login:', err);
-        alert('⚠️ Erro ao conectar ao servidor.');
-    }
-}
-
-function logout() {
-    localStorage.removeItem('usuarioLogado');
-    window.location.href = '../index.html';
 }
 
 // ==========================================
@@ -895,52 +823,16 @@ async function criarUsuario(dados) {
 }
 
 // ==========================================
-// 8. INTERFACE E PERMISSÕES (ATUALIZADO)
+// 8. INTERFACE E PERMISSÕES (APOSENTADO)
 // ==========================================
+/**
+ * ESTA FUNÇÃO FOI DESATIVADA.
+ * O controle de visibilidade agora é feito pelo MÓDULO 15 de forma dinâmica 
+ * buscando as informações diretamente da tabela 'niveis_acesso' no Supabase.
+ */
 function ajustarInterfacePorPerfil() {
-    const user = JSON.parse(localStorage.getItem('usuarioLogado'));
-    if (!user) return;
-    const nivel = (user.permissao || user.nivel || "").toLowerCase(); 
-    
-    const b = {
-        chamada: document.getElementById('btnChamada'),
-        cadastro: document.getElementById('idBtnCadastro'),
-        lista: document.getElementById('btnLista'),
-        grupos: document.getElementById('btnGrupos'),
-        usuarios: document.getElementById('btnUsuarios'),
-        relatorios: document.getElementById('btnRelatorios'),
-        aniversariantes: document.getElementById('btnAniversariantes')
-    };
-
-    // 1. ADMIN / MASTER / PASTOR (Vê tudo)
-    if (nivel === 'admin' || nivel === 'master' || nivel === 'pastor') { 
-        Object.values(b).forEach(el => { if(el) el.style.display = 'flex'; });
-    } 
-    // 2. COORDENADORA (Vê Lista e Aniversariantes)
-    else if (nivel === 'coordenadora') {
-        if (b.lista) b.lista.style.display = 'flex';
-        if (b.aniversariantes) b.aniversariantes.style.display = 'flex';
-        [b.chamada, b.cadastro, b.grupos, b.usuarios, b.relatorios].forEach(el => { if(el) el.style.display = 'none'; });
-    }
-    // 3. APOIO (Vê Chamada e Aniversariantes) - Ajustado conforme sua ideia
-    else if (nivel === 'apoio') {
-        if (b.chamada) b.chamada.style.display = 'flex';
-        if (b.aniversariantes) b.aniversariantes.style.display = 'flex'; // Liberado para Apoio
-        [b.cadastro, b.lista, b.relatorios, b.grupos, b.usuarios].forEach(el => { if(el) el.style.display = 'none'; });
-    }
-    // 4. USER (Vê Lista, Relatórios e Aniversariantes)
-    else if (nivel === 'user') {
-        if (b.lista) b.lista.style.display = 'flex';
-        if (b.relatorios) b.relatorios.style.display = 'flex';
-        if (b.aniversariantes) b.aniversariantes.style.display = 'flex'; // Liberado para User
-        [b.chamada, b.cadastro, b.grupos, b.usuarios].forEach(el => { if(el) el.style.display = 'none'; });
-    }
-    // 5. LIVRE (Não vê nada do menu administrativo)
-    else if (nivel === 'livre') {
-        Object.values(b).forEach(el => { if(el) el.style.display = 'none'; });
-    }
+    console.log("Módulo 8 (Antigo) ignorado. O sistema agora usa o Módulo 15 Dinâmico.");
 }
-
 // ==========================================
 // 9. RELATÓRIOS E ANIVERSARIANTES
 // ==========================================

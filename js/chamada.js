@@ -1,5 +1,5 @@
 // ==========================================
-// SOLDADO: js/chamada.js - VERSÃO FINALÍSSIMA
+// SOLDADO: js/chamada.js - VERSÃO DEFINITIVA
 // ==========================================
 
 let listaMembrosCache = [];
@@ -24,14 +24,14 @@ async function renderizarListaChamada() {
         if (errM) throw errM;
         listaMembrosCache = membros;
 
-        // B. BUSCA PRESENÇAS EXISTENTES
+        // B. BUSCA PRESENÇAS (QUADRADINHOS)
         const { data: presencasExistentes, error: errP } = await _supabase
             .from('presencas')
             .select('membro_id, status')
             .eq('data_culto', dataSelecionada)
             .eq('tipo_evento', tipoEvento);
 
-        // C. BUSCA RESUMO DO CULTO
+        // C. BUSCA RESUMO DO CULTO (CAMPOS DE TEXTO)
         const { data: resumoDados } = await _supabase
             .from('resumo_culto')
             .select('*')
@@ -39,7 +39,7 @@ async function renderizarListaChamada() {
             .eq('tipo_evento', tipoEvento)
             .maybeSingle();
 
-        // D. PREENCHE CAMPOS DO RESUMO
+        // D. PREENCHE OS CAMPOS DO RESUMO
         if (resumoDados) {
             document.getElementById('vis_adultos').value = resumoDados.vis_adultos || 0;
             document.getElementById('vis_cias').value = resumoDados.vis_cias || 0;
@@ -51,27 +51,32 @@ async function renderizarListaChamada() {
             document.getElementById('portao_nome').value = resumoDados.portao_nome || '';
             document.getElementById('portao_funcao').value = resumoDados.portao_funcao || 'Membro';
             document.getElementById('observacoes_culto').value = resumoDados.observacoes || '';
+        } else {
+            // Limpa se não houver registro para a data
+            ['pregador_nome', 'texto_biblico', 'louvor_nome', 'portao_nome', 'observacoes_culto'].forEach(id => document.getElementById(id).value = '');
+            ['pregador_funcao', 'louvor_funcao', 'portao_funcao'].forEach(id => document.getElementById(id).value = 'Membro');
+            document.getElementById('vis_adultos').value = 0;
+            document.getElementById('vis_cias').value = 0;
         }
 
-        // E. ALIMENTA SUGESTÕES (DATALIST)
+        // E. ALIMENTA DATALIST DE SUGESTÕES
         const datalist = document.getElementById('listaMembrosSugestao');
         datalist.innerHTML = membros.map(m => `<option value="${m.apelido || m.nome}">`).join('');
 
-        // F. RENDERIZA LISTA (CORREÇÃO DE COMPARAÇÃO DE ID)
+        // F. RENDERIZA LISTA NOMINAL COM STATUS ANTERIOR
         container.innerHTML = membros.map(m => {
-            // Buscamos se o ID do membro está na lista de presenças do dia
+            // COMPARAÇÃO SEGURA: Transforma ambos os IDs em String para evitar erro de tipo (int8 vs text)
             const registro = presencasExistentes?.find(p => String(p.membro_id) === String(m.id));
             
             const isVisitante = m.situacao === 'Visitante';
-            const partesNome = m.nome.split(' ');
-            const apelidoExibir = m.apelido || partesNome[0];
+            const nomeExibicao = m.apelido || m.nome.split(' ')[0];
 
             return `
             <div class="card-chamada">
                 <div style="flex: 1;">
-                    <strong style="font-size: 1.1rem; color: #2c3e50; display: block;">${apelidoExibir}</strong>
+                    <strong style="font-size: 1.1rem; color: #2c3e50; display: block;">${nomeExibicao}</strong>
                     <div style="display: flex; gap: 5px; align-items: center;">
-                        <small style="color: #7f8c8d;">(${partesNome.slice(0,2).join(' ')})</small>
+                        <small style="color: #7f8c8d;">(${m.nome.split(' ').slice(0,2).join(' ')})</small>
                         ${isVisitante ? '<small style="color: #e74c3c; font-weight: bold;">• Vis.</small>' : ''}
                     </div>
                 </div>
@@ -96,86 +101,82 @@ async function renderizarListaChamada() {
 
         atualizarPlacar();
     } catch (err) {
-        console.error("Erro na renderização:", err);
+        console.error("Erro Geral:", err);
+        container.innerHTML = "<p style='text-align:center; padding:20px;'>Erro ao carregar dados.</p>";
     }
 }
 
 // 2. EXCLUSIVIDADE DE MARCAÇÃO
 function marcarExclusivo(el) {
-    const checks = el.parentElement.querySelectorAll('input[type="checkbox"]');
+    const pai = el.parentElement;
+    const checks = pai.querySelectorAll('input[type="checkbox"]');
     if (el.checked) {
         checks.forEach(c => { if(c !== el) c.checked = false; });
     }
     atualizarPlacar();
 }
 
-// 3. AUTO-COMPLETAR FUNÇÃO (Ajustado para ler campo 'funcao' da tabela membros)
+// 3. AUTO-COMPLETAR FUNÇÃO (Busca campo 'funcao' da tabela membros)
 function vincularAutoCompletar(idInput) {
     const input = document.getElementById(idInput);
     if (!input) return;
 
-    const preencherFuncao = () => {
-        const valorDigitado = input.value.trim().toLowerCase();
-        // Busca no cache pelo apelido ou nome completo
+    const acao = () => {
+        const valor = input.value.trim().toLowerCase();
         const membro = listaMembrosCache.find(m => 
-            (m.apelido && m.apelido.toLowerCase() === valorDigitado) || 
-            (m.nome.toLowerCase() === valorDigitado)
+            (m.apelido && m.apelido.toLowerCase() === valor) || 
+            (m.nome.toLowerCase() === valor)
         );
 
-        if (membro) {
-            const idSelect = idInput.replace('_nome', '_funcao');
-            const selectFuncao = document.getElementById(idSelect);
-            
-            if (selectFuncao && membro.funcao) {
-                // Normaliza para comparar (ex: Diácono -> diacono)
+        if (membro && membro.funcao) {
+            const select = document.getElementById(idInput.replace('_nome', '_funcao'));
+            if (select) {
                 const normal = (t) => t.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
-                const funcaoMembro = normal(membro.funcao);
+                const fMembro = normal(membro.funcao);
 
-                for (let i = 0; i < selectFuncao.options.length; i++) {
-                    if (normal(selectFuncao.options[i].text) === funcaoMembro || normal(selectFuncao.options[i].value) === funcaoMembro) {
-                        selectFuncao.selectedIndex = i;
+                for (let i = 0; i < select.options.length; i++) {
+                    const textoOp = normal(select.options[i].text);
+                    if (textoOp === fMembro) {
+                        select.selectedIndex = i;
                         break;
                     }
                 }
             }
         }
     };
-
-    input.addEventListener('change', preencherFuncao);
-    input.addEventListener('input', preencherFuncao);
+    input.addEventListener('input', acao);
+    input.addEventListener('change', acao);
 }
-
 ['pregador_nome', 'louvor_nome', 'portao_nome'].forEach(vincularAutoCompletar);
 
-// 4. PLACAR (Categorias Exatas: Adulto, Jovem, Adolescente, Intermediário, Criança)
+// 4. PLACAR (Categorias Adulto, Jovem, Adolescente, Intermediário, Criança)
 function atualizarPlacar() {
-    let mAd = 0, mCia = 0, vAdList = 0, vCiaList = 0;
-
+    let mAd = 0, mCia = 0, vAdL = 0, vCiaL = 0;
     const listaCias = ['Adolescente', 'Intermediário', 'Criança'];
 
     document.querySelectorAll('.card-chamada').forEach(card => {
-        const check = card.querySelector('input[type="checkbox"]:checked');
-        if (check) {
-            const cat = check.getAttribute('data-cat'); // Pega do banco
-            const sit = check.getAttribute('data-sit'); // Membro ou Visitante
-            const ehCia = listaCias.includes(cat);
+        const ck = card.querySelector('input[type="checkbox"]:checked');
+        if (ck) {
+            const cat = ck.getAttribute('data-cat');
+            const sit = ck.getAttribute('data-sit');
+            const cia = listaCias.includes(cat);
 
             if (sit === 'Membro') {
-                if (ehCia) mCia++; else mAd++;
+                if (cia) mCia++; else mAd++;
             } else {
-                if (ehCia) vCiaList++; else vAdList++;
+                if (cia) vCiaL++; else vAdL++;
             }
         }
     });
 
-    const vAdMan = parseInt(document.getElementById('vis_adultos').value) || 0;
-    const vCiaMan = parseInt(document.getElementById('vis_cias').value) || 0;
+    const vAdM = parseInt(document.getElementById('vis_adultos').value) || 0;
+    const vCiaM = parseInt(document.getElementById('vis_cias').value) || 0;
 
     document.getElementById('cont_membros_adultos').innerText = mAd;
     document.getElementById('cont_membros_cias').innerText = mCia;
-    document.getElementById('cont_vis_adultos_display').innerText = vAdList + vAdMan;
-    document.getElementById('cont_vis_cias_display').innerText = vCiaList + vCiaMan;
-    document.getElementById('cont_total').innerText = mAd + mCia + vAdList + vAdMan + vCiaList + vCiaMan;
+    document.getElementById('cont_vis_adultos_display').innerText = vAdL + vAdM;
+    document.getElementById('cont_vis_cias_display').innerText = vCiaL + vCiaM;
+    document.getElementById('cont_total').innerText = mAd + mCia + vAdL + vAdM + vCiaL + vCiaM;
 }
 
 // 5. SALVAR TUDO
@@ -185,13 +186,13 @@ async function salvarChamada() {
 
     const presencas = [];
     document.querySelectorAll('.card-chamada').forEach(card => {
-        const check = card.querySelector('input[type="checkbox"]:checked');
-        if (check) {
+        const ck = card.querySelector('input[type="checkbox"]:checked');
+        if (ck) {
             let status = 'P';
-            if (check.classList.contains('check-icm')) status = 'I';
-            if (check.classList.contains('check-maanaim')) status = 'M';
+            if (ck.classList.contains('check-icm')) status = 'I';
+            if (ck.classList.contains('check-maanaim')) status = 'M';
             presencas.push({ 
-                membro_id: check.getAttribute('data-id'), 
+                membro_id: ck.getAttribute('data-id'), 
                 data_culto, 
                 tipo_evento, 
                 status 
@@ -214,22 +215,22 @@ async function salvarChamada() {
     };
 
     try {
+        // Limpa presenças do dia/evento para evitar duplicados
         await _supabase.from('presencas').delete().eq('data_culto', data_culto).eq('tipo_evento', tipo_evento);
+        // Salva novas
         if (presencas.length > 0) await _supabase.from('presencas').insert(presencas);
+        // Salva resumo
         await _supabase.from('resumo_culto').upsert(resumo, { onConflict: 'data_culto, tipo_evento' });
+        
         alert("✅ Salvo com sucesso!");
     } catch (e) {
         alert("❌ Erro ao salvar.");
     }
 }
 
-// 6. AJUSTE DE VISITANTES E WHATSAPP
+// 6. AUXILIARES
 function ajustarVisitante(id, mudanca) {
     const input = document.getElementById(id);
     input.value = Math.max(0, (parseInt(input.value) || 0) + mudanca);
     atualizarPlacar();
-}
-
-function enviarResumoWhatsapp() {
-    // Mesma lógica anterior...
 }

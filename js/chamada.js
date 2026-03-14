@@ -1,5 +1,5 @@
 // ==========================================
-// SOLDADO: js/chamada.js - VERSÃO FINALÍSSIMA
+// SOLDADO: js/chamada.js - VERSÃO FINAL (CORRIGIDA)
 // ==========================================
 
 let listaMembrosCache = [];
@@ -24,8 +24,8 @@ async function renderizarListaChamada() {
         if (errM) throw errM;
         listaMembrosCache = membros;
 
-        // B. BUSCA PRESENÇAS
-        const { data: presencasExistentes, error: errP } = await _supabase
+        // B. BUSCA PRESENÇAS EXISTENTES
+        const { data: presencasExistentes } = await _supabase
             .from('presencas')
             .select('*')
             .eq('data_culto', dataSelecionada)
@@ -39,7 +39,7 @@ async function renderizarListaChamada() {
             .eq('tipo_evento', tipoEvento)
             .maybeSingle();
 
-        // D. PREENCHE OS CAMPOS DO RESUMO
+        // D. PREENCHE CAMPOS DO RESUMO
         if (resumoDados) {
             document.getElementById('vis_adultos').value = resumoDados.vis_adultos || 0;
             document.getElementById('vis_cias').value = resumoDados.vis_cias || 0;
@@ -58,13 +58,15 @@ async function renderizarListaChamada() {
             document.getElementById('vis_cias').value = 0;
         }
 
-        // E. RENDERIZA LISTA NOMINAL
+        // E. ALIMENTA SUGESTÕES
         const datalist = document.getElementById('listaMembrosSugestao');
         datalist.innerHTML = membros.map(m => `<option value="${m.apelido || m.nome}">`).join('');
 
+        // F. RENDERIZA LISTA (COMPARANDO IDS COM SEGURANÇA)
         container.innerHTML = membros.map(m => {
-            // Comparação forçada para String para evitar erro de tipo int8
+            // Compara IDs convertendo ambos para String para evitar erro de tipo (int8 vs text)
             const registro = presencasExistentes?.find(p => String(p.membro_id) === String(m.id));
+            
             const isVisitante = m.situacao === 'Visitante';
             const partesNome = m.nome.split(' ');
             const nomeCurto = partesNome.slice(0, 2).join(' ');
@@ -72,7 +74,7 @@ async function renderizarListaChamada() {
             return `
             <div class="card-chamada">
                 <div style="flex: 1;">
-                    <strong style="font-size: 1.2rem; color: #2c3e50; display: block;">${m.apelido || partesNome[0]}</strong>
+                    <strong style="font-size: 1.1rem; color: #2c3e50; display: block;">${m.apelido || partesNome[0]}</strong>
                     <div style="display: flex; gap: 5px; align-items: center;">
                         <small style="color: #7f8c8d;">(${nomeCurto})</small>
                         ${isVisitante ? '<small style="color: #e74c3c; font-weight: bold;">• Vis.</small>' : ''}
@@ -81,15 +83,17 @@ async function renderizarListaChamada() {
                 <div class="colunas-nomes">
                     <input type="checkbox" class="custom-check check-presenca" 
                         ${registro?.status === 'P' ? 'checked' : ''} 
-                        onclick="marcarExclusivo(this, '${m.id}')" 
+                        onclick="marcarExclusivo(this)" 
                         data-id="${m.id}" data-cat="${m.categoria}" data-sit="${m.situacao}">
+                    
                     <input type="checkbox" class="custom-check check-icm" 
                         ${registro?.status === 'I' ? 'checked' : ''} 
-                        onclick="marcarExclusivo(this, '${m.id}')"
+                        onclick="marcarExclusivo(this)"
                         data-id="${m.id}" data-cat="${m.categoria}" data-sit="${m.situacao}">
+                    
                     <input type="checkbox" class="custom-check check-maanaim" 
                         ${registro?.status === 'M' ? 'checked' : ''} 
-                        onclick="marcarExclusivo(this, '${m.id}')"
+                        onclick="marcarExclusivo(this)"
                         data-id="${m.id}" data-cat="${m.categoria}" data-sit="${m.situacao}">
                 </div>
             </div>`;
@@ -97,13 +101,12 @@ async function renderizarListaChamada() {
 
         atualizarPlacar();
     } catch (err) {
-        console.error("Erro geral:", err);
-        container.innerHTML = "<p style='text-align:center; padding:20px;'>Erro ao carregar dados.</p>";
+        console.error("Erro renderização:", err);
     }
 }
 
-// 2. EXCLUSIVIDADE
-function marcarExclusivo(el, id) {
+// 2. EXCLUSIVIDADE DE MARCAÇÃO
+function marcarExclusivo(el) {
     const pai = el.parentElement;
     const checks = pai.querySelectorAll('input[type="checkbox"]');
     if (el.checked) {
@@ -112,43 +115,50 @@ function marcarExclusivo(el, id) {
     atualizarPlacar();
 }
 
-// 3. AUTO-COMPLETAR FUNÇÃO (MELHORADO)
-document.addEventListener('input', (e) => {
-    if (['pregador_nome', 'louvor_nome', 'portao_nome'].includes(e.target.id)) {
-        const valorDigitado = e.target.value.trim().toLowerCase();
+// 3. AUTO-COMPLETAR FUNÇÃO (VERSÃO INFALÍVEL)
+function processarTrocaFuncao(idInput) {
+    const input = document.getElementById(idInput);
+    if (!input) return;
+
+    const acao = () => {
+        const valor = input.value.trim().toLowerCase();
         const membro = listaMembrosCache.find(m => 
-            (m.apelido && m.apelido.toLowerCase() === valorDigitado) || 
-            (m.nome.toLowerCase() === valorDigitado)
+            (m.apelido && m.apelido.toLowerCase() === valor) || 
+            (m.nome.toLowerCase() === valor)
         );
 
         if (membro) {
-            const idSelect = e.target.id.replace('_nome', '_funcao');
-            const selectFuncao = document.getElementById(idSelect);
-            if (selectFuncao) {
-                const normalizar = (txt) => txt ? txt.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim() : "";
-                const catMembro = normalizar(membro.categoria);
+            const select = document.getElementById(idInput.replace('_nome', '_funcao'));
+            if (select) {
+                const normal = (t) => t.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+                const catMembro = normal(membro.categoria || "");
 
-                for (let i = 0; i < selectFuncao.options.length; i++) {
-                    const textoOp = normalizar(selectFuncao.options[i].text);
-                    if (textoOp === catMembro) {
-                        selectFuncao.selectedIndex = i;
+                for (let i = 0; i < select.options.length; i++) {
+                    if (normal(select.options[i].text) === catMembro) {
+                        select.selectedIndex = i;
                         break;
                     }
                 }
             }
         }
-    }
-});
+    };
 
-// 4. PLACAR (DIVISÃO ADULTOS / CIAS)
+    // 'input' pega a digitação, 'change' pega a seleção do datalist
+    input.addEventListener('input', acao);
+    input.addEventListener('change', acao);
+}
+
+// Inicializa para os campos de cabeçalho
+['pregador_nome', 'louvor_nome', 'portao_nome'].forEach(processarTrocaFuncao);
+
+// 4. PLACAR (CORREÇÃO DE CATEGORIAS ADULTO / CIAS)
 function atualizarPlacar() {
-    let mAdultos = 0, mCias = 0;
-    let vAdultosLista = 0, vCiasLista = 0;
-    
-    const ehCia = (categoria) => {
-        if (!categoria) return false;
-        const c = categoria.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-        return c.includes('cia') || c.includes('crianca') || c.includes('intermediario') || c.includes('adolescente');
+    let mAd = 0, mCia = 0, vAdList = 0, vCiaList = 0;
+
+    const ehCia = (cat) => {
+        if (!cat) return false;
+        const c = cat.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        return c.includes('cia') || c.includes('crianca') || c.includes('interme') || c.includes('adoles');
     };
 
     document.querySelectorAll('.card-chamada').forEach(card => {
@@ -159,24 +169,24 @@ function atualizarPlacar() {
             const cia = ehCia(cat);
 
             if (sit === 'Membro') {
-                if (cia) mCias++; else mAdultos++;
+                if (cia) mCia++; else mAd++;
             } else {
-                if (cia) vCiasLista++; else vAdultosLista++;
+                if (cia) vCiaList++; else vAdList++;
             }
         }
     });
 
-    const vAdManual = parseInt(document.getElementById('vis_adultos').value) || 0;
-    const vCiaManual = parseInt(document.getElementById('vis_cias').value) || 0;
+    const vAdMan = parseInt(document.getElementById('vis_adultos').value) || 0;
+    const vCiaMan = parseInt(document.getElementById('vis_cias').value) || 0;
 
-    document.getElementById('cont_membros_adultos').innerText = mAdultos;
-    document.getElementById('cont_membros_cias').innerText = mCias;
-    document.getElementById('cont_vis_adultos_display').innerText = vAdultosLista + vAdManual;
-    document.getElementById('cont_vis_cias_display').innerText = vCiasLista + vCiaManual;
-    document.getElementById('cont_total').innerText = mAdultos + mCias + vAdultosLista + vAdManual + vCiasLista + vCiaManual;
+    document.getElementById('cont_membros_adultos').innerText = mAd;
+    document.getElementById('cont_membros_cias').innerText = mCia;
+    document.getElementById('cont_vis_adultos_display').innerText = vAdList + vAdMan;
+    document.getElementById('cont_vis_cias_display').innerText = vCiaList + vCiaMan;
+    document.getElementById('cont_total').innerText = mAd + mCia + vAdList + vAdMan + vCiaList + vCiaMan;
 }
 
-// 5. SALVAR TUDO
+// 5. SALVAR TUDO NO SUPABASE
 async function salvarChamada() {
     const data_culto = document.getElementById('data_chamada').value;
     const tipo_evento = document.getElementById('tipo_evento').value;
@@ -212,16 +222,15 @@ async function salvarChamada() {
     };
 
     try {
-        // Limpa presenças antigas e insere novas
+        // 1. Deleta presenças antigas para evitar duplicidade
         await _supabase.from('presencas').delete().eq('data_culto', data_culto).eq('tipo_evento', tipo_evento);
+        // 2. Insere novas presenças
         if (presencas.length > 0) await _supabase.from('presencas').insert(presencas);
-        
-        // Upsert no resumo
+        // 3. Salva resumo (Upsert)
         await _supabase.from('resumo_culto').upsert(resumo, { onConflict: 'data_culto, tipo_evento' });
         
         alert("✅ Salvo com sucesso!");
     } catch (e) {
-        console.error(e);
         alert("❌ Erro ao salvar.");
     }
 }
@@ -234,22 +243,7 @@ function ajustarVisitante(id, mudanca) {
 }
 
 function enviarResumoWhatsapp() {
-    const m_ad = document.getElementById('cont_membros_adultos').innerText;
-    const m_cia = document.getElementById('cont_membros_cias').innerText;
-    const v_ad = document.getElementById('cont_vis_adultos_display').innerText;
-    const v_cia = document.getElementById('cont_vis_cias_display').innerText;
-    const total = document.getElementById('cont_total').innerText;
-
     const data = document.getElementById('data_chamada').value.split('-').reverse().join('/');
-    
-    let msg = `ICM - Dona Augusta\n📊 *Resumo do Culto - ${data}*\n\n`;
-    msg += `*Participantes:*\n`;
-    msg += `- Membros (Ad/CIA): ${m_ad}/${m_cia}\n`;
-    msg += `- Visitantes (Ad/CIA): ${v_ad}/${v_cia}\n`;
-    msg += `🌟 *Total Vidas: ${total}*\n\n`;
-    
-    if(document.getElementById('pregador_nome').value) msg += `🎤 Pregador: ${document.getElementById('pregador_nome').value}\n`;
-    if(document.getElementById('texto_biblico').value) msg += `📖 Texto: ${document.getElementById('texto_biblico').value}\n`;
-    
+    const msg = `ICM - Dona Augusta\n📊 Resumo do Culto - ${data}\n\nTotal Vidas: ${document.getElementById('cont_total').innerText}`;
     window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`, '_blank');
 }

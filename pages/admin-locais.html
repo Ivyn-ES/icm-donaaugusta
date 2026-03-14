@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gerenciar Locais - ICM</title>
     <link rel="stylesheet" href="../css/style.css">
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
     <div class="container">
@@ -29,10 +28,26 @@
         </div>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="../js/supabase-config.js"></script>
+    <script src="../js/auth.js"></script>
     <script src="../js/script.js"></script>
+
     <script>
+        // Inicialização Segura
+        document.addEventListener('DOMContentLoaded', async () => {
+            // 1. Verifica se o usuário tem permissão
+            const user = verificarAcesso();
+            if (!user) return; // O auth.js já redireciona se não estiver logado
+
+            // 2. Carrega os dados da página
+            await carregarTabelaLocais();
+        });
+
         async function carregarTabelaLocais() {
             const container = document.getElementById('listaLocais');
+            if (!container) return;
+
             try {
                 const { data, error } = await _supabase
                     .from('igrejas_locais')
@@ -41,7 +56,7 @@
                 
                 if (error) throw error;
                 
-                if (data.length === 0) {
+                if (!data || data.length === 0) {
                     container.innerHTML = "<p style='padding: 20px;'>Nenhuma igreja cadastrada.</p>";
                     return;
                 }
@@ -49,10 +64,11 @@
                 container.innerHTML = data.map(l => `
                     <div style="display: flex; justify-content: space-between; align-items: center; padding: 15px; border-bottom: 1px solid #eee;">
                         <span style="font-weight: 500; color: #333;">${l.nome_igreja}</span>
-                        <button onclick="excluirLocal('${l.id}', '${l.nome_igreja}')" style="background:none; border:none; cursor:pointer; font-size: 1.2rem;">🗑️</button>
+                        <button onclick="excluirLocal('${l.id}', '${l.nome_igreja}')" style="background:none; border:none; cursor:pointer; font-size: 1.2rem;" title="Excluir">🗑️</button>
                     </div>
                 `).join('');
             } catch (err) {
+                console.error("Erro ao carregar locais:", err);
                 container.innerHTML = "<p style='padding: 20px; color: red;'>Erro ao carregar dados.</p>";
             }
         }
@@ -67,7 +83,8 @@
                 if (error) throw error;
                 
                 input.value = '';
-                carregarTabelaLocais();
+                await carregarTabelaLocais();
+                alert("✅ Local cadastrado!");
             } catch (err) {
                 alert("Erro ao salvar: " + err.message);
             }
@@ -78,13 +95,11 @@
             try {
                 const { error } = await _supabase.from('igrejas_locais').delete().eq('id', id);
                 if (error) throw error;
-                carregarTabelaLocais();
+                await carregarTabelaLocais();
             } catch (err) {
                 alert("Erro ao excluir.");
             }
         }
-
-        window.onload = carregarTabelaLocais;
     </script>
 </body>
 </html>

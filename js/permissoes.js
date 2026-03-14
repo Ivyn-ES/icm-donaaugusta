@@ -1,4 +1,8 @@
-// Lista de colunas exatamente como criamos no Supabase (sem o p_ na frente para facilitar a leitura na tela)
+// ==========================================
+// SOLDADO: js/permissoes.js
+// Responsável pela configuração do Painel de Permissões
+// ==========================================
+
 const listaFuncoes = [
     { id: 'p_dashboard', nome: 'Acesso ao Dashboard' },
     { id: 'p_chamada', nome: 'Fazer Chamada' },
@@ -15,60 +19,93 @@ const listaFuncoes = [
     { id: 'p_permissoes', nome: 'Painel Permissões' }
 ];
 
-// 1. Gera a tabela na tela ao carregar
+// 1. Gera a tabela na tela ao carregar (COM PROTEÇÃO)
 document.addEventListener('DOMContentLoaded', () => {
     const corpo = document.getElementById('lista-permissoes');
+    
+    // SE NÃO ESTIVER NA PÁGINA DE PERMISSÕES, ELE PARA AQUI E NÃO DÁ ERRO
+    if (!corpo) {
+        console.log("ℹ️ Página atual não requer configuração de níveis de acesso.");
+        return; 
+    }
+
+    // Limpa o carregando antes de preencher
+    corpo.innerHTML = "";
+
     listaFuncoes.forEach(f => {
         corpo.innerHTML += `
             <tr>
-                <td class="func-col">${f.nome}</td>
-                <td><input type="checkbox" id="${f.id}"></td>
+                <td class="func-col" style="padding: 10px; border-bottom: 1px solid #eee;">${f.nome}</td>
+                <td style="text-align: center; border-bottom: 1px solid #eee;">
+                    <input type="checkbox" id="${f.id}" style="width: 20px; height: 20px; cursor: pointer;">
+                </td>
             </tr>
         `;
     });
-    carregarPermissoesDoNivel(); // Carrega os dados do primeiro nível do select
+
+    // Só tenta carregar do banco se o select existir
+    if (document.getElementById('select-nivel')) {
+        carregarPermissoesDoNivel();
+    }
 });
 
 // 2. Busca os dados no Supabase para o nível selecionado
 async function carregarPermissoesDoNivel() {
-    const nivel = document.getElementById('select-nivel').value;
+    const select = document.getElementById('select-nivel');
+    if (!select) return;
+
+    const nivel = select.value;
     
-    const { data, error } = await _supabase
-        .from('niveis_acesso')
-        .select('*')
-        .eq('nivel_nome', nivel)
-        .single();
+    try {
+        const { data, error } = await _supabase
+            .from('niveis_acesso')
+            .select('*')
+            .eq('nivel_nome', nivel)
+            .single();
 
-    if (error) {
-        console.error("Erro ao buscar:", error);
-        // Se não existir a linha, todos ficam desmarcados
-        listaFuncoes.forEach(f => document.getElementById(f.id).checked = false);
-        return;
-    }
+        if (error) {
+            console.warn("Aviso: Nível não configurado no banco, resetando checkboxes.");
+            listaFuncoes.forEach(f => {
+                const check = document.getElementById(f.id);
+                if (check) check.checked = false;
+            });
+            return;
+        }
 
-    if (data) {
-        listaFuncoes.forEach(f => {
-            document.getElementById(f.id).checked = data[f.id] || false;
-        });
+        if (data) {
+            listaFuncoes.forEach(f => {
+                const check = document.getElementById(f.id);
+                if (check) check.checked = data[f.id] || false;
+            });
+        }
+    } catch (err) {
+        console.error("Erro ao carregar permissões:", err);
     }
 }
 
 // 3. Salva os novos valores no Supabase
 async function salvarPermissoes() {
-    const nivel = document.getElementById('select-nivel').value;
+    const select = document.getElementById('select-nivel');
+    if (!select) return;
+
+    const nivel = select.value;
     const dadosParaSalvar = { nivel_nome: nivel };
 
     listaFuncoes.forEach(f => {
-        dadosParaSalvar[f.id] = document.getElementById(f.id).checked;
+        const check = document.getElementById(f.id);
+        if (check) {
+            dadosParaSalvar[f.id] = check.checked;
+        }
     });
 
-    const { error } = await _supabase
-        .from('niveis_acesso')
-        .upsert(dadosParaSalvar, { onConflict: 'nivel_nome' });
+    try {
+        const { error } = await _supabase
+            .from('niveis_acesso')
+            .upsert(dadosParaSalvar, { onConflict: 'nivel_nome' });
 
-    if (error) {
-        alert("Erro ao salvar: " + error.message);
-    } else {
-        alert("Configurações de " + nivel + " gravadas com sucesso!");
+        if (error) throw error;
+        alert("✅ Configurações de " + nivel + " gravadas com sucesso!");
+    } catch (error) {
+        alert("❌ Erro ao salvar: " + error.message);
     }
 }

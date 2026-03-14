@@ -25,7 +25,7 @@
         input:checked + .slider { background-color: #ff9800; }
         input:checked + .slider:before { transform: translateX(26px); }
         .campo-full { margin-bottom: 20px; }
-        .campo-full select, .campo-full input { width: 100%; }
+        .campo-full select, .campo-full input { width: 100%; padding: 10px; border-radius: 5px; border: 1px solid #ddd; }
     </style>
 </head>
 <body>
@@ -88,9 +88,7 @@
             </div>
 
             <div class="switch-container">
-                <div>
-                    <span style="font-weight: bold; display: block;">👴 Membro Idoso?</span>
-                </div>
+                <div><span style="font-weight: bold; display: block;">👴 Membro Idoso?</span></div>
                 <label class="switch">
                     <input type="checkbox" id="eh_idoso">
                     <span class="slider"></span>
@@ -99,7 +97,9 @@
 
             <div class="campo-full">
                 <label for="grupo_vinculado">Grupo:</label>
-                <select id="grupo_vinculado" required></select>
+                <select id="grupo_vinculado" required>
+                    <option value="">Carregando grupos...</option>
+                </select>
             </div>
                 
             <div class="campo-full">
@@ -107,7 +107,7 @@
                 <div style="display: flex; gap: 10px; margin-top: 5px;">
                     <input type="number" id="niver_dia" placeholder="Dia" min="0" max="31" style="width: 80px;">
                     <select id="niver_mes" style="flex: 1;">
-                        <option value="">Selecione...</option>
+                        <option value="">Mês...</option>
                         <option value="Janeiro">Janeiro</option><option value="Fevereiro">Fevereiro</option>
                         <option value="Março">Março</option><option value="Abril">Abril</option>
                         <option value="Maio">Maio</option><option value="Junho">Junho</option>
@@ -130,22 +130,30 @@
     <script src="../js/script.js"></script>
 
     <script>
-        // PEGA O ID DA URL (Ex: ?id=123)
         const urlParams = new URLSearchParams(window.location.search);
         let idEdicao = urlParams.get('id');
 
-        document.addEventListener('DOMContentLoaded', async () => {
-            if (typeof verificarAcesso === 'function') verificarAcesso(); 
-            
-            // Carrega os grupos primeiro
-            if (typeof carregarGruposNoSelect === 'function') await carregarGruposNoSelect();
+        // FUNÇÃO PARA CARREGAR GRUPOS DIRETAMENTE DO BANCO
+        async function buscarGruposDoBanco() {
+            const selectGrupo = document.getElementById('grupo_vinculado');
+            try {
+                const { data, error } = await _supabase
+                    .from('grupos')
+                    .select('nome_grupo')
+                    .order('nome_grupo', { ascending: true });
 
-            if (idEdicao) {
-                document.getElementById('tituloPagina').innerText = "✏️ Editar Membro";
-                document.getElementById('btnSalvar').innerText = "Atualizar Dados";
-                await carregarDadosParaEdicao(idEdicao);
+                if (error) throw error;
+
+                let options = '<option value="">Selecione um Grupo</option>';
+                data.forEach(g => {
+                    options += `<option value="${g.nome_grupo}">${g.nome_grupo}</option>`;
+                });
+                selectGrupo.innerHTML = options;
+            } catch (err) {
+                console.error("Erro ao carregar grupos:", err);
+                selectGrupo.innerHTML = '<option value="">Erro ao carregar</option>';
             }
-        });
+        }
 
         async function carregarDadosParaEdicao(id) {
             try {
@@ -158,13 +166,30 @@
                     document.getElementById('situacao').value = data.situacao || "Membro";
                     document.getElementById('sexo').value = data.sexo || "Masculino";
                     document.getElementById('categoria').value = data.categoria || "Adulto";
-                    document.getElementById('grupo_vinculado').value = data.grupo || "";
+                    document.getElementById('eh_idoso').checked = data.eh_idoso || false;
                     document.getElementById('niver_dia').value = data.dia || ""; 
                     document.getElementById('niver_mes').value = data.mes || "";
-                    document.getElementById('eh_idoso').checked = data.eh_idoso || false;
+                    
+                    // Espera os grupos carregarem para selecionar o correto
+                    setTimeout(() => {
+                        document.getElementById('grupo_vinculado').value = data.grupo || "";
+                    }, 500);
                 }
-            } catch (err) { console.error("Erro ao carregar:", err); }
+            } catch (err) { console.error("Erro ao carregar dados do membro:", err); }
         }
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            if (typeof verificarAcesso === 'function') verificarAcesso(); 
+            
+            // Busca os grupos primeiro
+            await buscarGruposDoBanco();
+
+            if (idEdicao) {
+                document.getElementById('tituloPagina').innerText = "✏️ Editar Membro";
+                document.getElementById('btnSalvar').innerText = "Atualizar Dados";
+                await carregarDadosParaEdicao(idEdicao);
+            }
+        });
 
         document.getElementById('formCadastro').addEventListener('submit', async (e) => {
             e.preventDefault(); 
@@ -189,21 +214,18 @@
             try {
                 let resultado;
                 if (idEdicao) {
-                    // Update direto para garantir
                     resultado = await _supabase.from('membros').update(dadosParaSalvar).eq('id', idEdicao);
                 } else {
-                    // Insert direto
                     resultado = await _supabase.from('membros').insert([dadosParaSalvar]);
                 }
 
                 if (resultado.error) throw resultado.error;
                 
-                alert("Dados salvos com sucesso!");
+                alert("Salvo com sucesso!");
                 window.location.href = 'lista-membros.html';
                 
             } catch (err) { 
-                console.error(err);
-                alert("Erro ao salvar dados no banco."); 
+                alert("Erro ao salvar."); 
             } finally { 
                 btn.disabled = false; 
                 btn.innerText = idEdicao ? 'Atualizar Dados' : 'Salvar Dados'; 

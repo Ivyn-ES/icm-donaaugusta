@@ -1161,44 +1161,32 @@ async function ajustarInterfacePorPerfil() {
 }
 
 // ==========================================
-// 16. INICIALIZAÇÃO DA PÁGINA (DOM CONTENT LOADED)
+// 16. INICIALIZAÇÃO DA PÁGINA
 // ==========================================
-document.addEventListener('DOMContentLoaded', async () => {
-    // 1. Verifica se o usuário está logado
+document.addEventListener('DOMContentLoaded', () => {
+    console.log("DOM Carregado. Iniciando verificações...");
+
     const user = verificarAcesso(); 
     const urlAtual = window.location.href;
     
-    // 2. Lógica para a Página de Login (index.html)
+    // 1. Lógica para a Página de Login
     const formLogin = document.getElementById('loginForm');
     if (formLogin) {
+        console.log("Formulário de login detetado.");
         formLogin.addEventListener('submit', realizarLogin);
     }
 
-    // 3. Se estiver logado, executa as funções de interface
+    // 2. Lógica para páginas internas
     if (user) {
-        // Exibe mensagem de boas-vindas
+        console.log("Usuário logado:", user.login);
         const elBoasVindas = document.getElementById('boasVindas');
         if (elBoasVindas) {
             elBoasVindas.innerText = `Olá, ${user.login}!`;
         }
 
-        // CHAMA O GENERAL: Módulo 15 para ajustar os botões
+        // Executa o Módulo 15
         if (typeof ajustarInterfacePorPerfil === 'function') {
-            await ajustarInterfacePorPerfil();
+            ajustarInterfacePorPerfil();
         }
-    }
-
-    // 4. ROTAS ESPECÍFICAS (Só executa o que pertence à página atual)
-    if (urlAtual.includes('admin-usuarios.html')) {
-        if (typeof renderizarUsuarios === 'function') renderizarUsuarios();
-        if (typeof carregarGruposNoSelect === 'function') carregarGruposNoSelect();
-    }
-    
-    if (urlAtual.includes('chamada.html')) {
-        if (typeof renderizarListaChamada === 'function') renderizarListaChamada();
-    }
-
-    if (urlAtual.includes('aniversariantes.html')) {
-        if (typeof gerarRelatorioAniversariantes === 'function') gerarRelatorioAniversariantes();
     }
 });

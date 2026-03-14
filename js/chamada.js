@@ -1,5 +1,5 @@
 // ==========================================
-// SOLDADO: js/chamada.js - VERSÃO INTEGRAL COM WHATSAPP ESTRATÉGICO
+// SOLDADO: js/chamada.js - VERSÃO INTEGRAL COM WHATSAPP REFINADO
 // ==========================================
 
 let listaMembrosCache = [];
@@ -255,7 +255,7 @@ function ajustarVisitante(id, mudanca) {
 }
 
 // ==========================================
-// LÓGICA DE WHATSAPP ATUALIZADA (ESTRATÉGICA)
+// LÓGICA DE WHATSAPP (ESTILO REFINADO)
 // ==========================================
 function prepararResumoWhatsApp() {
     const dataRef = document.getElementById('data_chamada').value;
@@ -276,43 +276,43 @@ function prepararResumoWhatsApp() {
     const porcentagem = Math.round(((mAd + mCia) / totalMembrosCadastrados) * 100);
     const emojiPerto = porcentagem >= 50 ? "🟢" : "🔴";
 
+    // FUNÇÃO PARA PEGAR SÓ PRIMEIRO NOME
+    const pNome = (str) => str ? str.trim().split(' ')[0] : "";
+
     // COLETA RESPONSÁVEIS
-    const pregador = document.getElementById('pregador_nome').value.trim();
-    const louvor = document.getElementById('louvor_nome').value.trim();
-    const portao = document.getElementById('portao_nome').value.trim();
+    const pregadorRaw = document.getElementById('pregador_nome').value.trim();
+    const pregador = pNome(pregadorRaw);
+    const louvor = pNome(document.getElementById('louvor_nome').value);
+    const portao = pNome(document.getElementById('portao_nome').value);
     const texto = document.getElementById('texto_biblico').value.trim();
     const obs = document.getElementById('observacoes_culto').value.trim();
 
     // MONTAGEM DA MENSAGEM
     let msg = `ICM - Dona Augusta\n`;
-    msg += `Resumo do Culto - ${dataFormatadaResumo}\n\n`;
+    msg += `*Resumo do Culto - ${dataFormatadaResumo}*\n\n`;
     
-    msg += `Participantes:\n`;
+    msg += `*Participantes:*\n`;
     msg += `- Membros (Adulto/CIA): ${mAd}/${mCia} - ${emojiPerto} ${porcentagem}%\n`;
     msg += `- Visitantes (Adulto/CIA): ${vAd}/${vCia}\n`;
     msg += `🌟 Total de Vidas: ${totalVidas}\n\n`;
     
-    msg += `Responsáveis:\n`;
+    msg += `*Responsáveis:*\n`;
     
-    // Lógica Inteligente de Dirigente/Pregador
+    // Lógica de Dirigente: Se pregador faz louvor ou está nas Obs
     if (pregador) {
-        const tituloPregador = (pregador === louvor || obs.includes(pregador)) ? "🌟 Dirigente" : "🎤 Pregador";
-        msg += `${tituloPregador}: ${pregador}\n`;
+        const isDirigente = (pregadorRaw === document.getElementById('louvor_nome').value.trim() || obs.toLowerCase().includes(pregador.toLowerCase()));
+        msg += `${isDirigente ? "🌟 Dirigente" : "🎤 Pregador"}: ${pregador}\n`;
     }
     
     if (texto) msg += `📖 Texto: ${texto}\n`;
     
-    // Só aparece se não estiver vazio
-    if (louvor) msg += `🎶 Louvor: ${louvor}\n`;
+    // Só aparece se não estiver vazio e não for o pregador (se for dirigente)
+    if (louvor && (louvor !== pregador)) msg += `🎶 Louvor: ${louvor}\n`;
     if (portao) msg += `🚪 Portão: ${portao}\n`;
     
-    if (obs) msg += `Obs.: ${obs}`;
+    if (obs) msg += `\n*Obs.:* ${obs}`;
 
-    // Abre WhatsApp via Utils
-    if (typeof Utils !== 'undefined' && Utils.enviarWhatsApp) {
-        Utils.enviarWhatsApp(msg);
-    } else {
-        const url = `https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`;
-        window.open(url, '_blank');
-    }
+    // Abre WhatsApp
+    const url = `https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`;
+    window.open(url, '_blank');
 }

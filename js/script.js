@@ -1299,18 +1299,18 @@ async function ajustarInterfacePorPerfil() {
         return; // Se der erro, ele mantém como está no HTML
     }
 
-    // 2. MAPEAMENTO (ID do seu HTML : Coluna do Banco)
+// 2. MAPEAMENTO (ID do seu HTML : Coluna do Banco)
     const mapa = {
         'btnChamada': p.p_chamada,
-        'btnEventos': p.p_cias,
-        'btnHistorico': p.p_historico, // Verifique se tem esse ID no HTML
-        'idBtnCadastro': p.p_cadastro,
+        'btnEventos': p.p_cias,         // No HTML é btnEventos, no banco é p_cias
+        'idBtnCadastro': p.p_cadastro,   // Mantive o "id" no início como no seu HTML
         'btnLista': p.p_membros,
         'btnAniversariantes': p.p_niver,
-        'btnLocais': p.p_igrejas,
+        'btnLocais': p.p_igrejas,       // No HTML é btnLocais, no banco é p_igrejas
         'btnGrupos': p.p_grupos,
         'btnUsuarios': p.p_usuarios,
-        'btnPermissoes': p.p_permissoes
+        'btnPermissoes': p.p_permissoes,
+        'btnRelatorios': p.p_relatorios  // Adicionei este que estava no seu Modulo 8
     };
 
     // 3. APLICA A VISIBILIDADE NOS BOTÕES INTERNOS

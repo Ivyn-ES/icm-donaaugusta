@@ -7,51 +7,25 @@
     <link rel="stylesheet" href="../css/style.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        /* Estilo para o seletor de Idoso */
         .switch-container {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            background: #fff3e0;
-            padding: 12px;
-            border-radius: 8px;
-            border: 1px solid #ffe0b2;
-            margin-bottom: 20px;
+            display: flex; align-items: center; justify-content: space-between;
+            background: #fff3e0; padding: 12px; border-radius: 8px;
+            border: 1px solid #ffe0b2; margin-bottom: 20px;
         }
-        .switch {
-            position: relative;
-            display: inline-block;
-            width: 50px;
-            height: 24px;
-        }
+        .switch { position: relative; display: inline-block; width: 50px; height: 24px; }
         .switch input { opacity: 0; width: 0; height: 0; }
         .slider {
-            position: absolute;
-            cursor: pointer;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background-color: #ccc;
-            transition: .4s;
-            border-radius: 24px;
+            position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #ccc; transition: .4s; border-radius: 24px;
         }
         .slider:before {
-            position: absolute;
-            content: "";
-            height: 16px; width: 16px;
-            left: 4px; bottom: 4px;
-            background-color: white;
-            transition: .4s;
-            border-radius: 50%;
+            position: absolute; content: ""; height: 16px; width: 16px;
+            left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%;
         }
         input:checked + .slider { background-color: #ff9800; }
         input:checked + .slider:before { transform: translateX(26px); }
-
-        /* Ajuste para que Grupo e Aniversário ocupem linhas inteiras */
-        .campo-full {
-            margin-bottom: 20px;
-        }
-        .campo-full select, .campo-full input {
-            width: 100%;
-        }
+        .campo-full { margin-bottom: 20px; }
+        .campo-full select, .campo-full input { width: 100%; }
     </style>
 </head>
 <body>
@@ -63,22 +37,20 @@
         </header>
 
         <form id="formCadastro">
-            
             <div style="background: #f9f9f9; padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 5px solid #007bff;">
                 <div class="campo">
                     <label for="nome_completo">Nome Completo:</label>
-                    <input type="text" id="nome_completo" placeholder="Ex: João Silva" required>
+                    <input type="text" id="nome_completo" required>
                 </div>
-
                 <div class="campo" style="margin-top: 10px;">
                     <label for="apelido">Nome de Preferência (Apelido):</label>
-                    <input type="text" id="apelido" placeholder="Como gosta de ser chamado?">
+                    <input type="text" id="apelido">
                 </div>
             </div>
 
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
                 <div class="campo">
-                    <label for="funcao">Função (Voluntário):</label>
+                    <label for="funcao">Função:</label>
                     <select id="funcao">
                         <option value="Membro">Membro</option>
                         <option value="Obreiro">Obreiro</option>
@@ -118,7 +90,6 @@
             <div class="switch-container">
                 <div>
                     <span style="font-weight: bold; display: block;">👴 Membro Idoso?</span>
-                    <small style="color: #666;"></small>
                 </div>
                 <label class="switch">
                     <input type="checkbox" id="eh_idoso">
@@ -126,25 +97,17 @@
                 </label>
             </div>
 
-            <div class="campo" style="margin-bottom: 20px;">
-                <label for="vinculo_familia">Vincular a uma Família? (Opcional)</label>
-                <select id="vinculo_familia">
-                    <option value="">Ninguém (Membro Individual)</option>
-                </select>
-            </div>
-
             <div class="campo-full">
                 <label for="grupo_vinculado">Grupo:</label>
-                <select id="grupo_vinculado" required>
-                    <option value="">Carregando grupos...</option>
-                </select>
+                <select id="grupo_vinculado" required></select>
             </div>
                 
             <div class="campo-full">
                 <label>Aniversário:</label>
                 <div style="display: flex; gap: 10px; margin-top: 5px;">
-                    <input type="number" id="niver_dia" placeholder="Dia" min="1" max="31" style="width: 80px;">
+                    <input type="number" id="niver_dia" placeholder="Dia" min="0" max="31" style="width: 80px;">
                     <select id="niver_mes" style="flex: 1;">
+                        <option value="">Selecione...</option>
                         <option value="Janeiro">Janeiro</option><option value="Fevereiro">Fevereiro</option>
                         <option value="Março">Março</option><option value="Abril">Abril</option>
                         <option value="Maio">Maio</option><option value="Junho">Junho</option>
@@ -156,21 +119,26 @@
             </div>
 
             <div style="margin-top: 30px; display: flex; flex-direction: column; gap: 10px;">
-                <button type="submit" class="btn-salvar" id="btnSalvar">Salvar no Supabase</button>
-                <button type="button" onclick="voltarComLimpeza()" class="btn-voltar">⬅ Voltar ao Painel</button>
+                <button type="submit" class="btn-salvar" id="btnSalvar">Salvar Dados</button>
+                <button type="button" onclick="window.location.href='lista-membros.html'" class="btn-voltar">⬅ Cancelar</button>
             </div>
         </form>
     </div>
 
+    <script src="../js/supabase-config.js"></script>
+    <script src="../js/auth.js"></script>
     <script src="../js/script.js"></script>
 
     <script>
-        let idEdicao = localStorage.getItem('idMembroEdicao');
+        // PEGA O ID DA URL (Ex: ?id=123)
+        const urlParams = new URLSearchParams(window.location.search);
+        let idEdicao = urlParams.get('id');
 
         document.addEventListener('DOMContentLoaded', async () => {
-            verificarAcesso(); 
+            if (typeof verificarAcesso === 'function') verificarAcesso(); 
+            
+            // Carrega os grupos primeiro
             if (typeof carregarGruposNoSelect === 'function') await carregarGruposNoSelect();
-            if (typeof carregarMembrosParaVinculo === 'function') await carregarMembrosParaVinculo();
 
             if (idEdicao) {
                 document.getElementById('tituloPagina').innerText = "✏️ Editar Membro";
@@ -186,18 +154,16 @@
                 if (data) {
                     document.getElementById('nome_completo').value = data.nome || "";
                     document.getElementById('apelido').value = data.apelido || "";
-                    // Campo telefone removido da carga de dados
                     document.getElementById('funcao').value = data.funcao || "Membro";
-                    document.getElementById('vinculo_familia').value = data.familia_id || "";
                     document.getElementById('situacao').value = data.situacao || "Membro";
                     document.getElementById('sexo').value = data.sexo || "Masculino";
                     document.getElementById('categoria').value = data.categoria || "Adulto";
                     document.getElementById('grupo_vinculado').value = data.grupo || "";
                     document.getElementById('niver_dia').value = data.dia || ""; 
-                    document.getElementById('niver_mes').value = data.mes || "Janeiro";
+                    document.getElementById('niver_mes').value = data.mes || "";
                     document.getElementById('eh_idoso').checked = data.eh_idoso || false;
                 }
-            } catch (err) { console.error("Erro ao carregar edição:", err); }
+            } catch (err) { console.error("Erro ao carregar:", err); }
         }
 
         document.getElementById('formCadastro').addEventListener('submit', async (e) => {
@@ -206,39 +172,43 @@
             btn.disabled = true;
             btn.innerText = '⌛ Processando...';
 
-            const dados = {
+            const dadosParaSalvar = {
                 nome: document.getElementById('nome_completo').value.trim(),
                 apelido: document.getElementById('apelido').value.trim(),
-                // telefone removido do objeto de envio
                 funcao: document.getElementById('funcao').value,
-                familia_vinculo: document.getElementById('vinculo_familia').value,
                 situacao: document.getElementById('situacao').value,
                 sexo: document.getElementById('sexo').value,
                 categoria: document.getElementById('categoria').value,
                 grupo: document.getElementById('grupo_vinculado').value,
-                niver_dia: document.getElementById('niver_dia').value,
-                niver_mes: document.getElementById('niver_mes').value,
-                eh_idoso: document.getElementById('eh_idoso').checked
+                dia: parseInt(document.getElementById('niver_dia').value) || 0,
+                mes: document.getElementById('niver_mes').value,
+                eh_idoso: document.getElementById('eh_idoso').checked,
+                status_registro: 'Ativo'
             };
 
             try {
-                let sucesso = idEdicao ? await atualizarMembro(idEdicao, dados) : await cadastrarMembro(dados);
-                if (sucesso) {
-                    localStorage.removeItem('idMembroEdicao');
-                    if (idEdicao) window.location.href = 'lista-membros.html';
-                    else {
-                        document.getElementById('formCadastro').reset();
-                        await carregarMembrosParaVinculo();
-                    }
+                let resultado;
+                if (idEdicao) {
+                    // Update direto para garantir
+                    resultado = await _supabase.from('membros').update(dadosParaSalvar).eq('id', idEdicao);
+                } else {
+                    // Insert direto
+                    resultado = await _supabase.from('membros').insert([dadosParaSalvar]);
                 }
-            } catch (err) { alert("Erro ao salvar."); }
-            finally { btn.disabled = false; btn.innerText = idEdicao ? 'Atualizar Dados' : 'Salvar no Supabase'; }
-        });
 
-        function voltarComLimpeza() {
-            localStorage.removeItem('idMembroEdicao');
-            window.location.href = 'dashboard.html';
-        }
+                if (resultado.error) throw resultado.error;
+                
+                alert("Dados salvos com sucesso!");
+                window.location.href = 'lista-membros.html';
+                
+            } catch (err) { 
+                console.error(err);
+                alert("Erro ao salvar dados no banco."); 
+            } finally { 
+                btn.disabled = false; 
+                btn.innerText = idEdicao ? 'Atualizar Dados' : 'Salvar Dados'; 
+            }
+        });
     </script>
 </body>
 </html>

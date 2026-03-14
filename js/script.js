@@ -22,20 +22,26 @@ function verificarAcesso() {
 }
 
 // ==========================================
-// 3. FUNÇÃO DE LOGIN (BLINDADA)
+// 3. FUNÇÃO DE LOGIN (VERSÃO FINAL)
 // ==========================================
 async function realizarLogin(e) {
     if (e && typeof e.preventDefault === 'function') e.preventDefault();
     
-    // Capturamos os elementos primeiro
-    const campoLogin = document.getElementById('login');
+    console.log("Tentando realizar login...");
+
+    // Pegamos os elementos para checar se existem
+    const campoLogin = document.getElementById('login') || document.getElementById('usuario');
     const campoSenha = document.getElementById('senha');
 
-    // SÓ CONTINUA SE OS CAMPOS EXISTIREM (Isso evita o erro no Dashboard)
-    if (!campoLogin || !campoSenha) return;
+    if (!campoLogin || !campoSenha) {
+        console.error("Erro: Campos de login ou senha não encontrados no HTML!");
+        return;
+    }
 
     const loginInput = campoLogin.value.trim();
     const senhaInput = campoSenha.value.trim();
+
+    console.log("Dados capturados, consultando Supabase para:", loginInput);
 
     const { data: usuario, error } = await _supabase
         .from('usuarios')
@@ -45,11 +51,12 @@ async function realizarLogin(e) {
         .single();
 
     if (error || !usuario) {
+        console.error("Erro na consulta ou usuário inválido:", error);
         alert('Login ou senha incorretos!');
         return;
     }
 
-    // Salva e Redireciona
+    console.log("Sucesso! Redirecionando...");
     localStorage.setItem('usuarioLogado', JSON.stringify(usuario));
     window.location.href = 'pages/dashboard.html';
 }

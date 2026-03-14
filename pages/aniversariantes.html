@@ -131,21 +131,23 @@
         </div>
     </div>
 
+    <script src="../js/supabase-config.js"></script>
+    <script src="../js/auth.js"></script>
     <script src="../js/script.js"></script>
+
     <script>
         let aniversariantesFiltrados = [];
 
-        // 1. GERA O RELATÓRIO NA TELA
         async function gerarRelatorioAniversariantes() {
             const mesBusca = document.getElementById('filtroMes').value;
             const sexoBusca = document.getElementById('filtroSexo').value;
             const corpo = document.getElementById('corpoTabelaAniversarios');
             const msgVazia = document.getElementById('msgVazia');
 
+            if (!corpo) return;
             corpo.innerHTML = "<tr><td colspan='3' style='text-align:center;'>Buscando...</td></tr>";
 
             try {
-                // Busca todos os membros ativos
                 let { data: membros, error } = await _supabase
                     .from('membros')
                     .select('nome, apelido, data_nascimento, sexo')
@@ -153,7 +155,6 @@
 
                 if (error) throw error;
 
-                // Filtra pelo mês da data_nascimento (formato YYYY-MM-DD)
                 aniversariantesFiltrados = membros.filter(m => {
                     if (!m.data_nascimento) return false;
                     const mesMembro = parseInt(m.data_nascimento.split('-')[1]);
@@ -165,7 +166,6 @@
                     return matchesMes && matchesSexo;
                 });
 
-                // Ordena por dia
                 aniversariantesFiltrados.sort((a, b) => {
                     return parseInt(a.data_nascimento.split('-')[2]) - parseInt(b.data_nascimento.split('-')[2]);
                 });
@@ -196,7 +196,6 @@
             }
         }
 
-        // 2. ENVIA PARA O WHATSAPP
         function enviarAniversariantesZap() {
             if (aniversariantesFiltrados.length === 0) {
                 alert("Consulte a lista primeiro ou verifique se há aniversariantes.");

@@ -6,25 +6,34 @@
     <title>Lista de Membros - ICM</title>
     <link rel="stylesheet" href="../css/style.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        /* Ajuste para garantir que a tabela fique legível no mobile */
+        .container-lista { padding: 15px; max-width: 1000px; margin: auto; }
+        .btn-novo { background-color: #27ae60; color: white; padding: 10px 15px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; }
+        .btn-voltar { background: #636e72; color: white; border: none; padding: 8px 12px; border-radius: 5px; cursor: pointer; }
+        td { padding: 12px 8px; border-bottom: 1px solid #eee; }
+        th { padding: 10px 8px; border-bottom: 2px solid #ddd; }
+        .btn-acao-tabela { background: none; border: none; cursor: pointer; font-size: 1.1rem; }
+    </style>
 </head>
 <body>
     <div class="container-lista">
         <header style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
             <button onclick="window.location.href='dashboard.html'" class="btn-voltar">⬅ Voltar</button>
-            <h1>Membros Cadastrados</h1>
+            <h2 style="margin:0;">👥 Membros</h2>
             <button onclick="window.location.href='cadastro-membro.html'" class="btn-novo">+ Novo</button>
         </header>
 
         <div class="filtros-lista" style="margin-bottom: 15px;">
-            <input type="text" id="buscaMembro" placeholder="🔍 Pesquisar por nome..." onkeyup="filtrarLista()" 
-                   style="width: 100%; padding: 10px; border-radius: 5px; border: 1px solid #ddd;">
+            <input type="text" id="buscaMembro" placeholder="🔍 Pesquisar por nome ou apelido..." onkeyup="filtrarLista()" 
+                   style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #ddd; font-size: 1rem;">
         </div>
 
         <div class="tabela-responsiva">
             <table style="width: 100%; border-collapse: collapse;">
                 <thead>
-                    <tr style="background-color: #f4f4f4;">
-                        <th style="text-align: left; padding: 10px;">Nome</th>
+                    <tr style="background-color: #f8f9fa;">
+                        <th style="text-align: left;">Nome</th>
                         <th style="text-align: left;">Categoria</th>
                         <th style="text-align: left;">Grupo</th>
                         <th style="text-align: left;">Situação</th>
@@ -33,38 +42,93 @@
                 </thead>
                 <tbody id="corpoTabelaMembros">
                     <tr>
-                        <td colspan="5" style="text-align:center; padding: 20px;">Carregando membros...</td>
+                        <td colspan="5" style="text-align:center; padding: 30px;">Iniciando conexão...</td>
                     </tr>
                 </tbody>
             </table>
         </div>
     </div>
 
+    <script src="../js/supabase-config.js"></script>
+    <script src="../js/auth.js"></script>
     <script src="../js/script.js"></script>
-    <script>
-        // No Linux/Chrome, o DOMContentLoaded é mais confiável que window.onload
-        document.addEventListener('DOMContentLoaded', async () => {
-            verificarAcesso();
-            
-            // Chama a função que criamos no script.js
-            if (typeof renderizarListaMembros === 'function') {
-                await renderizarListaMembros();
-            }
-        });
 
-        // Função de filtro local (Busca em tempo real)
+    <script>
+        // Função para carregar a lista diretamente nesta página
+        async function carregarMembros() {
+            const corpo = document.getElementById('corpoTabelaMembros');
+            if (!corpo) return;
+
+            try {
+                // Busca os membros conforme a estrutura da sua tabela
+                let { data: membros, error } = await _supabase
+                    .from('membros')
+                    .select('id, nome, apelido, categoria, grupo, situacao')
+                    .order('nome', { ascending: true });
+
+                if (error) throw error;
+
+                if (!membros || membros.length === 0) {
+                    corpo.innerHTML = "<tr><td colspan='5' style='text-align:center;'>Nenhum membro encontrado.</td></tr>";
+                    return;
+                }
+
+                corpo.innerHTML = membros.map(m => {
+                    const nomeExibicao = m.apelido ? `${m.nome} (${m.apelido})` : m.nome;
+                    const statusCor = m.situacao === 'Comungante' ? 'green' : 'orange';
+                    
+                    return `
+                        <tr>
+                            <td style="font-weight: 500;">${nomeExibicao}</td>
+                            <td>${m.categoria || '-'}</td>
+                            <td>${m.grupo || '-'}</td>
+                            <td><span style="color: ${statusCor}; font-size: 0.9rem;">●</span> ${m.situacao || '-'}</td>
+                            <td style="text-align: center;">
+                                <button onclick="editarMembro('${m.id}')" class="btn-acao-tabela" title="Editar">📝</button>
+                                <button onclick="excluirMembro('${m.id}')" class="btn-acao-tabela" title="Excluir">🗑️</button>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+
+            } catch (err) {
+                console.error("Erro ao carregar membros:", err);
+                corpo.innerHTML = "<tr><td colspan='5' style='text-align:center; color:red;'>Erro ao carregar dados do banco.</td></tr>";
+            }
+        }
+
+        // Filtro em tempo real (Busca no Nome e no Apelido)
         function filtrarLista() {
             const termo = document.getElementById('buscaMembro').value.toLowerCase();
             const linhas = document.querySelectorAll('#corpoTabelaMembros tr');
             
             linhas.forEach(linha => {
-                // Verifica se a linha tem dados (evita erro se a tabela estiver vazia)
                 if (linha.cells.length > 1) {
-                    const nome = linha.cells[0].textContent.toLowerCase();
-                    linha.style.display = nome.includes(termo) ? '' : 'none';
+                    const textoLinha = linha.cells[0].textContent.toLowerCase();
+                    linha.style.display = textoLinha.includes(termo) ? '' : 'none';
                 }
             });
         }
+
+        // Funções de ação (Stubs para expansão futura)
+        function editarMembro(id) {
+            window.location.href = `cadastro-membro.html?id=${id}`;
+        }
+
+        async function excluirMembro(id) {
+            if (!confirm("Tem certeza que deseja excluir este membro?")) return;
+            // Lógica de exclusão aqui
+            alert("Funcionalidade de exclusão em desenvolvimento.");
+        }
+
+        // Inicialização
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Agora o auth.js já foi carregado, a função existe
+            if (typeof verificarAcesso === 'function') {
+                verificarAcesso();
+            }
+            carregarMembros();
+        });
     </script>
 </body>
 </html>

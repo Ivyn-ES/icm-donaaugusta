@@ -1,5 +1,5 @@
 // ==========================================
-// SOLDADO: js/chamada.js - VERSÃO INTEGRAL CORRIGIDA
+// SOLDADO: js/chamada.js - VERSÃO INTEGRAL CORRIGIDA FINAL
 // ==========================================
 
 let listaMembrosCache = [];
@@ -52,7 +52,6 @@ async function renderizarListaChamada() {
             document.getElementById('portao_funcao').value = resumoDados.portao_funcao || 'Membro';
             document.getElementById('observacoes_culto').value = resumoDados.observacoes || '';
         } else {
-            // Limpa campos se for registro novo
             ['pregador_nome', 'texto_biblico', 'louvor_nome', 'portao_nome', 'observacoes_culto'].forEach(id => {
                 const el = document.getElementById(id);
                 if(el) el.value = '';
@@ -75,6 +74,9 @@ async function renderizarListaChamada() {
             const isVisitante = m.situacao === 'Visitante';
             const apelidoExibir = m.apelido || m.nome.split(' ')[0];
 
+            // AJUSTE: Comparação com os nomes completos salvos no banco
+            const statusSalvo = registro?.status;
+
             return `
             <div class="card-chamada">
                 <div style="flex: 1;">
@@ -86,17 +88,17 @@ async function renderizarListaChamada() {
                 </div>
                 <div class="colunas-nomes">
                     <input type="checkbox" class="custom-check check-presenca" 
-                        ${registro?.status === 'P' ? 'checked' : ''} 
+                        ${statusSalvo === 'Presente' ? 'checked' : ''} 
                         onclick="marcarExclusivo(this)" 
                         data-id="${m.id}" data-cat="${m.categoria}" data-sit="${m.situacao}">
                     
                     <input type="checkbox" class="custom-check check-icm" 
-                        ${registro?.status === 'I' ? 'checked' : ''} 
+                        ${statusSalvo === 'Outra ICM' ? 'checked' : ''} 
                         onclick="marcarExclusivo(this)"
                         data-id="${m.id}" data-cat="${m.categoria}" data-sit="${m.situacao}">
                     
                     <input type="checkbox" class="custom-check check-maanaim" 
-                        ${registro?.status === 'M' ? 'checked' : ''} 
+                        ${statusSalvo === 'Maanaim' ? 'checked' : ''} 
                         onclick="marcarExclusivo(this)"
                         data-id="${m.id}" data-cat="${m.categoria}" data-sit="${m.situacao}">
                 </div>
@@ -183,29 +185,34 @@ function atualizarPlacar() {
     document.getElementById('cont_total').innerText = mAd + mCia + vAdL + vAdM + vCiaL + vCiaM;
 }
 
-// 5. SALVAR TUDO (CORREÇÃO DO ERRO 400 E PERSISTÊNCIA DE TEXTO)
+// 5. SALVAR TUDO
 async function salvarChamada() {
     const data_culto = document.getElementById('data_chamada').value;
     const tipo_evento = document.getElementById('tipo_evento').value;
 
-    // A. Coleta Presenças
+    // A. Coleta Presenças (CORRIGIDO: Identifica o checkbox específico e define status longo + presenca:true)
     const presencas = [];
     document.querySelectorAll('.card-chamada').forEach(card => {
-        const ck = card.querySelector('input[type="checkbox"]:checked');
-        if (ck) {
-            let status = 'P';
-            if (ck.classList.contains('check-icm')) status = 'I';
-            if (ck.classList.contains('check-maanaim')) status = 'M';
+        const ckPresenca = card.querySelector('.check-presenca:checked');
+        const ckICM = card.querySelector('.check-icm:checked');
+        const ckMaanaim = card.querySelector('.check-maanaim:checked');
+
+        let statusFinal = null;
+        if (ckPresenca) statusFinal = 'Presente';
+        else if (ckICM) statusFinal = 'Outra ICM';
+        else if (ckMaanaim) statusFinal = 'Maanaim';
+
+        if (statusFinal) {
             presencas.push({ 
-                membro_id: ck.getAttribute('data-id'), 
+                membro_id: (ckPresenca || ckICM || ckMaanaim).getAttribute('data-id'), 
                 data_culto, 
                 tipo_evento, 
-                status 
+                status: statusFinal,
+                presenca: true // Resolve o problema do campo NULL
             });
         }
     });
 
-    // B. Objeto Resumo (Atenção aos nomes exatos da sua tabela resumo_culto)
     const resumo = {
         data_culto,
         tipo_evento,
@@ -222,22 +229,26 @@ async function salvarChamada() {
     };
 
     try {
-        // 1. Salvar Presenças (Limpa e Insere)
+        // 1. Salvar Presenças
         await _supabase.from('presencas').delete().eq('data_culto', data_culto).eq('tipo_evento', tipo_evento);
         if (presencas.length > 0) {
-            await _supabase.from('presencas').insert(presencas);
+            const { error: errorP } = await _supabase.from('presencas').insert(presencas);
+            if (errorP) throw errorP;
         }
 
-        // 2. Salvar Resumo (Limpa e Insere para evitar erro 400 do Upsert)
+        // 2. Salvar Resumo
         await _supabase.from('resumo_culto').delete().eq('data_culto', data_culto).eq('tipo_evento', tipo_evento);
         const { error: errorResumo } = await _supabase.from('resumo_culto').insert([resumo]);
-        
         if (errorResumo) throw errorResumo;
 
-        alert("✅ Registro do Culto salvo com sucesso!");
+        alert("✅ Registro completo salvo com sucesso!");
+        
+        // RECARREGA para garantir que os checks fiquem ativos na tela
+        renderizarListaChamada(); 
+
     } catch (e) {
         console.error("Erro ao salvar:", e);
-        alert("❌ Erro ao salvar dados. Verifique a conexão.");
+        alert("❌ Erro ao salvar dados.");
     }
 }
 

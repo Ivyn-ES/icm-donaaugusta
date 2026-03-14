@@ -21,12 +21,20 @@ function verificarAcesso() {
 }
 
 // ==========================================
-// 3. FUNÇÃO DE LOGIN (CORRIGIDA)
+// 3. FUNÇÃO DE LOGIN (BLINDADA)
 // ==========================================
 async function realizarLogin(e) {
     if (e && typeof e.preventDefault === 'function') e.preventDefault();
-    const loginInput = document.getElementById('login').value.trim();
-    const senhaInput = document.getElementById('senha').value.trim();
+    
+    // Capturamos os elementos primeiro
+    const campoLogin = document.getElementById('login');
+    const campoSenha = document.getElementById('senha');
+
+    // SÓ CONTINUA SE OS CAMPOS EXISTIREM (Isso evita o erro no Dashboard)
+    if (!campoLogin || !campoSenha) return;
+
+    const loginInput = campoLogin.value.trim();
+    const senhaInput = campoSenha.value.trim();
 
     const { data: usuario, error } = await _supabase
         .from('usuarios')
@@ -39,11 +47,11 @@ async function realizarLogin(e) {
         alert('Login ou senha incorretos!');
         return;
     }
+
+    // Salva e Redireciona
     localStorage.setItem('usuarioLogado', JSON.stringify(usuario));
     window.location.href = 'pages/dashboard.html';
 }
-
-// MANTENHA OS MÓDULOS 4, 5, 6 e 7 ABAIXO DAQUI (NÃO APAGUE ELES)
 
 // ==========================================
 // 4. MÓDULO DE CHAMADA (PRESENÇA) - ATUALIZADO COM FILTRO
@@ -706,36 +714,9 @@ async function gerarRelatorio() {
         resumo.innerHTML = `<div class="card-resumo"><h3>${pres}</h3><p>Presentes</p></div><div class="card-resumo" style="color:#ff4757"><h3>${aus}</h3><p>Ausentes</p></div>`;
     } catch (err) { console.error(err); }
 }
-
 // ==========================================
 // 10. INICIALIZAÇÃO AUTOMÁTICA
 // ==========================================
-document.addEventListener('DOMContentLoaded', () => {
-    const url = window.location.href;
-    
-    // Ajusta interface se a função existir
-    if (typeof ajustarInterfacePorPerfil === 'function') ajustarInterfacePorPerfil();
-
-    const formLogin = document.getElementById('loginForm');
-    if (formLogin) {
-        formLogin.addEventListener('submit', (e) => {
-            e.preventDefault();
-            realizarLogin(document.getElementById('usuario').value, document.getElementById('senha').value);
-        });
-    }
-
-    // Gerenciamento de rotas
-    if (url.includes('admin-usuarios.html')) { renderizarUsuarios(); carregarGruposNoSelect(); }
-    if (url.includes('admin-grupos.html')) { renderizarGrupos(); }
-    if (url.includes('lista-membros.html')) { renderizarListaMembros(); }
-    
-    // Na chamada.html, deixamos o carregarSugestoesMembros apenas para o delay do HTML
-    if (url.includes('chamada.html')) { 
-        renderizarListaChamada(); 
-    }
-    
-    if (url.includes('cadastro-membro.html')) { carregarGruposNoSelect(); carregarMembrosParaVinculo(); }
-});
 
 // ==========================================
 // 11. CIAs (SALVAR / ATUALIZAR)
@@ -1181,18 +1162,42 @@ async function ajustarInterfacePorPerfil() {
 // ==========================================
 // 16. INICIALIZAÇÃO DA PÁGINA (DOM CONTENT LOADED)
 // ==========================================
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     // 1. Verifica se o usuário está logado
     const user = verificarAcesso(); 
+    const urlAtual = window.location.href;
     
+    // 2. Lógica para a Página de Login (index.html)
+    const formLogin = document.getElementById('loginForm');
+    if (formLogin) {
+        formLogin.addEventListener('submit', realizarLogin);
+    }
+
+    // 3. Se estiver logado, executa as funções de interface
     if (user) {
-        // 2. Exibe mensagem de boas-vindas
+        // Exibe mensagem de boas-vindas
         const elBoasVindas = document.getElementById('boasVindas');
         if (elBoasVindas) {
-            elBoasVindas.innerText = `Logado como: ${user.nome} (${user.nivel || user.permissao})`;
+            elBoasVindas.innerText = `Olá, ${user.login}!`;
         }
 
-        // 3. ATIVA O FILTRO DE PERMISSÕES (Módulo 15)
-        ajustarInterfacePorPerfil();
+        // CHAMA O GENERAL: Módulo 15 para ajustar os botões
+        if (typeof ajustarInterfacePorPerfil === 'function') {
+            await ajustarInterfacePorPerfil();
+        }
+    }
+
+    // 4. ROTAS ESPECÍFICAS (Só executa o que pertence à página atual)
+    if (urlAtual.includes('admin-usuarios.html')) {
+        if (typeof renderizarUsuarios === 'function') renderizarUsuarios();
+        if (typeof carregarGruposNoSelect === 'function') carregarGruposNoSelect();
+    }
+    
+    if (urlAtual.includes('chamada.html')) {
+        if (typeof renderizarListaChamada === 'function') renderizarListaChamada();
+    }
+
+    if (urlAtual.includes('aniversariantes.html')) {
+        if (typeof gerarRelatorioAniversariantes === 'function') gerarRelatorioAniversariantes();
     }
 });

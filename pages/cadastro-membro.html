@@ -137,21 +137,22 @@
         async function buscarGruposDoBanco() {
             const selectGrupo = document.getElementById('grupo_vinculado');
             try {
+                // Ajustado para buscar na coluna 'nome' que é o padrão
                 const { data, error } = await _supabase
                     .from('grupos')
-                    .select('nome_grupo')
-                    .order('nome_grupo', { ascending: true });
+                    .select('nome')
+                    .order('nome', { ascending: true });
 
                 if (error) throw error;
 
                 let options = '<option value="">Selecione um Grupo</option>';
                 data.forEach(g => {
-                    options += `<option value="${g.nome_grupo}">${g.nome_grupo}</option>`;
+                    options += `<option value="${g.nome}">${g.nome}</option>`;
                 });
                 selectGrupo.innerHTML = options;
             } catch (err) {
                 console.error("Erro ao carregar grupos:", err);
-                selectGrupo.innerHTML = '<option value="">Erro ao carregar</option>';
+                selectGrupo.innerHTML = '<option value="">Erro ao carregar grupos</option>';
             }
         }
 
@@ -170,10 +171,10 @@
                     document.getElementById('niver_dia').value = data.dia || ""; 
                     document.getElementById('niver_mes').value = data.mes || "";
                     
-                    // Espera os grupos carregarem para selecionar o correto
+                    // Delay estratégico para garantir que o select já tenha os grupos carregados
                     setTimeout(() => {
                         document.getElementById('grupo_vinculado').value = data.grupo || "";
-                    }, 500);
+                    }, 800);
                 }
             } catch (err) { console.error("Erro ao carregar dados do membro:", err); }
         }
@@ -181,9 +182,10 @@
         document.addEventListener('DOMContentLoaded', async () => {
             if (typeof verificarAcesso === 'function') verificarAcesso(); 
             
-            // Busca os grupos primeiro
+            // 1. Carrega os grupos
             await buscarGruposDoBanco();
 
+            // 2. Se for edição, carrega os dados do membro
             if (idEdicao) {
                 document.getElementById('tituloPagina').innerText = "✏️ Editar Membro";
                 document.getElementById('btnSalvar').innerText = "Atualizar Dados";
@@ -225,7 +227,8 @@
                 window.location.href = 'lista-membros.html';
                 
             } catch (err) { 
-                alert("Erro ao salvar."); 
+                console.error("Erro no salvamento:", err);
+                alert("Erro ao salvar dados."); 
             } finally { 
                 btn.disabled = false; 
                 btn.innerText = idEdicao ? 'Atualizar Dados' : 'Salvar Dados'; 

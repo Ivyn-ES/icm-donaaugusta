@@ -1,3 +1,4 @@
+console.log("🚀 O Script carregou com sucesso!");
 // ==========================================
 // 1. CONFIGURAÇÃO E CONEXÃO
 // ==========================================

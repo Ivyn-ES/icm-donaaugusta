@@ -7,13 +7,13 @@
     <link rel="stylesheet" href="../css/style.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        /* Ajuste para garantir que a tabela fique legível no mobile */
         .container-lista { padding: 15px; max-width: 1000px; margin: auto; }
         .btn-novo { background-color: #27ae60; color: white; padding: 10px 15px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; }
         .btn-voltar { background: #636e72; color: white; border: none; padding: 8px 12px; border-radius: 5px; cursor: pointer; }
-        td { padding: 12px 8px; border-bottom: 1px solid #eee; }
-        th { padding: 10px 8px; border-bottom: 2px solid #ddd; }
-        .btn-acao-tabela { background: none; border: none; cursor: pointer; font-size: 1.1rem; }
+        td { padding: 12px 8px; border-bottom: 1px solid #eee; font-size: 0.95rem; }
+        th { padding: 10px 8px; border-bottom: 2px solid #ddd; background-color: #f8f9fa; }
+        .btn-acao-tabela { background: none; border: none; cursor: pointer; font-size: 1.1rem; margin: 0 5px; }
+        .tag-situacao { font-weight: 500; display: flex; align-items: center; gap: 5px; }
     </style>
 </head>
 <body>
@@ -32,7 +32,7 @@
         <div class="tabela-responsiva">
             <table style="width: 100%; border-collapse: collapse;">
                 <thead>
-                    <tr style="background-color: #f8f9fa;">
+                    <tr>
                         <th style="text-align: left;">Nome</th>
                         <th style="text-align: left;">Categoria</th>
                         <th style="text-align: left;">Grupo</th>
@@ -54,35 +54,42 @@
     <script src="../js/script.js"></script>
 
     <script>
-        // Função para carregar a lista diretamente nesta página
         async function carregarMembros() {
             const corpo = document.getElementById('corpoTabelaMembros');
             if (!corpo) return;
 
             try {
-                // Busca os membros conforme a estrutura da sua tabela
                 let { data: membros, error } = await _supabase
                     .from('membros')
                     .select('id, nome, apelido, categoria, grupo, situacao')
+                    .eq('status_registro', 'Ativo')
                     .order('nome', { ascending: true });
 
                 if (error) throw error;
 
                 if (!membros || membros.length === 0) {
-                    corpo.innerHTML = "<tr><td colspan='5' style='text-align:center;'>Nenhum membro encontrado.</td></tr>";
+                    corpo.innerHTML = "<tr><td colspan='5' style='text-align:center;'>Nenhum membro ativo encontrado.</td></tr>";
                     return;
                 }
 
                 corpo.innerHTML = membros.map(m => {
-                    const nomeExibicao = m.apelido ? `${m.nome} (${m.apelido})` : m.nome;
-                    const statusCor = m.situacao === 'Comungante' ? 'green' : 'orange';
+                    // 1. Nome Curto (Prioriza Apelido ou Primeiro Nome)
+                    const nomeParaExibir = m.apelido || m.nome.split(' ')[0];
                     
+                    // 2. Lógica da Situação com Emojis conforme solicitado
+                    let situacaoHTML = m.situacao || '';
+                    if (situacaoHTML.toLowerCase().includes('membro')) {
+                        situacaoHTML = `<span>🔸Membro</span>`;
+                    } else if (situacaoHTML.toLowerCase().includes('visitante')) {
+                        situacaoHTML = `<span>🔹Visitante</span>`;
+                    }
+
                     return `
                         <tr>
-                            <td style="font-weight: 500;">${nomeExibicao}</td>
+                            <td style="font-weight: 500;">${nomeParaExibir}</td>
                             <td>${m.categoria || '-'}</td>
                             <td>${m.grupo || '-'}</td>
-                            <td><span style="color: ${statusCor}; font-size: 0.9rem;">●</span> ${m.situacao || '-'}</td>
+                            <td class="tag-situacao">${situacaoHTML}</td>
                             <td style="text-align: center;">
                                 <button onclick="editarMembro('${m.id}')" class="btn-acao-tabela" title="Editar">📝</button>
                                 <button onclick="excluirMembro('${m.id}')" class="btn-acao-tabela" title="Excluir">🗑️</button>
@@ -93,11 +100,10 @@
 
             } catch (err) {
                 console.error("Erro ao carregar membros:", err);
-                corpo.innerHTML = "<tr><td colspan='5' style='text-align:center; color:red;'>Erro ao carregar dados do banco.</td></tr>";
+                corpo.innerHTML = "<tr><td colspan='5' style='text-align:center; color:red;'>Erro ao carregar dados.</td></tr>";
             }
         }
 
-        // Filtro em tempo real (Busca no Nome e no Apelido)
         function filtrarLista() {
             const termo = document.getElementById('buscaMembro').value.toLowerCase();
             const linhas = document.querySelectorAll('#corpoTabelaMembros tr');
@@ -110,20 +116,27 @@
             });
         }
 
-        // Funções de ação (Stubs para expansão futura)
         function editarMembro(id) {
             window.location.href = `cadastro-membro.html?id=${id}`;
         }
 
         async function excluirMembro(id) {
-            if (!confirm("Tem certeza que deseja excluir este membro?")) return;
-            // Lógica de exclusão aqui
-            alert("Funcionalidade de exclusão em desenvolvimento.");
+            if (!confirm("Tem certeza que deseja remover este membro da lista ativa?")) return;
+            try {
+                const { error } = await _supabase
+                    .from('membros')
+                    .update({ status_registro: 'Inativo' })
+                    .eq('id', id);
+                
+                if (error) throw error;
+                alert("Membro inativado com sucesso!");
+                carregarMembros();
+            } catch (err) {
+                alert("Erro ao remover membro.");
+            }
         }
 
-        // Inicialização
         document.addEventListener('DOMContentLoaded', async () => {
-            // Agora o auth.js já foi carregado, a função existe
             if (typeof verificarAcesso === 'function') {
                 verificarAcesso();
             }

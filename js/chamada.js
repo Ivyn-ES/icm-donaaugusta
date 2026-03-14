@@ -1,5 +1,5 @@
 // ==========================================
-// SOLDADO: js/chamada.js - VERSÃO COM RESUMO
+// SOLDADO: js/chamada.js - VERSÃO DEFINITIVA
 // ==========================================
 
 let listaMembrosCache = [];
@@ -14,7 +14,7 @@ async function renderizarListaChamada() {
     container.innerHTML = "<p style='text-align:center; padding: 20px; color: #888;'>Buscando registros...</p>";
 
     try {
-        // A. BUSCA MEMBROS
+        // A. BUSCA MEMBROS ATIVOS
         const { data: membros, error: errM } = await _supabase
             .from('membros')
             .select('*')
@@ -24,23 +24,22 @@ async function renderizarListaChamada() {
         if (errM) throw errM;
         listaMembrosCache = membros;
 
-        // B. BUSCA PRESENÇAS (QUADRADINHOS)
+        // B. BUSCA PRESENÇAS
         const { data: presencasExistentes } = await _supabase
             .from('presencas')
             .select('*')
             .eq('data_culto', dataSelecionada)
             .eq('tipo_evento', tipoEvento);
 
-        // C. BUSCA RESUMO DO CULTO (PREGADOR, TEXTO, ETC)
-        // Ajuste o nome da tabela 'resumo_culto' se for diferente no seu banco
+        // C. BUSCA RESUMO DO CULTO
         const { data: resumoDados } = await _supabase
             .from('resumo_culto')
             .select('*')
             .eq('data_culto', dataSelecionada)
             .eq('tipo_evento', tipoEvento)
-            .maybeSingle(); // Pega apenas um registro
+            .maybeSingle();
 
-        // D. PREENCHE OS CAMPOS DO RESUMO SE EXISTIREM
+        // D. PREENCHE OS CAMPOS DO RESUMO (DE ACORDO COM SUA TABELA)
         if (resumoDados) {
             document.getElementById('vis_adultos').value = resumoDados.vis_adultos || 0;
             document.getElementById('vis_cias').value = resumoDados.vis_cias || 0;
@@ -53,9 +52,13 @@ async function renderizarListaChamada() {
             document.getElementById('portao_funcao').value = resumoDados.portao_funcao || 'Membro';
             document.getElementById('observacoes_culto').value = resumoDados.observacoes || '';
         } else {
-            // Limpa os campos se não houver registro para o dia
-            const camposParaLimpar = ['pregador_nome', 'texto_biblico', 'louvor_nome', 'portao_nome', 'observacoes_culto'];
-            camposParaLimpar.forEach(id => document.getElementById(id).value = '');
+            // Reseta campos se não houver registro
+            ['pregador_nome', 'texto_biblico', 'louvor_nome', 'portao_nome', 'observacoes_culto'].forEach(id => {
+                document.getElementById(id).value = '';
+            });
+            ['pregador_funcao', 'louvor_funcao', 'portao_funcao'].forEach(id => {
+                document.getElementById(id).value = 'Membro';
+            });
             document.getElementById('vis_adultos').value = 0;
             document.getElementById('vis_cias').value = 0;
         }
@@ -65,7 +68,7 @@ async function renderizarListaChamada() {
         datalist.innerHTML = membros.map(m => `<option value="${m.apelido || m.nome}">`).join('');
 
         container.innerHTML = membros.map(m => {
-            const registro = presencasExistentes?.find(p => p.membro_id === m.id);
+            const registro = presencasExistentes?.find(p => p.membro_id == m.id);
             const isVisitante = m.situacao === 'Visitante';
             const partesNome = m.nome.split(' ');
             const nomeCurto = partesNome.slice(0, 2).join(' ');
@@ -87,11 +90,11 @@ async function renderizarListaChamada() {
                     <input type="checkbox" class="custom-check check-icm" 
                         ${registro?.status === 'I' ? 'checked' : ''} 
                         onclick="marcarExclusivo(this, '${m.id}')"
-                        data-cat="${m.categoria}" data-sit="${m.situacao}">
+                        data-id="${m.id}" data-cat="${m.categoria}" data-sit="${m.situacao}">
                     <input type="checkbox" class="custom-check check-maanaim" 
                         ${registro?.status === 'M' ? 'checked' : ''} 
                         onclick="marcarExclusivo(this, '${m.id}')"
-                        data-cat="${m.categoria}" data-sit="${m.situacao}">
+                        data-id="${m.id}" data-cat="${m.categoria}" data-sit="${m.situacao}">
                 </div>
             </div>`;
         }).join('');
@@ -113,33 +116,42 @@ function marcarExclusivo(el, id) {
     atualizarPlacar();
 }
 
-// 3. AUTO-COMPLETAR FUNÇÃO
-document.addEventListener('input', (e) => {
-    if (e.target.list && e.target.list.id === 'listaMembrosSugestao') {
-        const valorDigitado = e.target.value.trim().toLowerCase();
+// 3. AUTO-COMPLETAR FUNÇÃO (REESCRITO PARA SER INFALÍVEL)
+function vincularAutoCompletar(idInput) {
+    const input = document.getElementById(idInput);
+    if (!input) return;
+
+    input.addEventListener('change', () => {
+        const valorDigitado = input.value.trim().toLowerCase();
         const membro = listaMembrosCache.find(m => 
             (m.apelido && m.apelido.toLowerCase() === valorDigitado) || 
             (m.nome.toLowerCase() === valorDigitado)
         );
 
         if (membro) {
-            const idBase = e.target.id.replace('_nome', ''); 
-            const selectFuncao = document.getElementById(`${idBase}_funcao`);
+            const idSelect = idInput.replace('_nome', '_funcao');
+            const selectFuncao = document.getElementById(idSelect);
             if (selectFuncao) {
-                const normalizar = (txt) => txt ? txt.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim() : "";
-                const catMembro = normalizar(membro.categoria);
+                // Normalização para ignorar acentos e espaços
+                const normalizar = (txt) => txt.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+                const catMembro = normalizar(membro.categoria || "");
 
                 for (let i = 0; i < selectFuncao.options.length; i++) {
-                    const textoOp = normalizar(selectFuncao.options[i].text);
-                    if (textoOp === catMembro) {
+                    const textoOpcao = normalizar(selectFuncao.options[i].text);
+                    const valorOpcao = normalizar(selectFuncao.options[i].value);
+                    
+                    if (textoOpcao === catMembro || valorOpcao === catMembro) {
                         selectFuncao.selectedIndex = i;
                         break;
                     }
                 }
             }
         }
-    }
-});
+    });
+}
+
+// Inicializa o auto-completar para os 3 campos
+['pregador_nome', 'louvor_nome', 'portao_nome'].forEach(vincularAutoCompletar);
 
 // 4. PLACAR
 function atualizarPlacar() {
@@ -152,13 +164,18 @@ function atualizarPlacar() {
             const cat = checkMarcado.getAttribute('data-cat');
             const sit = checkMarcado.getAttribute('data-sit');
             const ehCia = ['CIA', 'Crianças', 'Intermédios', 'Adolescentes'].includes(cat);
-            if (sit === 'Membro') { if (ehCia) mCias++; else mAdultos++; } 
-            else if (sit === 'Visitante') { if (ehCia) vCiasLista++; else vAdultosLista++; }
+            
+            if (sit === 'Membro') {
+                if (ehCia) mCias++; else mAdultos++;
+            } else if (sit === 'Visitante') {
+                if (ehCia) vCiasLista++; else vAdultosLista++;
+            }
         }
     });
 
     const vAdultosManual = parseInt(document.getElementById('vis_adultos').value) || 0;
     const vCiasManual = parseInt(document.getElementById('vis_cias').value) || 0;
+
     const totalVAdultos = vAdultosLista + vAdultosManual;
     const totalVCias = vCiasLista + vCiasManual;
 
@@ -169,23 +186,31 @@ function atualizarPlacar() {
     document.getElementById('cont_total').innerText = mAdultos + mCias + totalVAdultos + totalVCias;
 }
 
-// 5. SALVAR TUDO (PRESENÇAS E RESUMO)
+// 5. SALVAR TUDO
 async function salvarChamada() {
     const data_culto = document.getElementById('data_chamada').value;
     const tipo_evento = document.getElementById('tipo_evento').value;
 
-    // A. Coleta Presenças
+    // A. Coleta Presenças (Conforme sua tabela: membro_id, data_culto, tipo_evento, status)
     const presencas = [];
     document.querySelectorAll('.card-chamada').forEach(card => {
-        const idMembro = card.querySelector('.check-presenca').getAttribute('data-id');
-        let status = null;
-        if(card.querySelector('.check-presenca').checked) status = 'P';
-        else if(card.querySelector('.check-icm').checked) status = 'I';
-        else if(card.querySelector('.check-maanaim').checked) status = 'M';
-        if(status) presencas.push({ membro_id: idMembro, data_culto, tipo_evento, status });
+        const inputCheck = card.querySelector('input[type="checkbox"]:checked');
+        if (inputCheck) {
+            const idMembro = inputCheck.getAttribute('data-id');
+            let statusChar = 'P'; // Default
+            if (inputCheck.classList.contains('check-icm')) statusChar = 'I';
+            if (inputCheck.classList.contains('check-maanaim')) statusChar = 'M';
+            
+            presencas.push({ 
+                membro_id: idMembro, 
+                data_culto, 
+                tipo_evento, 
+                status: statusChar 
+            });
+        }
     });
 
-    // B. Coleta Resumo
+    // B. Coleta Resumo (Conforme sua tabela resumo_culto)
     const resumo = {
         data_culto,
         tipo_evento,
@@ -202,20 +227,25 @@ async function salvarChamada() {
     };
 
     try {
-        // Salva presenças
+        // Primeiro deleta as presenças antigas daquele dia/evento para não duplicar se mudar o status
+        await _supabase.from('presencas').delete().eq('data_culto', data_culto).eq('tipo_evento', tipo_evento);
+        
+        // Insere as novas presenças
         if (presencas.length > 0) {
-            await _supabase.from('presencas').upsert(presencas, { onConflict: 'membro_id, data_culto, tipo_evento' });
+            await _supabase.from('presencas').insert(presencas);
         }
-        // Salva resumo
+
+        // Upsert no resumo
         await _supabase.from('resumo_culto').upsert(resumo, { onConflict: 'data_culto, tipo_evento' });
         
-        alert("✅ Tudo salvo com sucesso!");
+        alert("✅ Registro de Culto Salvo!");
     } catch (e) {
-        alert("❌ Erro ao salvar.");
+        console.error(e);
+        alert("❌ Erro ao salvar dados.");
     }
 }
 
-// Funções auxiliares (Whatsapp e Ajuste) continuam as mesmas...
+// 6. OUTRAS FUNÇÕES
 function ajustarVisitante(id, mudanca) {
     const input = document.getElementById(id);
     input.value = Math.max(0, (parseInt(input.value) || 0) + mudanca);
@@ -223,5 +253,5 @@ function ajustarVisitante(id, mudanca) {
 }
 
 function enviarResumoWhatsapp() {
-    // Mesma lógica de envio...
+    // ... (mesma lógica anterior de gerar a string msg)
 }

@@ -825,14 +825,37 @@ async function criarUsuario(dados) {
 // ==========================================
 // 8. INTERFACE E PERMISSÕES (APOSENTADO)
 // ==========================================
-/**
- * ESTA FUNÇÃO FOI DESATIVADA.
- * O controle de visibilidade agora é feito pelo MÓDULO 15 de forma dinâmica 
- * buscando as informações diretamente da tabela 'niveis_acesso' no Supabase.
- */
 function ajustarInterfacePorPerfil() {
     console.log("Módulo 8 (Antigo) ignorado. O sistema agora usa o Módulo 15 Dinâmico.");
 }
+
+// CERTIFIQUE-SE QUE A FUNÇÃO ABAIXO EXISTE E ESTÁ ASSIM:
+async function realizarLogin(e) {
+    if (e) e.preventDefault();
+    
+    const loginInput = document.getElementById('login').value.trim();
+    const senhaInput = document.getElementById('senha').value.trim();
+
+    // 1. BUSCA O USUÁRIO NO SUPABASE
+    const { data: usuario, error } = await _supabase
+        .from('usuarios')
+        .select('*')
+        .eq('login', loginInput)
+        .eq('senha', senhaInput)
+        .single();
+
+    if (error || !usuario) {
+        alert('Login ou senha incorretos!');
+        return;
+    }
+
+    // 2. SALVA NO LOCALSTORAGE (Aqui está o segredo)
+    localStorage.setItem('usuarioLogado', JSON.stringify(usuario));
+
+    // 3. REDIRECIONA
+    window.location.href = 'pages/dashboard.html';
+}
+
 // ==========================================
 // 9. RELATÓRIOS E ANIVERSARIANTES
 // ==========================================

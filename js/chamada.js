@@ -1,5 +1,5 @@
 // ==========================================
-// SOLDADO: js/chamada.js - VERSÃO INTEGRAL COM WHATSAPP REFINADO
+// SOLDADO: js/chamada.js - VERSÃO INTEGRAL COM ORDEM E DIRIGENTE CORRIGIDOS
 // ==========================================
 
 let listaMembrosCache = [];
@@ -22,6 +22,14 @@ async function renderizarListaChamada() {
             .order('nome');
 
         if (errM) throw errM;
+
+        // --- AJUSTE DE ORDEM: Membros em cima, Visitantes embaixo ---
+        membros.sort((a, b) => {
+            if (a.situacao === 'Membro' && b.situacao === 'Visitante') return -1;
+            if (a.situacao === 'Visitante' && b.situacao === 'Membro') return 1;
+            return 0;
+        });
+
         listaMembrosCache = membros;
 
         // B. BUSCA PRESENÇAS (Tabela: presencas)
@@ -281,11 +289,13 @@ function prepararResumoWhatsApp() {
 
     // COLETA RESPONSÁVEIS
     const pregadorRaw = document.getElementById('pregador_nome').value.trim();
+    const louvorRaw = document.getElementById('louvor_nome').value.trim();
+    const obsRaw = document.getElementById('observacoes_culto').value.trim();
+    
     const pregador = pNome(pregadorRaw);
-    const louvor = pNome(document.getElementById('louvor_nome').value);
+    const louvor = pNome(louvorRaw);
     const portao = pNome(document.getElementById('portao_nome').value);
     const texto = document.getElementById('texto_biblico').value.trim();
-    const obs = document.getElementById('observacoes_culto').value.trim();
 
     // MONTAGEM DA MENSAGEM
     let msg = `ICM - Dona Augusta\n`;
@@ -299,18 +309,25 @@ function prepararResumoWhatsApp() {
     msg += `*Responsáveis:*\n`;
     
     // Lógica de Dirigente: Se pregador faz louvor ou está nas Obs
-    if (pregador) {
-        const isDirigente = (pregadorRaw === document.getElementById('louvor_nome').value.trim() || obs.toLowerCase().includes(pregador.toLowerCase()));
+    let isDirigente = false;
+    if (pregadorRaw !== "") {
+        const mesmoLouvor = louvorRaw !== "" && (pregadorRaw.toLowerCase() === louvorRaw.toLowerCase());
+        const naObs = obsRaw.toLowerCase().includes(pregador.toLowerCase());
+        isDirigente = mesmoLouvor || naObs;
+        
         msg += `${isDirigente ? "🌟 Dirigente" : "🎤 Pregador"}: ${pregador}\n`;
     }
     
     if (texto) msg += `📖 Texto: ${texto}\n`;
     
-    // Só aparece se não estiver vazio e não for o pregador (se for dirigente)
-    if (louvor && (louvor !== pregador)) msg += `🎶 Louvor: ${louvor}\n`;
+    // Só aparece se não estiver vazio e se não for a mesma pessoa do Pregador (quando for Dirigente)
+    if (louvor && !(isDirigente && louvorRaw.toLowerCase() === pregadorRaw.toLowerCase())) {
+        msg += `🎶 Louvor: ${louvor}\n`;
+    }
+    
     if (portao) msg += `🚪 Portão: ${portao}\n`;
     
-    if (obs) msg += `\n*Obs.:* ${obs}`;
+    if (obsRaw) msg += `\n*Obs.:* ${obsRaw}`;
 
     // Abre WhatsApp
     const url = `https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`;

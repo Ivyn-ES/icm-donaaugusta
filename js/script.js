@@ -10,16 +10,31 @@ const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 // ==========================================
 // 2. SEGURANÇA E ACESSO (VERSÃO DINÂMICA)
 // ==========================================
+
+// Função que vigia quem está logado
 function verificarAcesso() {
     const usuarioJson = localStorage.getItem('usuarioLogado');
     const usuario = usuarioJson ? JSON.parse(usuarioJson) : null;
+    
     if (!usuario) {
+        // Se não tem usuário e não estou na index, volta pro início
         if (!window.location.href.includes('index.html')) {
             window.location.href = '../index.html';
         }
         return null;
     }
     return usuario;
+}
+
+// O SOLDADO DA SAÍDA: Função para deslogar
+function realizarLogout() {
+    console.log("Iniciando saída do sistema...");
+    
+    // 1. Limpa o "crachá" do navegador
+    localStorage.removeItem('usuarioLogado');
+    
+    // 2. Garante que o histórico não permita voltar com o botão "voltar" do navegador
+    window.location.replace('../index.html'); 
 }
 
 // ==========================================
@@ -1197,4 +1212,10 @@ document.addEventListener('DOMContentLoaded', () => {
             ajustarInterfacePorPerfil();
         }
     }
+    // Ativador do botão Sair
+    const btnSair = document.getElementById('btnSair'); 
+    if (btnSair) {
+        btnSair.addEventListener('click', realizarLogout);
+    }
+    
 });

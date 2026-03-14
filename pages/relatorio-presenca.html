@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Relatório de Frequência - ICM</title>
     <link rel="stylesheet" href="../css/style.css">
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         .card-filtros {
             background: #fff;
@@ -91,7 +90,7 @@
                     </select>
                 </div>
 
-                <button onclick="gerarRelatorioFrequencia()" class="btn-primario" style="height: 45px; min-width: 180px;">
+                <button onclick="gerarNovoRelatorioFrequencia()" class="btn-primario" style="height: 45px; min-width: 180px;">
                     Gerar Relatório
                 </button>
             </div>
@@ -121,24 +120,18 @@
         </section>
     </div>
 
-    <script src="../js/script.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="../js/supabase-config.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../js/relatorios.js"></script> <script src="../js/script.js"></script>
+
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            // Data local correta (AAAA-MM-DD)
+            verificarAcesso();
             const hoje = new Date();
-            document.getElementById('filtroData').value = hoje.toLocaleDateString('sv-SE');
+            // Formato ISO para o input date (AAAA-MM-DD)
+            document.getElementById('filtroData').value = hoje.toISOString().split('T')[0];
         });
-
-        async function gerarRelatorioFrequencia() {
-            const corpo = document.getElementById('corpoRelatorio');
-            corpo.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:30px;">🔍 Calculando frequências e ausências...</td></tr>';
-            
-            if (typeof gerarNovoRelatorioFrequencia === "function") {
-                await gerarNovoRelatorioFrequencia();
-            } else {
-                alert("Erro: A lógica de processamento ainda não foi carregada no script.js");
-            }
-        }
     </script>
 </body>
 </html>

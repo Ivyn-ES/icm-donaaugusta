@@ -44,7 +44,6 @@
             padding-right: 5px;
         }
 
-        /* Largura fixa para os ícones baterem com os botões da lista */
         .colunas-nomes span {
             width: 35px; 
             text-align: center;
@@ -59,7 +58,6 @@
             height: 45px; 
         }
 
-        /* Card do membro: ajuste para não quebrar em telas pequenas */
         .card-chamada {
             display: flex;
             justify-content: space-between;
@@ -69,7 +67,6 @@
             transition: background 0.2s;
         }
     </style>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
     <datalist id="listaMembrosSugestao"></datalist>
@@ -98,6 +95,7 @@
             <div style="text-align: center; margin: 5px;">
                 <span style="display: block; font-weight: bold; color: #2c3e50;">👥 Membros</span>
                 <small>Ad: <span id="cont_membros_adultos">0</span> | CIAs: <span id="cont_membros_cias">0</span></small>
+                <div id="cont_percentual_display" style="font-size: 0.8rem; margin-top: 5px; font-weight: bold;"></div>
             </div>
             <div style="text-align: center; margin: 5px;">
                 <span style="display: block; font-weight: bold; color: #2c3e50;">🌟 Visitantes</span>
@@ -148,7 +146,7 @@
             <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 10px; margin-bottom: 15px;">
                 <div>
                     <label style="display:block; font-weight:bold; margin-bottom:5px;">🎤 Pregador</label>
-                    <input type="search" id="pregador_nome" list="listaMembrosSugestao" oninput="identificarFuncao(this, 'pregador_funcao')" placeholder="Nome ou Apelido..." style="width:100%; padding:10px; border-radius:8px; border:1px solid #ccc;">
+                    <input type="search" id="pregador_nome" list="listaMembrosSugestao" placeholder="Nome ou Apelido..." style="width:100%; padding:10px; border-radius:8px; border:1px solid #ccc;">
                 </div>
                 <div>
                     <label style="display:block; font-weight:bold; margin-bottom:5px;">Função</label>
@@ -169,7 +167,7 @@
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
                 <div>
                     <label style="display:block; font-weight:bold; margin-bottom:5px;">🎶 Louvor</label>
-                    <input type="search" id="louvor_nome" list="listaMembrosSugestao" oninput="identificarFuncao(this, 'louvor_funcao')" placeholder="Responsável..." style="width:100%; padding:10px; border-radius:8px; border:1px solid #ccc; margin-bottom: 5px;">
+                    <input type="search" id="louvor_nome" list="listaMembrosSugestao" placeholder="Responsável..." style="width:100%; padding:10px; border-radius:8px; border:1px solid #ccc; margin-bottom: 5px;">
                     <select id="louvor_funcao" class="select-funcao-estilo">
                         <option value="Membro">Membro</option>
                         <option value="Obreiro">Obreiro</option>
@@ -179,7 +177,7 @@
                 </div>
                 <div>
                     <label style="display:block; font-weight:bold; margin-bottom:5px;">🚪 Portão</label>
-                    <input type="search" id="portao_nome" list="listaMembrosSugestao" oninput="identificarFuncao(this, 'portao_funcao')" placeholder="Responsável..." style="width:100%; padding:10px; border-radius:8px; border:1px solid #ccc; margin-bottom: 5px;">
+                    <input type="search" id="portao_nome" list="listaMembrosSugestao" placeholder="Responsável..." style="width:100%; padding:10px; border-radius:8px; border:1px solid #ccc; margin-bottom: 5px;">
                     <select id="portao_funcao" class="select-funcao-estilo">
                         <option value="Membro">Membro</option>
                         <option value="Obreiro">Obreiro</option>
@@ -197,27 +195,33 @@
 
         <div style="margin-top: 30px; display: flex; flex-direction: column; gap: 12px;">
             <button onclick="salvarChamada()" class="btn-salvar" id="btnFinalizar" style="padding: 18px; font-size: 1.2rem; font-weight: bold; background-color: #007bff; color: white; border: none; border-radius: 10px; cursor: pointer;">Atualizar Dados</button>
-            <button onclick="gerarResumoWhatsApp()" style="background-color: #25d366; width: 100%; padding: 15px; color: white; border: none; border-radius: 10px; font-weight: bold; display: flex; align-items: center; justify-content: center; gap: 10px; cursor: pointer;">
+            <button onclick="enviarResumoWhatsapp()" style="background-color: #25d366; width: 100%; padding: 15px; color: white; border: none; border-radius: 10px; font-weight: bold; display: flex; align-items: center; justify-content: center; gap: 10px; cursor: pointer;">
                 <span>📱 Gerar Resumo para WhatsApp</span>
             </button>
             <a href="dashboard.html" style="text-align: center; text-decoration: none; padding: 12px; background: #f1f1f1; border-radius: 8px; color: #555; font-weight: bold;">⬅ Voltar ao Painel</a>
         </div>
     </div>
 
-    <script src="../js/script.js"></script>
-    <script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="../js/supabase-config.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../js/chamada.js"></script> <script src="../js/script.js"></script> <script>
+        // Inicialização específica da página
         document.addEventListener('DOMContentLoaded', async () => {
+            verificarAcesso(); // Garante segurança
+            
             const campoData = document.getElementById('data_chamada');
             if (campoData) {
-                // Ajuste preciso para data local (sem fuso horário)
                 const hoje = new Date();
                 const offset = hoje.getTimezoneOffset();
                 const dataLocal = new Date(hoje.getTime() - (offset * 60 * 1000));
                 campoData.value = dataLocal.toISOString().split('T')[0];
             }
             
-            // Inicia o processo de busca de dados
-            await renderizarListaChamada();
+            // Chama o soldado da chamada para carregar os membros
+            if (typeof renderizarListaChamada === 'function') {
+                await renderizarListaChamada();
+            }
         });
     </script>
 </body>

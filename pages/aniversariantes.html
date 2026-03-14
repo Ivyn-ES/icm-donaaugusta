@@ -83,18 +83,18 @@
             <div class="campo-filtro">
                 <label>📅 Mês:</label>
                 <select id="filtroMes">
-                    <option value="1">Janeiro</option>
-                    <option value="2">Fevereiro</option>
-                    <option value="3">Março</option>
-                    <option value="4">Abril</option>
-                    <option value="5">Maio</option>
-                    <option value="6">Junho</option>
-                    <option value="7">Julho</option>
-                    <option value="8">Agosto</option>
-                    <option value="9">Setembro</option>
-                    <option value="10">Outubro</option>
-                    <option value="11">Novembro</option>
-                    <option value="12">Dezembro</option>
+                    <option value="Janeiro">Janeiro</option>
+                    <option value="Fevereiro">Fevereiro</option>
+                    <option value="Março">Março</option>
+                    <option value="Abril">Abril</option>
+                    <option value="Maio">Maio</option>
+                    <option value="Junho">Junho</option>
+                    <option value="Julho">Julho</option>
+                    <option value="Agosto">Agosto</option>
+                    <option value="Setembro">Setembro</option>
+                    <option value="Outubro">Outubro</option>
+                    <option value="Novembro">Novembro</option>
+                    <option value="Dezembro">Dezembro</option>
                 </select>
             </div>
 
@@ -118,7 +118,7 @@
                 <thead>
                     <tr>
                         <th style="text-align: center; width: 60px;">Dia</th>
-                        <th>Nome</th>
+                        <th>Nome / Apelido</th>
                         <th style="text-align: center; width: 80px;">Sexo</th>
                     </tr>
                 </thead>
@@ -139,36 +139,32 @@
         let aniversariantesFiltrados = [];
 
         async function gerarRelatorioAniversariantes() {
+            // Agora o valor é o texto do mês (Janeiro, Fevereiro...)
             const mesBusca = document.getElementById('filtroMes').value;
             const sexoBusca = document.getElementById('filtroSexo').value;
             const corpo = document.getElementById('corpoTabelaAniversarios');
             const msgVazia = document.getElementById('msgVazia');
 
-            if (!corpo) return;
+            if(!corpo) return;
             corpo.innerHTML = "<tr><td colspan='3' style='text-align:center;'>Buscando...</td></tr>";
 
             try {
+                // Busca usando as colunas reais: dia e mes
                 let { data: membros, error } = await _supabase
                     .from('membros')
-                    .select('nome, apelido, data_nascimento, sexo')
-                    .eq('status_registro', 'Ativo');
+                    .select('nome, apelido, dia, mes, sexo')
+                    .eq('status_registro', 'Ativo')
+                    .eq('mes', mesBusca); // Filtra direto no banco pelo nome do mês
 
                 if (error) throw error;
 
+                // Filtro adicional de sexo no JS
                 aniversariantesFiltrados = membros.filter(m => {
-                    if (!m.data_nascimento) return false;
-                    const mesMembro = parseInt(m.data_nascimento.split('-')[1]);
-                    const mesFiltro = parseInt(mesBusca);
-                    
-                    const matchesMes = mesMembro === mesFiltro;
-                    const matchesSexo = (sexoBusca === 'Todos' || m.sexo === sexoBusca);
-                    
-                    return matchesMes && matchesSexo;
+                    return (sexoBusca === 'Todos' || m.sexo === sexoBusca);
                 });
 
-                aniversariantesFiltrados.sort((a, b) => {
-                    return parseInt(a.data_nascimento.split('-')[2]) - parseInt(b.data_nascimento.split('-')[2]);
-                });
+                // Ordena pelo número do dia
+                aniversariantesFiltrados.sort((a, b) => (a.dia || 0) - (b.dia || 0));
 
                 if (aniversariantesFiltrados.length === 0) {
                     corpo.innerHTML = "";
@@ -178,12 +174,11 @@
 
                 msgVazia.style.display = 'none';
                 corpo.innerHTML = aniversariantesFiltrados.map(m => {
-                    const dia = m.data_nascimento.split('-')[2];
                     const nomeExibir = m.apelido || m.nome;
                     const iconSexo = m.sexo === 'Masculino' ? '👨‍🦱' : '👩‍🦰';
                     return `
                         <tr>
-                            <td style="text-align: center; font-weight: bold;">${dia}</td>
+                            <td style="text-align: center; font-weight: bold;">${m.dia || '--'}</td>
                             <td>${nomeExibir}</td>
                             <td style="text-align: center;">${iconSexo}</td>
                         </tr>
@@ -198,19 +193,16 @@
 
         function enviarAniversariantesZap() {
             if (aniversariantesFiltrados.length === 0) {
-                alert("Consulte a lista primeiro ou verifique se há aniversariantes.");
+                alert("Consulte a lista primeiro.");
                 return;
             }
 
-            const selectMes = document.getElementById('filtroMes');
-            const nomeMes = selectMes.options[selectMes.selectedIndex].text;
-            
-            let msg = `🎂 *Aniversariantes de ${nomeMes} - ICM*\n\n`;
+            const mesNome = document.getElementById('filtroMes').value;
+            let msg = `🎂 *Aniversariantes de ${mesNome} - ICM*\n\n`;
 
             aniversariantesFiltrados.forEach(m => {
-                const dia = m.data_nascimento.split('-')[2];
                 const nome = m.apelido || m.nome.split(' ')[0];
-                msg += `*${dia}* - ${nome}\n`;
+                msg += `*${m.dia}* - ${nome}\n`;
             });
 
             msg += `\n_Parabéns a todos! Que o Senhor os abençoe!_ 🙌`;
@@ -221,18 +213,18 @@
 
         function inicializarPagina() {
             if (typeof _supabase !== 'undefined') {
+                const meses = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
+                const mesAtualNome = meses[new Date().getMonth()];
+                const selectMes = document.getElementById('filtroMes');
+                if(selectMes) selectMes.value = mesAtualNome;
+                
                 gerarRelatorioAniversariantes();
             } else {
                 setTimeout(inicializarPagina, 200);
             }
         }
 
-        document.addEventListener('DOMContentLoaded', () => {
-            const mesAtual = new Date().getMonth() + 1;
-            const selectMes = document.getElementById('filtroMes');
-            if(selectMes) selectMes.value = mesAtual;
-            inicializarPagina();
-        });
+        document.addEventListener('DOMContentLoaded', inicializarPagina);
     </script>
 </body>
 </html>

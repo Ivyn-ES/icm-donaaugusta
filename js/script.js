@@ -2,8 +2,7 @@
 // 1. CONFIGURAÇÃO E CONEXÃO
 // ==========================================
 const SUPABASE_URL = 'https://pxjczmjhzopfxwlmpjfv.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB4amN6bWpoem9wZnh3bG1wamZ2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE1MjUzMjYsImV4cCI6MjA4NzEwMTMyNn0.OfekQPuYUwsZu5X9_lPDGBbVTZYBvAQ5KdiFx3TFOCY';
-
+const SUPABASE_KEY = 'SUA_CHAVE_AQUI'; 
 const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // ==========================================
@@ -12,189 +11,39 @@ const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 function verificarAcesso() {
     const usuarioJson = localStorage.getItem('usuarioLogado');
     const usuario = usuarioJson ? JSON.parse(usuarioJson) : null;
-    
-    // 1. Se não houver usuário logado, manda para o Login
     if (!usuario) {
         if (!window.location.href.includes('index.html')) {
             window.location.href = '../index.html';
         }
         return null;
     }
-
-    // 2. O acesso agora é controlado dinamicamente pelos botões do Dashboard.
-    // O sistema apenas garante que a pessoa está autenticada.
     return usuario;
 }
 
 // ==========================================
-// 3. MÓDULO DE MEMBROS (VERSÃO INTEGRAL)
+// 3. FUNÇÃO DE LOGIN (CORRIGIDA)
 // ==========================================
-async function renderizarListaMembros() {
-    const corpoTabela = document.getElementById('corpoTabelaMembros');
-    if (!corpoTabela) return;
+async function realizarLogin(e) {
+    if (e && typeof e.preventDefault === 'function') e.preventDefault();
+    const loginInput = document.getElementById('login').value.trim();
+    const senhaInput = document.getElementById('senha').value.trim();
 
-    const user = verificarAcesso();
-    if (!user) return;
+    const { data: usuario, error } = await _supabase
+        .from('usuarios')
+        .select('*')
+        .eq('login', loginInput)
+        .eq('senha', senhaInput)
+        .single();
 
-    const nivel = (user.permissao || user.nivel || "").toLowerCase();
-    
-    // Definição de Privilégios (Secretário incluído)
-    const ehPrivilegiado = ['admin', 'master', 'coordenadora', 'secretario', 'pastor'].includes(nivel);
-    const ehAdminMasterSecretario = ['admin', 'master', 'secretario'].includes(nivel);
-
-    try {
-        let consulta = _supabase.from('membros').select('*').eq('status_registro', 'Ativo');
-        
-        // Filtro de Grupo: Se não for privilegiado, vê apenas o seu grupo
-        if (!ehPrivilegiado) {
-            consulta = consulta.eq('grupo', user.grupo); 
-        }
-
-        const { data, error } = await consulta.order('nome', { ascending: true });
-        if (error) throw error;
-
-        if (!data || data.length === 0) {
-            corpoTabela.innerHTML = "<tr><td colspan='5' style='text-align:center;'>Nenhum membro ativo encontrado.</td></tr>";
-            return;
-        }
-
-        corpoTabela.innerHTML = data.map(m => `
-            <tr>
-                <td>${m.nome} ${m.apelido ? `<br><small>(${m.apelido})</small>` : ''}</td> 
-                <td>${m.categoria}</td>
-                <td>${m.grupo || 'Sem Grupo'}</td>
-                <td>${m.situacao}</td>
-                <td style="text-align:center;">
-                    ${ehAdminMasterSecretario ? `
-                        <button onclick="prepararEdicao('${m.id}')" style="background:none; border:none; cursor:pointer;" title="Editar">✏️</button>
-                        <button onclick="excluirMembro('${m.id}')" style="background:none; border:none; cursor:pointer;" title="Excluir">🗑️</button>
-                    ` : (ehPrivilegiado ? '👁️' : '🔒')}
-                </td>
-            </tr>`).join('');
-    } catch (err) { 
-        console.error("Erro ao renderizar lista:", err);
-        corpoTabela.innerHTML = "<tr><td colspan='5' style='color:red;'>Erro ao carregar os dados.</td></tr>"; 
-    }
-}
-
-async function cadastrarMembro(dados) {
-    const user = verificarAcesso();
-    const nivel = (user?.permissao || user?.nivel || "").toLowerCase();
-    
-    // Apenas quem tem permissão de escrita
-    const podeCadastrar = ['admin', 'master', 'coordenadora', 'pastor', 'secretario'].includes(nivel);
-    
-    if (!podeCadastrar) {
-        alert("❌ Você não tem permissão para cadastrar novos membros.");
-        return false;
-    }
-
-    try {
-        const { error } = await _supabase.from('membros').insert([{
-            nome: dados.nome, 
-            apelido: dados.apelido, 
-            funcao: dados.funcao,
-            situacao: dados.situacao, 
-            categoria: dados.categoria, 
-            sexo: dados.sexo,
-            eh_idoso: dados.eh_idoso, 
-            grupo: dados.grupo, 
-            dia: parseInt(dados.niver_dia) || 0, 
-            mes: dados.niver_mes, 
-            familia_id: dados.familia_vinculo || crypto.randomUUID(), 
-            status_registro: 'Ativo'
-        }]);
-
-        if (error) throw error;
-        alert("✅ Membro cadastrado com sucesso!");
-        return true; 
-    } catch (err) { 
-        alert("Erro no cadastro: " + err.message); 
-        return false; 
-    }
-}
-
-async function atualizarMembro(id, dados) {
-    const user = verificarAcesso();
-    const nivel = (user?.permissao || user?.nivel || "").toLowerCase();
-    const podeEditar = ['admin', 'master', 'coordenadora', 'pastor', 'secretario'].includes(nivel);
-
-    if (!podeEditar) {
-        alert("❌ Sem permissão para atualizar dados.");
-        return false;
-    }
-
-    try {
-        const { error } = await _supabase.from('membros').update({
-            nome: dados.nome, 
-            apelido: dados.apelido, 
-            funcao: dados.funcao,
-            situacao: dados.situacao, 
-            categoria: dados.categoria, 
-            sexo: dados.sexo,
-            eh_idoso: dados.eh_idoso, 
-            grupo: dados.grupo, 
-            dia: parseInt(dados.niver_dia) || 0,
-            mes: dados.niver_mes, 
-            familia_id: dados.familia_vinculo || crypto.randomUUID()
-        }).eq('id', id);
-
-        if (error) throw error;
-        alert("✅ Dados atualizados!");
-        return true;
-    } catch (err) { 
-        alert("Erro na atualização: " + err.message); 
-        return false; 
-    }
-}
-
-async function carregarMembrosParaVinculo() {
-    const selectFamilia = document.getElementById('vinculo_familia');
-    if (!selectFamilia) return;
-    try {
-        const { data, error } = await _supabase
-            .from('membros')
-            .select('nome, familia_id')
-            .eq('status_registro', 'Ativo')
-            .order('nome');
-
-        if (error) throw error;
-        
-        let html = '<option value="">Ninguém (Membro Individual / Novo Responsável)</option>';
-        if (data) html += data.map(m => `<option value="${m.familia_id}">${m.nome}</option>`).join('');
-        selectFamilia.innerHTML = html;
-    } catch (err) { 
-        console.error("Erro ao carregar vínculos:", err); 
-    }
-}
-
-function prepararEdicao(id) {
-    localStorage.setItem('idMembroEdicao', id);
-    window.location.href = 'cadastro-membro.html';
-}
-
-async function excluirMembro(id) {
-    const user = verificarAcesso();
-    const nivel = (user?.permissao || user?.nivel || "").toLowerCase();
-    
-    if (nivel !== 'admin' && nivel !== 'master' && nivel !== 'secretario') {
-        alert("❌ Apenas administradores podem excluir registros.");
+    if (error || !usuario) {
+        alert('Login ou senha incorretos!');
         return;
     }
-
-    if (!confirm("Tem certeza que deseja remover este membro definitivamente?")) return;
-
-    try {
-        // Sugestão: Você pode mudar para .update({status_registro: 'Excluído'}) em vez de delete se quiser manter histórico
-        const { error } = await _supabase.from('membros').delete().eq('id', id);
-        if (error) throw error;
-        
-        alert("✅ Membro removido!");
-        renderizarListaMembros();
-    } catch (err) { 
-        alert("Erro ao excluir: " + err.message); 
-    }
+    localStorage.setItem('usuarioLogado', JSON.stringify(usuario));
+    window.location.href = 'pages/dashboard.html';
 }
+
+// MANTENHA OS MÓDULOS 4, 5, 6 e 7 ABAIXO DAQUI (NÃO APAGUE ELES)
 
 // ==========================================
 // 4. MÓDULO DE CHAMADA (PRESENÇA) - ATUALIZADO COM FILTRO
@@ -823,37 +672,11 @@ async function criarUsuario(dados) {
 }
 
 // ==========================================
-// 8. INTERFACE E PERMISSÕES (APOSENTADO)
+// 8. INTERFACE (APOSENTADO - AGORA USA O MÓDULO 15)
 // ==========================================
 function ajustarInterfacePorPerfil() {
-    console.log("Módulo 8 (Antigo) ignorado. O sistema agora usa o Módulo 15 Dinâmico.");
-}
-
-// CERTIFIQUE-SE QUE A FUNÇÃO ABAIXO EXISTE E ESTÁ ASSIM:
-async function realizarLogin(e) {
-    if (e) e.preventDefault();
-    
-    const loginInput = document.getElementById('login').value.trim();
-    const senhaInput = document.getElementById('senha').value.trim();
-
-    // 1. BUSCA O USUÁRIO NO SUPABASE
-    const { data: usuario, error } = await _supabase
-        .from('usuarios')
-        .select('*')
-        .eq('login', loginInput)
-        .eq('senha', senhaInput)
-        .single();
-
-    if (error || !usuario) {
-        alert('Login ou senha incorretos!');
-        return;
-    }
-
-    // 2. SALVA NO LOCALSTORAGE (Aqui está o segredo)
-    localStorage.setItem('usuarioLogado', JSON.stringify(usuario));
-
-    // 3. REDIRECIONA
-    window.location.href = 'pages/dashboard.html';
+    // Esta função antiga foi desativada para não conflitar com o Módulo 15.
+    console.log("Sistema utilizando controle dinâmico do Módulo 15.");
 }
 
 // ==========================================

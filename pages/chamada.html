@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chamada - ICM</title>
     <link rel="stylesheet" href="../css/style.css">
-<style>
+    <style>
         /* 1. Botões de ajuste de visitantes manual */
         .btn-ajuste { width: 35px; height: 35px; border: none; border-radius: 8px; font-size: 1.2rem; font-weight: bold; color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: opacity 0.2s; }
         .btn-menos { background-color: #e74c3c; }
@@ -19,7 +19,7 @@
             gap: 15px;
             font-size: 0.85rem;
             color: #444;
-            margin-bottom: 30px; /* Aumentado para desgrudar do seletor */
+            margin-bottom: 30px; 
             padding: 12px;
             background: #fff;
             border-radius: 4px;
@@ -73,8 +73,8 @@
             -webkit-appearance: none;
             width: 45px;
             height: 45px;
-            border: 1px solid #bbb; /* Borda mais seca */
-            border-radius: 0px; /* Quadrado perfeito */
+            border: 1px solid #bbb; 
+            border-radius: 0px; 
             cursor: pointer;
             display: flex;
             align-items: center;
@@ -233,9 +233,11 @@
 
         <div style="margin-top: 30px; display: flex; flex-direction: column; gap: 12px;">
             <button onclick="salvarChamada()" class="btn-salvar" id="btnFinalizar" style="padding: 18px; font-size: 1.2rem; font-weight: bold; background-color: #007bff; color: white; border: none; border-radius: 10px; cursor: pointer;">Atualizar Dados</button>
-            <button onclick="enviarResumoWhatsapp()" style="background-color: #25d366; width: 100%; padding: 15px; color: white; border: none; border-radius: 10px; font-weight: bold; display: flex; align-items: center; justify-content: center; gap: 10px; cursor: pointer;">
+            
+            <button onclick="prepararResumoWhatsApp()" style="background-color: #25d366; width: 100%; padding: 15px; color: white; border: none; border-radius: 10px; font-weight: bold; display: flex; align-items: center; justify-content: center; gap: 10px; cursor: pointer;">
                 <span>📱 Gerar Resumo para WhatsApp</span>
             </button>
+            
             <a href="dashboard.html" style="text-align: center; text-decoration: none; padding: 12px; background: #f1f1f1; border-radius: 8px; color: #555; font-weight: bold;">⬅ Voltar ao Painel</a>
         </div>
     </div>
@@ -243,10 +245,15 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="../js/supabase-config.js"></script>
     <script src="../js/auth.js"></script>
-    <script src="../js/chamada.js"></script> <script src="../js/script.js"></script> <script>
+    
+    <script src="../js/utils.js"></script> 
+    <script src="../js/chamada.js"></script> 
+    <script src="../js/script.js"></script> 
+
+    <script>
         // Inicialização específica da página
         document.addEventListener('DOMContentLoaded', async () => {
-            verificarAcesso(); // Garante segurança
+            if (typeof verificarAcesso === 'function') verificarAcesso(); 
             
             const campoData = document.getElementById('data_chamada');
             if (campoData) {
@@ -256,7 +263,7 @@
                 campoData.value = dataLocal.toISOString().split('T')[0];
             }
             
-            // Chama o soldado da chamada para carregar os membros
+            // Chama a renderização da lista
             if (typeof renderizarListaChamada === 'function') {
                 await renderizarListaChamada();
             }

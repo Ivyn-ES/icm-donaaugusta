@@ -260,3 +260,41 @@ function ajustarVisitante(id, mudanca) {
         atualizarPlacar();
     }
 }
+
+// ==========================================
+// LÓGICA DE WHATSAPP ESPECÍFICA DA CHAMADA
+// ==========================================
+function prepararResumoWhatsApp() {
+    const dataRef = document.getElementById('data_chamada').value;
+    const tipoEvento = document.getElementById('tipo_evento').value;
+    
+    // Usando a utilidade central para a data
+    const dataFormatada = Utils.formatarDataBR(dataRef);
+
+    const mAd = document.getElementById('cont_membros_adultos').innerText;
+    const mCia = document.getElementById('cont_membros_cias').innerText;
+    const vAd = document.getElementById('cont_vis_adultos_display').innerText;
+    const vCia = document.getElementById('cont_vis_cias_display').innerText;
+    const total = document.getElementById('cont_total').innerText;
+
+    const pregador = document.getElementById('pregador_nome').value || "Não informado";
+    const pregadorFunc = document.getElementById('pregador_funcao').value;
+    const textoBiblico = document.getElementById('texto_biblico').value || "Não informado";
+    const louvor = document.getElementById('louvor_nome').value || "Não informado";
+    const portao = document.getElementById('portao_nome').value || "Não informado";
+    const observacoes = document.getElementById('observacoes_culto').value || "Nenhuma.";
+
+    let msg = `*RESUMO DO CULTO - ${dataFormatada}* \n`;
+    msg += `*Evento:* ${tipoEvento}\n\n`;
+    msg += `👥 *Membros:* Ad: ${mAd} | CIAs: ${mCia}\n`;
+    msg += `🌟 *Visitantes:* Ad: ${vAd} | CIAs: ${vCia}\n`;
+    msg += `📊 *Total Geral:* ${total}\n\n`;
+    msg += `📖 *Palavra:* ${pregador} (${pregadorFunc})\n`;
+    msg += `📜 *Texto:* ${textoBiblico}\n`;
+    msg += `🎶 *Louvor:* ${louvor}\n`;
+    msg += `🚪 *Portão:* ${portao}\n\n`;
+    msg += `📝 *Obs:* ${observacoes}`;
+
+    // Chama o enviador central
+    Utils.enviarWhatsApp(msg);
+}

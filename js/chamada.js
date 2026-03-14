@@ -279,22 +279,23 @@ function prepararResumoWhatsApp() {
     const vCia = document.getElementById('cont_vis_cias_display').innerText;
     const totalVidas = document.getElementById('cont_total').innerText;
 
-    // CÁLCULO DA PORCENTAGEM (Membros Presentes / Total de Membros Ativos)
+    // CÁLCULO DA PORCENTAGEM
     const totalMembrosCadastrados = listaMembrosCache.filter(m => m.situacao === 'Membro').length || 1;
     const porcentagem = Math.round(((mAd + mCia) / totalMembrosCadastrados) * 100);
     const emojiPerto = porcentagem >= 50 ? "🟢" : "🔴";
 
-    // FUNÇÃO PARA PEGAR SÓ PRIMEIRO NOME
+    // FUNÇÃO AUXILIAR PARA LIMPAR E PEGAR SÓ PRIMEIRO NOME
     const pNome = (str) => str ? str.trim().split(' ')[0] : "";
+    const normalizar = (str) => str ? str.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim() : "";
 
     // COLETA RESPONSÁVEIS
     const pregadorRaw = document.getElementById('pregador_nome').value.trim();
     const louvorRaw = document.getElementById('louvor_nome').value.trim();
     const obsRaw = document.getElementById('observacoes_culto').value.trim();
     
-    const pregador = pNome(pregadorRaw);
-    const louvor = pNome(louvorRaw);
-    const portao = pNome(document.getElementById('portao_nome').value);
+    const pregadorPrimeiroNome = pNome(pregadorRaw);
+    const louvorPrimeiroNome = pNome(louvorRaw);
+    const portaoPrimeiroNome = pNome(document.getElementById('portao_nome').value);
     const texto = document.getElementById('texto_biblico').value.trim();
 
     // MONTAGEM DA MENSAGEM
@@ -308,24 +309,27 @@ function prepararResumoWhatsApp() {
     
     msg += `*Responsáveis:*\n`;
     
-    // Lógica de Dirigente: Se pregador faz louvor ou está nas Obs
+    // Lógica de Dirigente Blindada
     let isDirigente = false;
-    if (pregadorRaw !== "") {
-        const mesmoLouvor = louvorRaw !== "" && (pregadorRaw.toLowerCase() === louvorRaw.toLowerCase());
-        const naObs = obsRaw.toLowerCase().includes(pregador.toLowerCase());
-        isDirigente = mesmoLouvor || naObs;
+    if (pregadorPrimeiroNome !== "") {
+        const pNorm = normalizar(pregadorPrimeiroNome);
+        const lNorm = normalizar(louvorRaw); 
+        const oNorm = normalizar(obsRaw);
         
-        msg += `${isDirigente ? "🌟 Dirigente" : "🎤 Pregador"}: ${pregador}\n`;
+        // Se o primeiro nome do pregador está contido no louvor OU nas observações
+        isDirigente = (lNorm.includes(pNorm) || oNorm.includes(pNorm));
+        
+        msg += `${isDirigente ? "🌟 Dirigente" : "🎤 Pregador"}: ${pregadorPrimeiroNome}\n`;
     }
     
     if (texto) msg += `📖 Texto: ${texto}\n`;
     
-    // Só aparece se não estiver vazio e se não for a mesma pessoa do Pregador (quando for Dirigente)
-    if (louvor && !(isDirigente && louvorRaw.toLowerCase() === pregadorRaw.toLowerCase())) {
-        msg += `🎶 Louvor: ${louvor}\n`;
+    // Só exibe louvor se não for o próprio dirigente/pregador
+    if (louvorPrimeiroNome && normalizar(louvorPrimeiroNome) !== normalizar(pregadorPrimeiroNome)) {
+        msg += `🎶 Louvor: ${louvorPrimeiroNome}\n`;
     }
     
-    if (portao) msg += `🚪 Portão: ${portao}\n`;
+    if (portaoPrimeiroNome) msg += `🚪 Portão: ${portaoPrimeiroNome}\n`;
     
     if (obsRaw) msg += `\n*Obs.:* ${obsRaw}`;
 

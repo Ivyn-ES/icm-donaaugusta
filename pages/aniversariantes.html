@@ -167,11 +167,11 @@
 
                 if (error) throw error;
 
-                // FILTRO ATUALIZADO: Ignora quem não tem dia preenchido
+                // FILTRO ATUALIZADO: Ignora quem não tem dia preenchido ou tem dia igual a 0
                 aniversariantesFiltrados = membros.filter(m => {
-                    const temDia = m.dia !== null && m.dia !== undefined && m.dia !== "";
+                    const diaValido = m.dia !== null && m.dia !== undefined && m.dia !== "" && m.dia !== 0 && m.dia !== "0";
                     const matchesSexo = (sexoBusca === 'Todos' || m.sexo === sexoBusca);
-                    return temDia && matchesSexo;
+                    return diaValido && matchesSexo;
                 });
 
                 aniversariantesFiltrados.sort((a, b) => (a.dia || 0) - (b.dia || 0));

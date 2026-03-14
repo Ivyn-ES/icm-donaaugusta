@@ -5,68 +5,47 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chamada - ICM</title>
     <link rel="stylesheet" href="../css/style.css">
-    <style>
-        /* Ajuste de botões de visitantes */
-        .btn-ajuste { width: 35px; height: 35px; border: none; border-radius: 8px; font-size: 1.2rem; font-weight: bold; color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: opacity 0.2s; }
-        .btn-menos { background-color: #e74c3c; }
-        .btn-mais { background-color: #2ecc71; }
-        .input-ajuste { width: 55px; text-align: center; font-size: 1.2rem; font-weight: bold; border: 1px solid #ddd; border-radius: 8px; background: #fdfdfd; }
-        
-        .legenda-status-topo {
-            display: flex;
-            justify-content: center;
-            gap: 15px;
-            font-size: 0.8rem;
-            color: #666;
-            margin-bottom: 15px;
-            padding: 10px;
-            background: #fdfdfd;
-            border-radius: 8px;
-            border: 1px dashed #ccc;
-        }
+<style>
+    /* 1. Botões de ajuste de visitantes */
+    .btn-ajuste { width: 35px; height: 35px; border: none; border-radius: 8px; font-size: 1.2rem; font-weight: bold; color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+    .btn-menos { background-color: #e74c3c; }
+    .btn-mais { background-color: #2ecc71; }
+    .input-ajuste { width: 55px; text-align: center; font-size: 1.2rem; font-weight: bold; border: 1px solid #ddd; border-radius: 8px; }
 
-        .cabecalho-lista {
-            display: flex; 
-            justify-content: space-between; 
-            align-items: flex-end; 
-            border-bottom: 2px solid #007bff; 
-            padding-bottom: 8px;
-            margin-top: 20px;
-        }
+    /* 2. Cabeçalho e Linha */
+    .cabecalho-lista { display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 2px solid #007bff; padding-bottom: 8px; margin-top: 20px; }
+    .colunas-nomes { display: flex; gap: 15px; font-size: 0.65rem; color: #888; font-weight: bold; text-transform: uppercase; }
+    .colunas-nomes span { width: 45px; text-align: center; } /* Largura fixa para alinhar com o quadradinho */
 
-        .colunas-nomes {
-            display: flex; 
-            gap: 12px; 
-            font-size: 0.65rem; 
-            color: #888; 
-            font-weight: bold; 
-            text-transform: uppercase; 
-            padding-right: 5px;
-        }
+    .card-chamada { display: flex; justify-content: space-between; align-items: center; padding: 15px 0; border-bottom: 1px solid #eee; }
 
-        .colunas-nomes span {
-            width: 35px; 
-            text-align: center;
-        }
+    /* 3. QUADRADINHOS (TAMANHO FIXO) */
+    .custom-check {
+        appearance: none; -webkit-appearance: none;
+        width: 45px; height: 45px; /* Tamanho maior para não ficar minúsculo */
+        border: 2px solid #ccc; border-radius: 10px;
+        cursor: pointer; display: flex; align-items: center; justify-content: center;
+        background-color: #fff; transition: all 0.1s; position: relative;
+        margin: 0;
+    }
 
-        .select-funcao-estilo { 
-            width:100%; 
-            padding:10px; 
-            border-radius:8px; 
-            border:1px solid #ccc; 
-            background: white; 
-            height: 45px; 
-        }
+    /* Emojis APAGADOS (Estado Inicial) */
+    .check-presenca::before { content: "✅"; opacity: 0.2; filter: grayscale(1); font-size: 1.3rem; }
+    .check-icm::before      { content: "🏠"; opacity: 0.2; filter: grayscale(1); font-size: 1.3rem; }
+    .check-maanaim::before  { content: "⛰️"; opacity: 0.2; filter: grayscale(1); font-size: 1.3rem; }
 
-        .card-chamada {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 10px 0;
-            border-bottom: 1px solid #eee;
-            transition: background 0.2s;
-        }
-    </style>
+    /* Quando selecionado: O emoji some e o ✅ colorido assume o lugar */
+    .custom-check:checked { border-color: #2ecc71; background-color: #e8f5e9; }
+    
+    .custom-check:checked::before {
+        content: "✅" !important; /* Sempre ✅ quando marcado */
+        opacity: 1 !important;
+        filter: none !important;
+        font-size: 1.5rem !important;
+    }
+
+    .custom-check:active { transform: scale(0.95); }
+</style>
 </head>
 <body>
     <datalist id="listaMembrosSugestao"></datalist>

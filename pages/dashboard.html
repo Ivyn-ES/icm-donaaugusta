@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard - ICM</title>
     <link rel="stylesheet" href="../css/style.css">
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         .container {
             max-width: 500px;
@@ -34,7 +33,7 @@
             border-radius: 15px;
             color: white;
             font-weight: bold;
-            font-size: 0.75rem; /* Ajustado para caber o nome dentro */
+            font-size: 0.75rem;
             cursor: pointer;
             box-shadow: 0 4px 8px rgba(0,0,0,0.1);
             transition: transform 0.1s;
@@ -121,7 +120,7 @@
                     <span>⚙️</span>Admin
                 </button>
             </div>
-            <button class="btn-faixa btn-sair" onclick="logout()">Sair</button>
+            <button class="btn-faixa btn-sair" id="btnSair" onclick="logout()">Sair</button>
         </div>
 
         <div id="view-secretaria" class="sub-dashboard">
@@ -134,7 +133,7 @@
                     <div class="quadrado-cor" style="background-color: #e67e22;">⭐</div>
                     <div class="legenda-externa">CIAs</div>
                 </button>
-                <button class="btn-interno" onclick="window.location.href='cadastro-membro.html'">
+                <button class="btn-interno" id="idBtnCadastro" onclick="window.location.href='cadastro-membro.html'">
                     <div class="quadrado-cor" style="background-color: #34495e;">👤</div>
                     <div class="legenda-externa">Cadastrar Membro</div>
                 </button>
@@ -158,7 +157,7 @@
                     <div class="quadrado-cor" style="background-color: #3498db;">🎂</div>
                     <div class="legenda-externa">Aniversariantes</div>
                 </button>
-                <button class="btn-interno" onclick="window.location.href='lista-membros.html'">
+                <button class="btn-interno" id="btnLista" onclick="window.location.href='lista-membros.html'">
                     <div class="quadrado-cor" style="background-color: #57606f;">📋</div>
                     <div class="legenda-externa">Membros</div>
                 </button>
@@ -168,7 +167,7 @@
 
         <div id="view-relatorios" class="sub-dashboard">
             <div class="grid-padrao">
-                <button class="btn-interno" onclick="window.location.href='relatorio-presenca.html'">
+                <button class="btn-interno" id="btnRelatorios" onclick="window.location.href='relatorio-presenca.html'">
                     <div class="quadrado-cor" style="background-color: #ffa502;">📈</div>
                     <div class="legenda-externa">Frequências</div>
                 </button>
@@ -178,11 +177,11 @@
 
         <div id="view-admin" class="sub-dashboard">
             <div class="grid-padrao">
-                <button class="btn-interno" onclick="window.location.href='admin-usuarios.html'">
+                <button class="btn-interno" id="btnUsuarios" onclick="window.location.href='admin-usuarios.html'">
                     <div class="quadrado-cor" style="background-color: #8e44ad;">🔑</div>
                     <div class="legenda-externa">Acessos</div>
                 </button>
-                <button class="btn-interno" onclick="window.location.href='admin-permissoes.html'">
+                <button class="btn-interno" id="btnPermissoes" onclick="window.location.href='admin-permissoes.html'">
                     <div class="quadrado-cor" style="background-color: #c0392b;">🛡️</div>
                     <div class="legenda-externa">Permissões</div>
                 </button>
@@ -191,22 +190,39 @@
         </div>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="../js/supabase-config.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../js/permissoes.js"></script>
     <script src="../js/script.js"></script>
+
     <script>
+        // Funções de UI exclusivas do Dashboard
         function abrirSubMenu(idSub, nomeTitulo) {
             document.getElementById('menu-principal').style.display = 'none';
             document.querySelectorAll('.sub-dashboard').forEach(v => v.style.display = 'none');
             document.getElementById(idSub).style.display = 'block';
             document.getElementById('titulo-painel').innerText = nomeTitulo;
         }
+
         function voltarAoPrincipal() {
             document.querySelectorAll('.sub-dashboard').forEach(view => view.style.display = 'none');
             document.getElementById('menu-principal').style.display = 'block';
             document.getElementById('titulo-painel').innerText = 'Painel Administrativo';
         }
+
+        // Inicialização específica da página
         document.addEventListener('DOMContentLoaded', () => {
             const user = verificarAcesso();
-            if (user) document.getElementById('boasVindas').innerText = `Logado como: ${user.nome}`;
+            if (user) {
+                // Se no banco o campo for 'nome', use user.nome. Se for 'login', use user.login.
+                document.getElementById('boasVindas').innerText = `Logado como: ${user.nome || user.login}`;
+                
+                // Se o soldado das permissões estiver carregado, ele faz o trabalho dele
+                if (typeof ajustarInterfacePorPerfil === 'function') {
+                    ajustarInterfacePorPerfil();
+                }
+            }
         });
     </script>
 </body>

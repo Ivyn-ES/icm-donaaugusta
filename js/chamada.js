@@ -1,5 +1,5 @@
 // ==========================================
-// SOLDADO: js/chamada.js - VERSÃO DEFINITIVA
+// SOLDADO: js/chamada.js - VERSÃO FINALÍSSIMA
 // ==========================================
 
 let listaMembrosCache = [];
@@ -25,7 +25,7 @@ async function renderizarListaChamada() {
         listaMembrosCache = membros;
 
         // B. BUSCA PRESENÇAS
-        const { data: presencasExistentes } = await _supabase
+        const { data: presencasExistentes, error: errP } = await _supabase
             .from('presencas')
             .select('*')
             .eq('data_culto', dataSelecionada)
@@ -39,7 +39,7 @@ async function renderizarListaChamada() {
             .eq('tipo_evento', tipoEvento)
             .maybeSingle();
 
-        // D. PREENCHE OS CAMPOS DO RESUMO (DE ACORDO COM SUA TABELA)
+        // D. PREENCHE OS CAMPOS DO RESUMO
         if (resumoDados) {
             document.getElementById('vis_adultos').value = resumoDados.vis_adultos || 0;
             document.getElementById('vis_cias').value = resumoDados.vis_cias || 0;
@@ -52,13 +52,8 @@ async function renderizarListaChamada() {
             document.getElementById('portao_funcao').value = resumoDados.portao_funcao || 'Membro';
             document.getElementById('observacoes_culto').value = resumoDados.observacoes || '';
         } else {
-            // Reseta campos se não houver registro
-            ['pregador_nome', 'texto_biblico', 'louvor_nome', 'portao_nome', 'observacoes_culto'].forEach(id => {
-                document.getElementById(id).value = '';
-            });
-            ['pregador_funcao', 'louvor_funcao', 'portao_funcao'].forEach(id => {
-                document.getElementById(id).value = 'Membro';
-            });
+            ['pregador_nome', 'texto_biblico', 'louvor_nome', 'portao_nome', 'observacoes_culto'].forEach(id => document.getElementById(id).value = '');
+            ['pregador_funcao', 'louvor_funcao', 'portao_funcao'].forEach(id => document.getElementById(id).value = 'Membro');
             document.getElementById('vis_adultos').value = 0;
             document.getElementById('vis_cias').value = 0;
         }
@@ -68,7 +63,8 @@ async function renderizarListaChamada() {
         datalist.innerHTML = membros.map(m => `<option value="${m.apelido || m.nome}">`).join('');
 
         container.innerHTML = membros.map(m => {
-            const registro = presencasExistentes?.find(p => p.membro_id == m.id);
+            // Comparação forçada para String para evitar erro de tipo int8
+            const registro = presencasExistentes?.find(p => String(p.membro_id) === String(m.id));
             const isVisitante = m.situacao === 'Visitante';
             const partesNome = m.nome.split(' ');
             const nomeCurto = partesNome.slice(0, 2).join(' ');
@@ -116,74 +112,68 @@ function marcarExclusivo(el, id) {
     atualizarPlacar();
 }
 
-// 3. AUTO-COMPLETAR FUNÇÃO (REESCRITO PARA SER INFALÍVEL)
-function vincularAutoCompletar(idInput) {
-    const input = document.getElementById(idInput);
-    if (!input) return;
-
-    input.addEventListener('change', () => {
-        const valorDigitado = input.value.trim().toLowerCase();
+// 3. AUTO-COMPLETAR FUNÇÃO (MELHORADO)
+document.addEventListener('input', (e) => {
+    if (['pregador_nome', 'louvor_nome', 'portao_nome'].includes(e.target.id)) {
+        const valorDigitado = e.target.value.trim().toLowerCase();
         const membro = listaMembrosCache.find(m => 
             (m.apelido && m.apelido.toLowerCase() === valorDigitado) || 
             (m.nome.toLowerCase() === valorDigitado)
         );
 
         if (membro) {
-            const idSelect = idInput.replace('_nome', '_funcao');
+            const idSelect = e.target.id.replace('_nome', '_funcao');
             const selectFuncao = document.getElementById(idSelect);
             if (selectFuncao) {
-                // Normalização para ignorar acentos e espaços
-                const normalizar = (txt) => txt.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
-                const catMembro = normalizar(membro.categoria || "");
+                const normalizar = (txt) => txt ? txt.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim() : "";
+                const catMembro = normalizar(membro.categoria);
 
                 for (let i = 0; i < selectFuncao.options.length; i++) {
-                    const textoOpcao = normalizar(selectFuncao.options[i].text);
-                    const valorOpcao = normalizar(selectFuncao.options[i].value);
-                    
-                    if (textoOpcao === catMembro || valorOpcao === catMembro) {
+                    const textoOp = normalizar(selectFuncao.options[i].text);
+                    if (textoOp === catMembro) {
                         selectFuncao.selectedIndex = i;
                         break;
                     }
                 }
             }
         }
-    });
-}
+    }
+});
 
-// Inicializa o auto-completar para os 3 campos
-['pregador_nome', 'louvor_nome', 'portao_nome'].forEach(vincularAutoCompletar);
-
-// 4. PLACAR
+// 4. PLACAR (DIVISÃO ADULTOS / CIAS)
 function atualizarPlacar() {
     let mAdultos = 0, mCias = 0;
     let vAdultosLista = 0, vCiasLista = 0;
     
+    const ehCia = (categoria) => {
+        if (!categoria) return false;
+        const c = categoria.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        return c.includes('cia') || c.includes('crianca') || c.includes('intermediario') || c.includes('adolescente');
+    };
+
     document.querySelectorAll('.card-chamada').forEach(card => {
-        const checkMarcado = card.querySelector('input[type="checkbox"]:checked');
-        if (checkMarcado) {
-            const cat = checkMarcado.getAttribute('data-cat');
-            const sit = checkMarcado.getAttribute('data-sit');
-            const ehCia = ['CIA', 'Crianças', 'Intermédios', 'Adolescentes'].includes(cat);
-            
+        const check = card.querySelector('input[type="checkbox"]:checked');
+        if (check) {
+            const cat = check.getAttribute('data-cat');
+            const sit = check.getAttribute('data-sit');
+            const cia = ehCia(cat);
+
             if (sit === 'Membro') {
-                if (ehCia) mCias++; else mAdultos++;
-            } else if (sit === 'Visitante') {
-                if (ehCia) vCiasLista++; else vAdultosLista++;
+                if (cia) mCias++; else mAdultos++;
+            } else {
+                if (cia) vCiasLista++; else vAdultosLista++;
             }
         }
     });
 
-    const vAdultosManual = parseInt(document.getElementById('vis_adultos').value) || 0;
-    const vCiasManual = parseInt(document.getElementById('vis_cias').value) || 0;
-
-    const totalVAdultos = vAdultosLista + vAdultosManual;
-    const totalVCias = vCiasLista + vCiasManual;
+    const vAdManual = parseInt(document.getElementById('vis_adultos').value) || 0;
+    const vCiaManual = parseInt(document.getElementById('vis_cias').value) || 0;
 
     document.getElementById('cont_membros_adultos').innerText = mAdultos;
     document.getElementById('cont_membros_cias').innerText = mCias;
-    document.getElementById('cont_vis_adultos_display').innerText = totalVAdultos;
-    document.getElementById('cont_vis_cias_display').innerText = totalVCias;
-    document.getElementById('cont_total').innerText = mAdultos + mCias + totalVAdultos + totalVCias;
+    document.getElementById('cont_vis_adultos_display').innerText = vAdultosLista + vAdManual;
+    document.getElementById('cont_vis_cias_display').innerText = vCiasLista + vCiaManual;
+    document.getElementById('cont_total').innerText = mAdultos + mCias + vAdultosLista + vAdManual + vCiasLista + vCiaManual;
 }
 
 // 5. SALVAR TUDO
@@ -191,29 +181,24 @@ async function salvarChamada() {
     const data_culto = document.getElementById('data_chamada').value;
     const tipo_evento = document.getElementById('tipo_evento').value;
 
-    // A. Coleta Presenças (Conforme sua tabela: membro_id, data_culto, tipo_evento, status)
     const presencas = [];
     document.querySelectorAll('.card-chamada').forEach(card => {
-        const inputCheck = card.querySelector('input[type="checkbox"]:checked');
-        if (inputCheck) {
-            const idMembro = inputCheck.getAttribute('data-id');
-            let statusChar = 'P'; // Default
-            if (inputCheck.classList.contains('check-icm')) statusChar = 'I';
-            if (inputCheck.classList.contains('check-maanaim')) statusChar = 'M';
-            
+        const check = card.querySelector('input[type="checkbox"]:checked');
+        if (check) {
+            let status = 'P';
+            if (check.classList.contains('check-icm')) status = 'I';
+            if (check.classList.contains('check-maanaim')) status = 'M';
             presencas.push({ 
-                membro_id: idMembro, 
+                membro_id: check.getAttribute('data-id'), 
                 data_culto, 
                 tipo_evento, 
-                status: statusChar 
+                status 
             });
         }
     });
 
-    // B. Coleta Resumo (Conforme sua tabela resumo_culto)
     const resumo = {
-        data_culto,
-        tipo_evento,
+        data_culto, tipo_evento,
         vis_adultos: parseInt(document.getElementById('vis_adultos').value) || 0,
         vis_cias: parseInt(document.getElementById('vis_cias').value) || 0,
         pregador_nome: document.getElementById('pregador_nome').value,
@@ -227,25 +212,21 @@ async function salvarChamada() {
     };
 
     try {
-        // Primeiro deleta as presenças antigas daquele dia/evento para não duplicar se mudar o status
+        // Limpa presenças antigas e insere novas
         await _supabase.from('presencas').delete().eq('data_culto', data_culto).eq('tipo_evento', tipo_evento);
+        if (presencas.length > 0) await _supabase.from('presencas').insert(presencas);
         
-        // Insere as novas presenças
-        if (presencas.length > 0) {
-            await _supabase.from('presencas').insert(presencas);
-        }
-
         // Upsert no resumo
         await _supabase.from('resumo_culto').upsert(resumo, { onConflict: 'data_culto, tipo_evento' });
         
-        alert("✅ Registro de Culto Salvo!");
+        alert("✅ Salvo com sucesso!");
     } catch (e) {
         console.error(e);
-        alert("❌ Erro ao salvar dados.");
+        alert("❌ Erro ao salvar.");
     }
 }
 
-// 6. OUTRAS FUNÇÕES
+// 6. AUXILIARES
 function ajustarVisitante(id, mudanca) {
     const input = document.getElementById(id);
     input.value = Math.max(0, (parseInt(input.value) || 0) + mudanca);
@@ -253,5 +234,22 @@ function ajustarVisitante(id, mudanca) {
 }
 
 function enviarResumoWhatsapp() {
-    // ... (mesma lógica anterior de gerar a string msg)
+    const m_ad = document.getElementById('cont_membros_adultos').innerText;
+    const m_cia = document.getElementById('cont_membros_cias').innerText;
+    const v_ad = document.getElementById('cont_vis_adultos_display').innerText;
+    const v_cia = document.getElementById('cont_vis_cias_display').innerText;
+    const total = document.getElementById('cont_total').innerText;
+
+    const data = document.getElementById('data_chamada').value.split('-').reverse().join('/');
+    
+    let msg = `ICM - Dona Augusta\n📊 *Resumo do Culto - ${data}*\n\n`;
+    msg += `*Participantes:*\n`;
+    msg += `- Membros (Ad/CIA): ${m_ad}/${m_cia}\n`;
+    msg += `- Visitantes (Ad/CIA): ${v_ad}/${v_cia}\n`;
+    msg += `🌟 *Total Vidas: ${total}*\n\n`;
+    
+    if(document.getElementById('pregador_nome').value) msg += `🎤 Pregador: ${document.getElementById('pregador_nome').value}\n`;
+    if(document.getElementById('texto_biblico').value) msg += `📖 Texto: ${document.getElementById('texto_biblico').value}\n`;
+    
+    window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`, '_blank');
 }

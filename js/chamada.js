@@ -1,5 +1,5 @@
 // ==========================================
-// SOLDADO: js/chamada.js - VERSÃO INTEGRAL CORRIGIDA FINAL
+// SOLDADO: js/chamada.js - VERSÃO INTEGRAL COM WHATSAPP ESTRATÉGICO
 // ==========================================
 
 let listaMembrosCache = [];
@@ -74,7 +74,6 @@ async function renderizarListaChamada() {
             const isVisitante = m.situacao === 'Visitante';
             const apelidoExibir = m.apelido || m.nome.split(' ')[0];
 
-            // AJUSTE: Comparação com os nomes completos salvos no banco
             const statusSalvo = registro?.status;
 
             return `
@@ -190,7 +189,6 @@ async function salvarChamada() {
     const data_culto = document.getElementById('data_chamada').value;
     const tipo_evento = document.getElementById('tipo_evento').value;
 
-    // A. Coleta Presenças (CORRIGIDO: Identifica o checkbox específico e define status longo + presenca:true)
     const presencas = [];
     document.querySelectorAll('.card-chamada').forEach(card => {
         const ckPresenca = card.querySelector('.check-presenca:checked');
@@ -208,7 +206,7 @@ async function salvarChamada() {
                 data_culto, 
                 tipo_evento, 
                 status: statusFinal,
-                presenca: true // Resolve o problema do campo NULL
+                presenca: true 
             });
         }
     });
@@ -229,23 +227,18 @@ async function salvarChamada() {
     };
 
     try {
-        // 1. Salvar Presenças
         await _supabase.from('presencas').delete().eq('data_culto', data_culto).eq('tipo_evento', tipo_evento);
         if (presencas.length > 0) {
             const { error: errorP } = await _supabase.from('presencas').insert(presencas);
             if (errorP) throw errorP;
         }
 
-        // 2. Salvar Resumo
         await _supabase.from('resumo_culto').delete().eq('data_culto', data_culto).eq('tipo_evento', tipo_evento);
         const { error: errorResumo } = await _supabase.from('resumo_culto').insert([resumo]);
         if (errorResumo) throw errorResumo;
 
         alert("✅ Registro completo salvo com sucesso!");
-        
-        // RECARREGA para garantir que os checks fiquem ativos na tela
         renderizarListaChamada(); 
-
     } catch (e) {
         console.error("Erro ao salvar:", e);
         alert("❌ Erro ao salvar dados.");
@@ -262,39 +255,64 @@ function ajustarVisitante(id, mudanca) {
 }
 
 // ==========================================
-// LÓGICA DE WHATSAPP ESPECÍFICA DA CHAMADA
+// LÓGICA DE WHATSAPP ATUALIZADA (ESTRATÉGICA)
 // ==========================================
 function prepararResumoWhatsApp() {
     const dataRef = document.getElementById('data_chamada').value;
-    const tipoEvento = document.getElementById('tipo_evento').value;
     
-    // Usando a utilidade central para a data
-    const dataFormatada = Utils.formatarDataBR(dataRef);
+    // Formata Data para DD/Mes (ex: 12/Mar)
+    const meses = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
+    const d = new Date(dataRef + "T12:00:00");
+    const dataFormatadaResumo = `${d.getDate()}/${meses[d.getMonth()]}`;
 
-    const mAd = document.getElementById('cont_membros_adultos').innerText;
-    const mCia = document.getElementById('cont_membros_cias').innerText;
+    const mAd = parseInt(document.getElementById('cont_membros_adultos').innerText) || 0;
+    const mCia = parseInt(document.getElementById('cont_membros_cias').innerText) || 0;
     const vAd = document.getElementById('cont_vis_adultos_display').innerText;
     const vCia = document.getElementById('cont_vis_cias_display').innerText;
-    const total = document.getElementById('cont_total').innerText;
+    const totalVidas = document.getElementById('cont_total').innerText;
 
-    const pregador = document.getElementById('pregador_nome').value || "Não informado";
-    const pregadorFunc = document.getElementById('pregador_funcao').value;
-    const textoBiblico = document.getElementById('texto_biblico').value || "Não informado";
-    const louvor = document.getElementById('louvor_nome').value || "Não informado";
-    const portao = document.getElementById('portao_nome').value || "Não informado";
-    const observacoes = document.getElementById('observacoes_culto').value || "Nenhuma.";
+    // CÁLCULO DA PORCENTAGEM (Membros Presentes / Total de Membros Ativos)
+    const totalMembrosCadastrados = listaMembrosCache.filter(m => m.situacao === 'Membro').length || 1;
+    const porcentagem = Math.round(((mAd + mCia) / totalMembrosCadastrados) * 100);
+    const emojiPerto = porcentagem >= 50 ? "🟢" : "🔴";
 
-    let msg = `*RESUMO DO CULTO - ${dataFormatada}* \n`;
-    msg += `*Evento:* ${tipoEvento}\n\n`;
-    msg += `👥 *Membros:* Ad: ${mAd} | CIAs: ${mCia}\n`;
-    msg += `🌟 *Visitantes:* Ad: ${vAd} | CIAs: ${vCia}\n`;
-    msg += `📊 *Total Geral:* ${total}\n\n`;
-    msg += `📖 *Palavra:* ${pregador} (${pregadorFunc})\n`;
-    msg += `📜 *Texto:* ${textoBiblico}\n`;
-    msg += `🎶 *Louvor:* ${louvor}\n`;
-    msg += `🚪 *Portão:* ${portao}\n\n`;
-    msg += `📝 *Obs:* ${observacoes}`;
+    // COLETA RESPONSÁVEIS
+    const pregador = document.getElementById('pregador_nome').value.trim();
+    const louvor = document.getElementById('louvor_nome').value.trim();
+    const portao = document.getElementById('portao_nome').value.trim();
+    const texto = document.getElementById('texto_biblico').value.trim();
+    const obs = document.getElementById('observacoes_culto').value.trim();
 
-    // Chama o enviador central
-    Utils.enviarWhatsApp(msg);
+    // MONTAGEM DA MENSAGEM
+    let msg = `ICM - Dona Augusta\n`;
+    msg += `Resumo do Culto - ${dataFormatadaResumo}\n\n`;
+    
+    msg += `Participantes:\n`;
+    msg += `- Membros (Adulto/CIA): ${mAd}/${mCia} - ${emojiPerto} ${porcentagem}%\n`;
+    msg += `- Visitantes (Adulto/CIA): ${vAd}/${vCia}\n`;
+    msg += `🌟 Total de Vidas: ${totalVidas}\n\n`;
+    
+    msg += `Responsáveis:\n`;
+    
+    // Lógica Inteligente de Dirigente/Pregador
+    if (pregador) {
+        const tituloPregador = (pregador === louvor || obs.includes(pregador)) ? "🌟 Dirigente" : "🎤 Pregador";
+        msg += `${tituloPregador}: ${pregador}\n`;
+    }
+    
+    if (texto) msg += `📖 Texto: ${texto}\n`;
+    
+    // Só aparece se não estiver vazio
+    if (louvor) msg += `🎶 Louvor: ${louvor}\n`;
+    if (portao) msg += `🚪 Portão: ${portao}\n`;
+    
+    if (obs) msg += `Obs.: ${obs}`;
+
+    // Abre WhatsApp via Utils
+    if (typeof Utils !== 'undefined' && Utils.enviarWhatsApp) {
+        Utils.enviarWhatsApp(msg);
+    } else {
+        const url = `https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`;
+        window.open(url, '_blank');
+    }
 }

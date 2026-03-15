@@ -7,38 +7,11 @@
     <link rel="stylesheet" href="../css/style.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        .tabela-historico {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 10px;
-            background: white;
-            border-radius: 8px;
-            overflow: hidden;
-        }
-        .tabela-historico th, .tabela-historico td {
-            padding: 12px 8px;
-            text-align: left;
-            border-bottom: 1px solid #eee;
-            font-size: 0.9rem;
-        }
-        .tabela-historico th {
-            background-color: #007bff;
-            color: white;
-            font-weight: 600;
-        }
-        .btn-detalhes {
-            background: #f1f1f1;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            padding: 5px 10px;
-            cursor: pointer;
-            font-size: 1.1rem;
-        }
-        /* Estilo para telas pequenas */
-        @media (max-width: 600px) {
-            .tabela-historico th:nth-child(3), 
-            .tabela-historico td:nth-child(3) { display: none; } /* Esconde 'Local' no celular pra caber */
-        }
+        .tabela-historico { width: 100%; border-collapse: collapse; margin-top: 10px; background: white; border-radius: 8px; overflow: hidden; }
+        .tabela-historico th, .tabela-historico td { padding: 12px 8px; text-align: left; border-bottom: 1px solid #eee; font-size: 0.9rem; }
+        .tabela-historico th { background-color: #007bff; color: white; font-weight: 600; }
+        .btn-acao { border: none; background: none; cursor: pointer; font-size: 1.2rem; padding: 5px; }
+        @media (max-width: 600px) { .tabela-historico th:nth-child(3), .tabela-historico td:nth-child(3) { display: none; } }
     </style>
 </head>
 <body>
@@ -48,11 +21,10 @@
             <h1 style="flex-grow: 1; text-align: center; margin-right: 60px;">📂 Histórico</h1>
         </header>
 
-<div style="margin-bottom: 15px;">
-    <input type="text" id="filtroHistorico" placeholder="🔍 Buscar por Local ou Evento..." 
-           onkeyup="filtrarTabela()" 
-           style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #ccc; font-size: 1rem;">
-</div>
+        <div style="margin-bottom: 15px;">
+            <input type="text" id="filtroHistorico" placeholder="🔍 Buscar por Local ou Evento..." onkeyup="filtrarTabela()" 
+                   style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #ccc; font-size: 1rem;">
+        </div>
 
         <section class="card">
             <h3 style="margin-top: 0; color: #2c3e50;">📋 Últimos Eventos Salvos</h3>
@@ -60,14 +32,15 @@
                 <table class="tabela-historico">
                     <thead>
                         <tr>
-                            <th style="text-align: center; width: 90px;">📅 Data</th>
+                            <th style="text-align: center; width: 100px;">📅 Data</th>
                             <th>📝 Evento</th>
                             <th>📍 Local</th>
-                            <th style="text-align: center;">Zap</th>
+                            <th style="text-align: center; width: 100px;">Ações</th>
                         </tr>
                     </thead>
                     <tbody id="corpoHistoricoEventos">
-                        </tbody>
+                        <tr><td colspan="4" style="text-align: center; padding: 20px;">Buscando eventos...</td></tr>
+                    </tbody>
                 </table>
             </div>
             <div id="msgVazia" style="display:none; text-align:center; padding:20px; color:#666;">
@@ -76,35 +49,75 @@
         </section>
     </div>
 
+    <script src="../js/supabase-config.js"></script>
+    <script src="../js/auth.js"></script>
     <script src="../js/script.js"></script>
+
     <script>
-        window.onload = () => {
-            if (typeof carregarHistoricoEventos === 'function') {
-                carregarHistoricoEventos();
-            }
-        };
+        document.addEventListener('DOMContentLoaded', async () => {
+            if (typeof verificarAcesso === 'function') verificarAcesso();
+            await carregarHistorico();
+        });
 
-function filtrarTabela() {
-    const input = document.getElementById("filtroHistorico");
-    const filter = input.value.toUpperCase();
-    const table = document.getElementById("corpoHistoricoEventos");
-    const tr = table.getElementsByTagName("tr");
+        async function carregarHistorico() {
+            const corpo = document.getElementById('corpoHistoricoEventos');
+            const msgVazia = document.getElementById('msgVazia');
 
-    for (let i = 0; i < tr.length; i++) {
-        // Busca na coluna da Descrição (1) e do Local (2)
-        const tdDesc = tr[i].getElementsByTagName("td")[1];
-        const tdLocal = tr[i].getElementsByTagName("td")[2];
-        if (tdDesc || tdLocal) {
-            const txtValue = (tdDesc.textContent || tdDesc.innerText) + " " + 
-                             (tdLocal.textContent || tdLocal.innerText);
-            if (txtValue.toUpperCase().indexOf(filter) > -1) {
-                tr[i].style.display = "";
-            } else {
-                tr[i].style.display = "none";
+            try {
+                const { data, error } = await _supabase
+                    .from('eventos_especiais')
+                    .select('*')
+                    .order('data_evento', { ascending: false });
+
+                if (error) throw error;
+
+                if (!data || data.length === 0) {
+                    corpo.innerHTML = "";
+                    msgVazia.style.display = "block";
+                    return;
+                }
+
+                msgVazia.style.display = "none";
+                corpo.innerHTML = data.map(ev => {
+                    const dataFormatada = ev.data_evento.split('-').reverse().join('/');
+                    return `
+                        <tr>
+                            <td style="text-align: center; font-weight: bold;">${dataFormatada}</td>
+                            <td>${ev.descricao || 'Sem descrição'}</td>
+                            <td>${ev.local_evento || '---'}</td>
+                            <td style="text-align: center;">
+                                <button onclick="window.location.href='eventos.html?id=${ev.id}'" class="btn-acao" title="Editar">📝</button>
+                                <button onclick="deletarEvento('${ev.id}')" class="btn-acao" title="Excluir">🗑️</button>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+
+            } catch (err) {
+                console.error("Erro:", err);
+                corpo.innerHTML = "<tr><td colspan='4' style='color:red; text-align:center;'>Erro ao carregar dados.</td></tr>";
             }
         }
-    }
-}
+
+        async function deletarEvento(id) {
+            if (!confirm("Deseja realmente excluir este registro de evento?")) return;
+            try {
+                const { error } = await _supabase.from('eventos_especiais').delete().eq('id', id);
+                if (error) throw error;
+                carregarHistorico();
+            } catch (err) {
+                alert("Erro ao excluir.");
+            }
+        }
+
+        function filtrarTabela() {
+            const filter = document.getElementById("filtroHistorico").value.toUpperCase();
+            const rows = document.getElementById("corpoHistoricoEventos").getElementsByTagName("tr");
+            for (let row of rows) {
+                const text = row.innerText.toUpperCase();
+                row.style.display = text.includes(filter) ? "" : "none";
+            }
+        }
     </script>
 </body>
 </html>

@@ -10,6 +10,37 @@
         .btn-excluir { background: none; border: none; cursor: pointer; font-size: 1.2rem; color: #e74c3c; }
         .btn-excluir:hover { transform: scale(1.1); }
         td, th { padding: 12px; border-bottom: 1px solid #eee; }
+
+        /* Ajustes no formulário para não espremer o campo */
+        .form-container {
+            display: flex; 
+            gap: 10px; 
+            align-items: flex-end;
+            width: 100%;
+        }
+
+        .btn-adicionar-curto {
+            padding: 12px 15px; /* Padding reduzido nas laterais */
+            border-radius: 8px; 
+            font-weight: bold;
+            background-color: #27ae60;
+            color: white;
+            border: none;
+            cursor: pointer;
+            white-space: nowrap; /* Impede o texto de quebrar linha */
+            min-width: fit-content;
+        }
+
+        /* Responsividade para telas muito pequenas */
+        @media (max-width: 400px) {
+            .form-container {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .btn-adicionar-curto {
+                width: 100%;
+            }
+        }
     </style>
 </head>
 <body>
@@ -19,12 +50,11 @@
         </header>
 
         <section class="admin-section" style="background: #f9f9f9; padding: 20px; border-radius: 12px; border: 1px solid #eee; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
-            <form id="formGrupo" style="display: flex; gap: 10px; align-items: flex-end;">
-                <div class="campo" style="flex: 1;">
-                    <label for="nomeGrupo" style="display: block; margin-bottom: 5px; font-weight: bold;">Novo Grupo:</label>
-                    <input type="text" id="nomeGrupo" placeholder="Ex: Grupo 01" required style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #ccc;">
+            <form id="formGrupo" class="form-container">
+                <div class="campo" style="flex: 2;"> <label for="nomeGrupo" style="display: block; margin-bottom: 5px; font-weight: bold;">Novo Grupo:</label>
+                    <input type="text" id="nomeGrupo" placeholder="Ex: Grupo 01" required style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #ccc; box-sizing: border-box;">
                 </div>
-                <button type="submit" id="btnSalvar" class="btn-salvar" style="padding: 12px 25px; border-radius: 8px; font-weight: bold;">➕ Adicionar</button>
+                <button type="submit" id="btnSalvar" class="btn-adicionar-curto">➕ Adicionar</button>
             </form>
         </section>
 
@@ -59,7 +89,6 @@
     <script src="../js/script.js"></script>
 
     <script>
-        // FUNÇÃO PARA LISTAR GRUPOS
         async function listarGrupos() {
             const corpo = document.getElementById('corpoTabelaGrupos');
             try {
@@ -90,7 +119,6 @@
             }
         }
 
-        // FUNÇÃO PARA DELETAR GRUPO
         async function deletarGrupo(id, nome) {
             if (!confirm(`Tem certeza que deseja excluir o "${nome}"?\nIsso pode afetar membros vinculados.`)) return;
             
@@ -103,9 +131,7 @@
             }
         }
 
-        // INICIALIZAÇÃO
         document.addEventListener('DOMContentLoaded', async () => {
-            // Agora o auth.js está carregado, verificarAcesso vai funcionar
             if (typeof verificarAcesso === 'function') {
                 const user = verificarAcesso();
                 if (user) {
@@ -120,7 +146,6 @@
             listarGrupos();
         });
 
-        // EVENTO DE SALVAR
         document.getElementById('formGrupo').addEventListener('submit', async (e) => {
             e.preventDefault();
             const btn = document.getElementById('btnSalvar');
@@ -128,7 +153,7 @@
             const nome = campoNome.value.trim();
 
             btn.disabled = true;
-            btn.innerText = "⌛ Salvando...";
+            btn.innerText = "⌛";
 
             try {
                 const { error } = await _supabase.from('grupos').insert([{ nome: nome }]);
@@ -138,7 +163,7 @@
                 listarGrupos();
             } catch (err) {
                 console.error(err);
-                alert("Erro ao salvar grupo. Pode ser que já exista um com este nome.");
+                alert("Erro ao salvar grupo.");
             } finally {
                 btn.disabled = false;
                 btn.innerText = "➕ Adicionar";

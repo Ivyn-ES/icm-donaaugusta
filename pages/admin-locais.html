@@ -7,22 +7,8 @@
     <link rel="stylesheet" href="../css/style.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        .input-evento {
-            width: 100%;
-            padding: 12px;
-            border: 1px solid #ccc;
-            border-radius: 8px;
-            font-size: 1rem;
-        }
-        .section-title { 
-            background: #f8f9fa; 
-            padding: 10px; 
-            border-radius: 8px; 
-            margin-top: 25px;
-            border-left: 5px solid #2ecc71;
-            font-size: 1.1rem;
-            color: #2c3e50;
-        }
+        .input-evento { width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 8px; font-size: 1rem; }
+        .section-title { background: #f8f9fa; padding: 10px; border-radius: 8px; margin-top: 25px; border-left: 5px solid #2ecc71; font-size: 1.1rem; color: #2c3e50; }
         .local-item:last-child { border-bottom: none; }
     </style>
 </head>
@@ -54,13 +40,12 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', async () => {
-            // Verifica acesso de admin
             if (typeof verificarAcesso === 'function') {
                 const user = verificarAcesso();
                 if (user) {
                     const nivel = (user.permissao || user.nivel || "").toLowerCase();
                     if (nivel !== 'admin' && nivel !== 'master') {
-                        alert('Acesso restrito a administradores.');
+                        alert('Acesso restrito!');
                         window.location.href = 'dashboard.html';
                         return;
                     }
@@ -86,13 +71,12 @@
 
                 container.innerHTML = data.map(l => `
                     <div class="local-item" style="display: flex; justify-content: space-between; align-items: center; padding: 15px; border-bottom: 1px solid #eee; background: #fff;">
-                        <span style="font-weight: 500; color: #333;">${l.nome_igreja}</span>
-                        <button onclick="excluirLocal('${l.id}', '${l.nome_igreja}')" style="background:none; border:none; cursor:pointer; font-size: 1.2rem; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.2)'" onmouseout="this.style.transform='scale(1)'" title="Excluir">🗑️</button>
+                        <span style="font-weight: 500; color: #333;">${l.nome_igreja} (${l.cidade || 'Dona Augusta'})</span>
+                        <button onclick="excluirLocal('${l.id}', '${l.nome_igreja}')" style="background:none; border:none; cursor:pointer; font-size: 1.2rem;" title="Excluir">🗑️</button>
                     </div>
                 `).join('');
             } catch (err) {
-                console.error("Erro ao carregar locais:", err);
-                container.innerHTML = "<p style='padding: 20px; color: #e74c3c; text-align: center;'>Erro ao carregar dados do banco.</p>";
+                container.innerHTML = "<p style='padding: 20px; color: #e74c3c; text-align: center;'>Erro ao carregar dados.</p>";
             }
         }
 
@@ -107,16 +91,26 @@
             btn.innerText = "⌛";
 
             try {
-                const { error } = await _supabase.from('igrejas_locais').insert([{ nome_igreja: nome }]);
-                if (error) {
-                    if (error.code === '42501') throw new Error("Sem permissão no banco (RLS).");
-                    throw error;
-                }
+                const { error } = await _supabase.from('igrejas_locais').insert([
+                    { 
+                        nome_igreja: nome, 
+                        cidade: "Dona Augusta", // Cidade padrão conforme a estrutura
+                        ativo: true 
+                    }
+                ]);
+
+                if (error) throw error;
                 
                 input.value = '';
                 await carregarTabelaLocais();
+                alert("✅ Local cadastrado!");
             } catch (err) {
-                alert("Erro ao salvar: " + err.message);
+                console.error(err);
+                if (err.code === '42501') {
+                    alert("Erro de RLS: Você precisa rodar o comando SQL no painel do Supabase para liberar o acesso.");
+                } else {
+                    alert("Erro ao salvar: " + err.message);
+                }
             } finally {
                 btn.disabled = false;
                 btn.innerText = "➕";
@@ -124,13 +118,13 @@
         }
 
         async function excluirLocal(id, nome) {
-            if (!confirm(`Deseja remover "${nome}" da lista?`)) return;
+            if (!confirm(`Deseja remover "${nome}"?`)) return;
             try {
                 const { error } = await _supabase.from('igrejas_locais').delete().eq('id', id);
                 if (error) throw error;
                 await carregarTabelaLocais();
             } catch (err) {
-                alert("Erro ao excluir local.");
+                alert("Erro ao excluir.");
             }
         }
     </script>

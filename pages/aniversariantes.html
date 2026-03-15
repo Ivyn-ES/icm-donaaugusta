@@ -74,7 +74,7 @@
 
     <div class="container-aniversarios">
         <header style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; border-bottom: 2px solid #eee; padding-bottom: 10px;">
-            <a href="dashboard.html" class="btn-voltar">← Voltar</a>
+            <a href="dashboard.html" class="btn-voltar" style="text-decoration: none;">← Voltar</a>
             <h1 style="margin: 0; flex-grow: 1; text-align: center;">🎂 Aniversariantes</h1>
             <div style="width: 80px;"></div>
         </header>
@@ -138,9 +138,20 @@
     <script>
         let aniversariantesFiltrados = [];
 
+        // FUNÇÃO DE ÍCONES CORRIGIDA
         function obterEmoji(sexo, categoria) {
-            const cat = (categoria || "").toUpperCase();
-            const ehCia = cat.includes("CIA") || cat.includes("ADOLESCENTE") || cat.includes("CRIANÇA");
+            // Normaliza o texto (remove acentos e espaços extras) para comparação segura
+            const cat = (categoria || "")
+                .normalize("NFD")
+                .replace(/[\u0300-\u036f]/g, "")
+                .toUpperCase()
+                .trim();
+
+            // Verifica se pertence ao grupo de CIAs
+            const ehCia = cat.includes("CIA") || 
+                          cat.includes("ADOLESCENTE") || 
+                          cat.includes("CRIANCA") || 
+                          cat.includes("INTERMEDIARIO");
 
             if (sexo === 'Masculino') {
                 return ehCia ? "👕" : "👔";
@@ -156,7 +167,7 @@
             const msgVazia = document.getElementById('msgVazia');
 
             if(!corpo) return;
-            corpo.innerHTML = "<tr><td colspan='3' style='text-align:center;'>Buscando...</td></tr>";
+            corpo.innerHTML = "<tr><td colspan='3' style='text-align:center; padding: 20px;'>Buscando...</td></tr>";
 
             try {
                 let { data: membros, error } = await _supabase
@@ -167,14 +178,16 @@
 
                 if (error) throw error;
 
-                // FILTRO ATUALIZADO: Ignora quem não tem dia preenchido ou tem dia igual a 0
+                // Filtro de dia válido e sexo selecionado
                 aniversariantesFiltrados = membros.filter(m => {
-                    const diaValido = m.dia !== null && m.dia !== undefined && m.dia !== "" && m.dia !== 0 && m.dia !== "0";
+                    const diaNum = parseInt(m.dia);
+                    const diaValido = !isNaN(diaNum) && diaNum > 0;
                     const matchesSexo = (sexoBusca === 'Todos' || m.sexo === sexoBusca);
                     return diaValido && matchesSexo;
                 });
 
-                aniversariantesFiltrados.sort((a, b) => (a.dia || 0) - (b.dia || 0));
+                // Ordenação por dia
+                aniversariantesFiltrados.sort((a, b) => parseInt(a.dia) - parseInt(b.dia));
 
                 if (aniversariantesFiltrados.length === 0) {
                     corpo.innerHTML = "";
@@ -198,7 +211,7 @@
 
             } catch (err) {
                 console.error("Erro:", err);
-                corpo.innerHTML = "<tr><td colspan='3' style='color:red;'>Erro ao carregar dados.</td></tr>";
+                corpo.innerHTML = "<tr><td colspan='3' style='color:red; text-align:center;'>Erro ao carregar dados.</td></tr>";
             }
         }
 
@@ -223,20 +236,19 @@
             window.open(url, '_blank');
         }
 
-        function inicializarPagina() {
-            if (typeof _supabase !== 'undefined') {
-                const meses = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
-                const mesAtualNome = meses[new Date().getMonth()];
-                const selectMes = document.getElementById('filtroMes');
-                if(selectMes) selectMes.value = mesAtualNome;
-                
-                gerarRelatorioAniversariantes();
-            } else {
-                setTimeout(inicializarPagina, 200);
-            }
-        }
+        // Inicialização automática
+        document.addEventListener('DOMContentLoaded', () => {
+            // Verifica acesso via auth.js
+            if (typeof verificarAcesso === 'function') verificarAcesso();
 
-        document.addEventListener('DOMContentLoaded', inicializarPagina);
+            const meses = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
+            const mesAtualNome = meses[new Date().getMonth()];
+            const selectMes = document.getElementById('filtroMes');
+            if(selectMes) selectMes.value = mesAtualNome;
+            
+            // Pequeno delay para garantir que o Supabase carregou
+            setTimeout(gerarRelatorioAniversariantes, 300);
+        });
     </script>
 </body>
 </html>

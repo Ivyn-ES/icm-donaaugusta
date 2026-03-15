@@ -12,41 +12,61 @@
         <header style="text-align: center; margin-bottom: 30px;">
             <span style="font-size: 50px;">📖</span>
             <h1>Espaço do Membro</h1>
-            <p>Olá, <strong id="nomeUsuario">...</strong>! Seja bem-vindo.</p>
+            <p>Olá, <strong id="nomeUsuario">Visitante</strong>! Seja bem-vindo.</p>
         </header>
 
-        <div class="grid-menu">
-            <button onclick="window.location.href='mensagens.html'" class="btn-menu" style="background-color: #3498db;">
+        <div class="grid-menu" style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+            <button onclick="window.location.href='mensagens.html'" class="btn-menu" style="background-color: #3498db; color: white; border: none; padding: 20px; border-radius: 15px; cursor: pointer;">
                 <span style="font-size: 2.5rem; display: block; margin-bottom: 10px;">📢</span>
                 Mural de Avisos
             </button>
 
-            <button onclick="alert('Funcionalidade em breve!')" class="btn-menu" style="background-color: #9b59b6;">
+            <button onclick="alert('Funcionalidade em breve!')" class="btn-menu" style="background-color: #9b59b6; color: white; border: none; padding: 20px; border-radius: 15px; cursor: pointer;">
                 <span style="font-size: 2.5rem; display: block; margin-bottom: 10px;">📅</span>
                 Programação
             </button>
 
-            <button onclick="logout()" class="btn-menu" style="background-color: #e74c3c; grid-column: span 2;">
-                <span style="font-size: 1.5rem; margin-bottom: 5px;">🚪</span>
+            <button onclick="sairMuralLivre()" class="btn-menu" style="background-color: #e74c3c; color: white; border: none; padding: 15px; border-radius: 15px; cursor: pointer; grid-column: span 2; margin-top: 10px;">
+                <span style="font-size: 1.5rem; margin-right: 8px;">🚪</span>
                 Sair do Sistema
             </button>
         </div>
 
         <div style="margin-top: 30px; text-align: center; color: #95a5a6; font-size: 0.8rem;">
-            <p>ICM Dona Augusta - Sistema de Gestão v1.1</p>
+            <p>Gerenciamento Local ICM - Dona Augusta</p>
         </div>
     </div>
 
+    <script src="../js/supabase-config.js"></script>
+    <script src="../js/auth.js"></script>
     <script src="../js/script.js"></script>
+
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            // Verifica o acesso. Se não for nível 'Livre' (ou superior), o script.js redireciona.
-            const user = verificarAcesso();
-            
-            if (user) {
-                document.getElementById('nomeUsuario').innerText = user.nome;
+            // Pegamos os dados do storage para exibir o nome
+            const storage = localStorage.getItem('usuarioLogado');
+            if (storage) {
+                const user = JSON.parse(storage);
+                document.getElementById('nomeUsuario').innerText = user.nome || "Membro";
             }
         });
+
+        // FUNÇÃO DE SAÍDA REVISADA
+        function sairMuralLivre() {
+            if (confirm("Deseja realmente voltar para a tela de login?")) {
+                // 1. Limpa o localStorage completamente
+                localStorage.removeItem('usuarioLogado');
+                
+                // 2. Limpa qualquer dado de sessão do Supabase (se houver)
+                if (typeof _supabase !== 'undefined') {
+                    _supabase.auth.signOut();
+                }
+
+                // 3. Redireciona para o index que está na pasta anterior (raiz)
+                // Usamos o replace para que o usuário não consiga "voltar" pelo navegador
+                window.location.replace('../index.html');
+            }
+        }
     </script>
 </body>
 </html>

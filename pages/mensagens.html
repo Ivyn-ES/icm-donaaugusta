@@ -16,60 +16,77 @@
             border-radius: 50%;
             cursor: pointer;
             font-size: 20px;
+            z-index: 1000;
         }
         .card-mensagem {
             background: #fff;
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 10px;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 15px;
             border-left: 5px solid #3498db;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            text-align: center;
         }
     </style>
 </head>
 <body>
-    <button id="botaoSenha" onclick="toggleSenha()" title="Mudar Senha">🔐</button>
+    <button id="botaoSenha" onclick="toggleSenha()" title="Mudar Senha" style="display: none;">🔐</button>
 
     <div class="container">
-        <header style="text-align: center; margin-bottom: 20px;">
-            <h1>📢 Mensagens e Avisos</h1>
+        <header style="text-align: center; margin-bottom: 25px;">
+            <span style="font-size: 40px;">📢</span>
+            <h1>Mural de Avisos</h1>
             <p>Olá, <strong id="nomeUsuario">...</strong>!</p>
         </header>
 
         <div id="mensagensLista">
-            <p style="text-align: center;">Carregando avisos...</p>
+            <div class="card-mensagem">
+                <p style="color: #7f8c8d; font-style: italic;">
+                    Novas programações e avisos serão listados aqui em breve. 🙌
+                </p>
+            </div>
         </div>
 
-<div id="formSenha" style="background:#fff3cd; padding:20px; border-radius:10px; margin-top: 20px; display:none;">
-    <h4 style="color: #856404;">🔐 Alterar sua Senha</h4>
-    <input type="password" id="inputNovaSenha" placeholder="Digite a nova senha" 
-           style="width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ffeeba; border-radius: 8px;">
-    
-    <div style="display: flex; gap: 10px;">
-        <button onclick="salvarNovaSenha()" class="btn-salvar" style="flex: 1; background: #28a745;">Confirmar</button>
-        <button onclick="toggleSenha()" class="btn-voltar" style="flex: 1; background: #6c757d; color: white; border: none; cursor: pointer;">Cancelar</button>
-    </div>
-</div>
+        <div id="formSenha" style="background:#fff3cd; padding:20px; border-radius:10px; margin-top: 20px; display:none;">
+            <h4 style="color: #856404;">🔐 Alterar sua Senha</h4>
+            <input type="password" id="inputNovaSenha" placeholder="Digite a nova senha" 
+                   style="width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ffeeba; border-radius: 8px; box-sizing: border-box;">
+            
+            <div style="display: flex; gap: 10px;">
+                <button onclick="salvarNovaSenha()" class="btn-salvar" style="flex: 1; background: #28a745; color: white; border: none; padding: 12px; border-radius: 8px; cursor: pointer; font-weight: bold;">Confirmar</button>
+                <button onclick="toggleSenha()" style="flex: 1; background: #6c757d; color: white; border: none; border-radius: 8px; cursor: pointer;">Cancelar</button>
+            </div>
+        </div>
+
         <div style="margin-top: 30px; display: flex; flex-direction: column; gap: 10px;">
-            <a href="dashboard.html" class="btn-voltar" style="text-align: center; text-decoration: none;">⬅ Voltar ao Painel</a>
-            <button onclick="logout()" style="background: #ff4757; color: white; border: none; padding: 10px; border-radius: 5px; cursor: pointer;">🚪 Sair</button>
+            <button id="btnVoltarDinamico" style="text-align: center; width: 100%; padding: 12px; background: #ebf2f6; color: #576574; border: 1px solid #cfd9df; border-radius: 8px; cursor: pointer; font-weight: bold;">⬅ Voltar</button>
+            
+            <button onclick="executarSaidaGeral()" style="background: #ff4757; color: white; border: none; padding: 12px; border-radius: 8px; cursor: pointer; font-weight: bold;">🚪 Sair do Sistema</button>
         </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="../js/supabase-config.js"></script>
+    <script src="../js/auth.js"></script>
     <script src="../js/script.js"></script>
     
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const user = verificarAcesso();
+            
             if (user) {
-                document.getElementById('nomeUsuario').innerText = user.nome;
-                
-                // Se você tiver uma tabela 'mensagens' no Supabase, chamamos aqui
-                if (typeof renderizarMensagens === 'function') {
-                    renderizarMensagens();
+                document.getElementById('nomeUsuario').innerText = user.nome || user.login;
+
+                const btnVoltar = document.getElementById('btnVoltarDinamico');
+                const btnSenha = document.getElementById('botaoSenha');
+
+                // Lógica de navegação baseada no perfil
+                if (user.nivel === 'Livre' || user.login === 'visitante') {
+                    btnVoltar.onclick = () => window.location.href = 'livre.html';
+                    btnSenha.style.display = 'none';
                 } else {
-                    document.getElementById('mensagensLista').innerHTML = "<p>Nenhum aviso no momento.</p>";
+                    btnVoltar.onclick = () => window.location.href = 'dashboard.html';
+                    btnSenha.style.display = 'block';
                 }
             }
         });
@@ -83,9 +100,20 @@
             const nova = document.getElementById('inputNovaSenha').value;
             if (nova.length < 4) return alert("A senha deve ter pelo menos 4 caracteres.");
             
-            // Usaremos uma função que adicionaremos ao script.js
-            const ok = await mudarSenha(nova);
-            if (ok) toggleSenha();
+            if (typeof mudarSenha === 'function') {
+                const ok = await mudarSenha(nova);
+                if (ok) {
+                    alert("Senha alterada com sucesso!");
+                    toggleSenha();
+                }
+            }
+        }
+
+        function executarSaidaGeral() {
+            if (confirm("Deseja realmente sair?")) {
+                localStorage.removeItem('usuarioLogado');
+                window.location.replace('../index.html');
+            }
         }
     </script>
 </body>

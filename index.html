@@ -6,14 +6,14 @@
     <title>Login - ICM Dona Augusta</title>
     <link rel="stylesheet" href="css/style.css">
     <style>
-        /* Estilo para o Mural Interativo */
-        .mural-container {
+        .mural-secao {
             margin-top: 25px;
             padding-top: 20px;
             border-top: 1px dashed #ccc;
             text-align: center;
         }
 
+        /* Transformamos em botão real para evitar conflitos de navegação */
         .btn-mural {
             background-color: #f8f9fa;
             color: #2c3e50;
@@ -21,15 +21,16 @@
             padding: 12px 20px;
             border-radius: 12px;
             font-weight: bold;
-            text-decoration: none;
             display: inline-flex;
             align-items: center;
+            justify-content: center;
             gap: 10px;
             transition: all 0.2s;
             cursor: pointer;
             width: 100%;
-            justify-content: center;
             box-sizing: border-box;
+            font-family: inherit;
+            font-size: 1rem;
         }
 
         .btn-mural:hover {
@@ -38,8 +39,13 @@
             transform: translateY(-2px);
         }
 
-        .btn-mural span {
-            font-size: 1.4rem;
+        .btn-mural span { font-size: 1.4rem; }
+
+        .mural-legenda {
+            font-size: 0.75rem;
+            color: #7f8c8d;
+            margin-top: 8px;
+            display: block;
         }
     </style>
 </head>
@@ -64,11 +70,11 @@
 
         <p id="mensagem" class="error-msg" style="color: red; text-align: center; margin-top: 10px;"></p>
 
-        <div class="mural-container">
-            <a href="paginas/mural.html" class="btn-mural">
+        <div class="mural-secao">
+            <button type="button" onclick="acessarMuralLivre()" class="btn-mural">
                 <span>📢</span> Mural Interativo
-            </a>
-            <p style="font-size: 0.75rem; color: #7f8c8d; margin-top: 8px;">Acesso livre à programação e avisos</p>
+            </button>
+            <small class="mural-legenda">Acesso livre à programação e avisos</small>
         </div>
 
         <div class="version-tag" style="margin-top: 20px;">
@@ -80,5 +86,24 @@
     <script src="js/supabase-config.js"></script>
     <script src="js/auth.js"></script>
     <script src="js/script.js"></script>
+
+    <script>
+        // Função para garantir que o acesso livre funcione sem interferência do auth.js
+        function acessarMuralLivre() {
+            // Remove qualquer tentativa de login pendente no storage
+            localStorage.removeItem('usuarioLogado');
+            
+            // Define um usuário temporário "Visitante" apenas para a página livre não bugar
+            const visitante = {
+                nome: "Visitante",
+                nivel: "Livre",
+                login: "visitante"
+            };
+            localStorage.setItem('usuarioLogado', JSON.stringify(visitante));
+            
+            // Redireciona
+            window.location.href = 'pages/livre.html';
+        }
+    </script>
 </body>
 </html>

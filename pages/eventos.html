@@ -7,64 +7,14 @@
     <link rel="stylesheet" href="../css/style.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        .contador-group {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 12px 0;
-            border-bottom: 1px solid #eee;
-        }
-        .controls {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-        }
-        .btn-ctrl {
-            width: 40px;
-            height: 40px;
-            border-radius: 8px;
-            border: none;
-            background: #007bff;
-            color: white;
-            font-size: 22px;
-            font-weight: bold;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
+        .contador-group { display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #eee; }
+        .controls { display: flex; align-items: center; gap: 15px; }
+        .btn-ctrl { width: 40px; height: 40px; border-radius: 8px; border: none; background: #007bff; color: white; font-size: 22px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; }
         .btn-minus { background: #e74c3c; }
         .count-val { font-size: 20px; font-weight: bold; min-width: 35px; text-align: center; }
-        
-        .section-title { 
-            background: #f8f9fa; 
-            padding: 10px; 
-            border-radius: 8px; 
-            margin-top: 25px;
-            border-left: 5px solid #007bff;
-            font-size: 1.1rem;
-            color: #2c3e50;
-        }
-
-        .card-header-event {
-            background: #fff;
-            padding: 20px;
-            border-radius: 15px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-            margin-bottom: 20px;
-            border: 1px solid #eee;
-        }
-
-        .input-evento {
-            width: 100%;
-            padding: 12px;
-            margin-top: 5px;
-            margin-bottom: 15px;
-            border: 1px solid #ccc;
-            border-radius: 8px;
-            font-size: 1rem;
-            background-color: white;
-        }
+        .section-title { background: #f8f9fa; padding: 10px; border-radius: 8px; margin-top: 25px; border-left: 5px solid #007bff; font-size: 1.1rem; color: #2c3e50; }
+        .card-header-event { background: #fff; padding: 20px; border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 20px; border: 1px solid #eee; }
+        .input-evento { width: 100%; padding: 12px; margin-top: 5px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 8px; font-size: 1rem; background-color: white; }
     </style>
 </head>
 <body>
@@ -84,7 +34,7 @@
             </select>
 
             <label>📝 Descrição:</label>
-            <input type="text" id="desc_evento" placeholder="Ex: Crianças, Intermediários ou Adolescentes" class="input-evento">
+            <input type="text" id="desc_evento" placeholder="Ex: Aula de Crianças" class="input-evento">
         </section>
 
         <h3 class="section-title">👥 MEMBROS</h3>
@@ -94,47 +44,39 @@
         <div class="card" id="grupoVisitantes"></div>
 
         <section style="margin-top: 30px; gap: 12px; display: flex; flex-direction: column;">
-            <button onclick="salvarEventoEspecial()" class="btn-salvar" style="background: #2ecc71; padding: 18px;">💾 Salvar/Atualizar</button>
+            <button onclick="salvarEventoEspecial()" id="btnSalvarEvento" class="btn-salvar" style="background: #2ecc71; padding: 18px;">💾 Salvar/Atualizar</button>
             <button onclick="gerarWhatsEspecial()" class="btn-salvar" style="background: #25d366; padding: 18px;">📱 Enviar Resumo WhatsApp</button>
         </section>
     </div>
 
+    <script src="../js/supabase-config.js"></script>
+    <script src="../js/auth.js"></script>
     <script src="../js/script.js"></script>
+
     <script>
-    // Função para buscar as igrejas que o secretário cadastrou
     async function carregarIgrejas() {
         const select = document.getElementById('local_evento');
         try {
-            const { data, error } = await _supabase
-                .from('igrejas_locais')
-                .select('nome_igreja')
-                .order('nome_igreja', { ascending: true });
-
+            const { data, error } = await _supabase.from('igrejas_locais').select('nome_igreja').order('nome_igreja', { ascending: true });
             if (error) throw error;
-
-            if (data && data.length > 0) {
-                select.innerHTML = '<option value="">Selecione a Igreja...</option>' + 
-                    data.map(i => `<option value="${i.nome_igreja}">${i.nome_igreja}</option>`).join('');
-            } else {
-                select.innerHTML = '<option value="">Nenhuma igreja cadastrada</option>';
-            }
+            select.innerHTML = '<option value="">Selecione a Igreja...</option>' + 
+                data.map(i => `<option value="${i.nome_igreja}">${i.nome_igreja}</option>`).join('');
         } catch (err) {
-            console.error("Erro ao carregar igrejas:", err);
-            select.innerHTML = '<option value="">Erro na conexão</option>';
+            select.innerHTML = '<option value="">Dona Augusta</option>'; // Fallback
         }
     }
 
+    const categorias = ["Varões", "Senhoras", "Jovens", "Adolescentes", "Intermediários", "Crianças", "Crianças de Colo"];
+
     window.onload = async () => {
-        // Carrega as opções do Select primeiro
+        if (typeof verificarAcesso === 'function') verificarAcesso();
         await carregarIgrejas();
 
-        const categorias = ["Varões", "Senhoras", "Jovens", "Adolescentes", "Intermediários", "Crianças", "Crianças de Colo"];
-        
         const renderContadores = (containerId, prefixo) => {
             const container = document.getElementById(containerId);
             container.innerHTML = categorias.map(cat => `
                 <div class="contador-group">
-                    <span style="font-weight: 500; color: #444;">${cat}</span>
+                    <span style="font-weight: 500;">${cat}</span>
                     <div class="controls">
                         <button class="btn-ctrl btn-minus" onclick="alterarContador('${prefixo}_${cat}', -1)">-</button>
                         <span class="count-val" id="val_${prefixo}_${cat}">0</span>
@@ -147,74 +89,97 @@
         renderContadores('grupoMembros', 'membro');
         renderContadores('grupoVisitantes', 'vis');
 
-        const urlParams = new URLSearchParams(window.location.search);
-        const idEvento = urlParams.get('id');
-
-        if (idEvento) {
-            document.querySelector('h1').innerText = "📝 Editar CIAs";
-            try {
-                const { data, error } = await _supabase
-                    .from('eventos_especiais')
-                    .select('*')
-                    .eq('id', idEvento)
-                    .single();
-
-                if (error) throw error;
-
-                document.getElementById('data_especial').value = data.data_evento;
-                document.getElementById('desc_evento').value = data.descricao;
-                
-                // Pequeno delay para o select carregar as opções antes de selecionar a correta
-                setTimeout(() => {
-                    document.getElementById('local_evento').value = data.local_evento;
-                }, 500);
-
-                // Membros
-                document.getElementById('val_membro_Varões').innerText = data.m_varoes || 0;
-                document.getElementById('val_membro_Senhoras').innerText = data.m_senhoras || 0;
-                document.getElementById('val_membro_Jovens').innerText = data.m_jovens || 0;
-                document.getElementById('val_membro_Adolescentes').innerText = data.m_adolescentes || 0;
-                document.getElementById('val_membro_Intermediários').innerText = data.m_intermediarios || 0;
-                document.getElementById('val_membro_Crianças').innerText = data.m_criancas || 0;
-                document.getElementById('val_membro_Crianças de Colo').innerText = data.m_colo || 0;
-
-                // Visitantes
-                document.getElementById('val_vis_Varões').innerText = data.v_varoes || 0;
-                document.getElementById('val_vis_Senhoras').innerText = data.v_senhoras || 0;
-                document.getElementById('val_vis_Jovens').innerText = data.v_jovens || 0;
-                document.getElementById('val_vis_Adolescentes').innerText = data.v_adolescentes || 0;
-                document.getElementById('val_vis_Intermediários').innerText = data.v_intermediarios || 0;
-                document.getElementById('val_vis_Crianças').innerText = data.v_criancas || 0;
-                document.getElementById('val_vis_Crianças de Colo').innerText = data.v_colo || 0;
-
-                garantirCampoEdicao(idEvento);
-
-            } catch (err) {
-                console.error("Erro ao carregar dados de edição:", err);
-            }
-        } else {
-            const hoje = new Date();
-            const dataLocal = hoje.toLocaleDateString('sv-SE');
-            document.getElementById('data_especial').value = dataLocal;
-        }
+        const idEvento = new URLSearchParams(window.location.search).get('id');
+        if (idEvento) carregarDadosEdicao(idEvento);
+        else document.getElementById('data_especial').value = new Date().toLocaleDateString('sv-SE');
     };
 
-    function garantirCampoEdicao(id) {
-        let hiddenId = document.getElementById('id_evento_edicao');
-        if (!hiddenId) {
-            hiddenId = document.createElement('input');
-            hiddenId.type = 'hidden';
-            hiddenId.id = 'id_evento_edicao';
-            document.body.appendChild(hiddenId);
-        }
-        hiddenId.value = id;
+    async function carregarDadosEdicao(id) {
+        try {
+            const { data, error } = await _supabase.from('eventos_especiais').select('*').eq('id', id).single();
+            if (error) throw error;
+
+            document.getElementById('data_especial').value = data.data_evento;
+            document.getElementById('desc_evento').value = data.descricao;
+            setTimeout(() => { document.getElementById('local_evento').value = data.local_evento; }, 600);
+
+            const mapeamento = {
+                'Varões': ['m_varoes', 'v_varoes'], 'Senhoras': ['m_senhoras', 'v_senhoras'],
+                'Jovens': ['m_jovens', 'v_jovens'], 'Adolescentes': ['m_adolescentes', 'v_adolescentes'],
+                'Intermediários': ['m_intermediarios', 'v_intermediarios'], 'Crianças': ['m_criancas', 'v_criancas'],
+                'Crianças de Colo': ['m_colo', 'v_colo']
+            };
+
+            Object.keys(mapeamento).forEach(cat => {
+                document.getElementById(`val_membro_${cat}`).innerText = data[mapeamento[cat][0]] || 0;
+                document.getElementById(`val_vis_${cat}`).innerText = data[mapeamento[cat][1]] || 0;
+            });
+
+            const inputId = document.createElement('input');
+            inputId.type = 'hidden'; inputId.id = 'id_evento_edicao'; inputId.value = id;
+            document.body.appendChild(inputId);
+        } catch (e) { console.error(e); }
     }
 
     function alterarContador(id, delta) {
         const el = document.getElementById(`val_${id}`);
-        let atual = parseInt(el.innerText);
-        atual = Math.max(0, atual + delta);
-        el.innerText = atual;
+        el.innerText = Math.max(0, parseInt(el.innerText) + delta);
+    }
+
+    async function salvarEventoEspecial() {
+        const btn = document.getElementById('btnSalvarEvento');
+        btn.disabled = true;
+
+        const getV = (id) => parseInt(document.getElementById(id).innerText);
+        const idEdicao = document.getElementById('id_evento_edicao')?.value;
+
+        const dados = {
+            data_evento: document.getElementById('data_especial').value,
+            local_evento: document.getElementById('local_evento').value,
+            descricao: document.getElementById('desc_evento').value,
+            m_varoes: getV('val_membro_Varões'), m_senhoras: getV('val_membro_Senhoras'),
+            m_jovens: getV('val_membro_Jovens'), m_adolescentes: getV('val_membro_Adolescentes'),
+            m_intermediarios: getV('val_membro_Intermediários'), m_criancas: getV('val_membro_Crianças'),
+            m_colo: getV('val_membro_Crianças de Colo'),
+            v_varoes: getV('val_vis_Varões'), v_senhoras: getV('val_vis_Senhoras'),
+            v_jovens: getV('val_vis_Jovens'), v_adolescentes: getV('val_vis_Adolescentes'),
+            v_intermediarios: getV('val_vis_Intermediários'), v_criancas: getV('val_vis_Crianças'),
+            v_colo: getV('val_vis_Crianças de Colo')
+        };
+
+        try {
+            let res;
+            if (idEdicao) res = await _supabase.from('eventos_especiais').update(dados).eq('id', idEdicao);
+            else res = await _supabase.from('eventos_especiais').insert([dados]);
+            
+            if (res.error) throw res.error;
+            alert("✅ Evento salvo com sucesso!");
+            window.location.href = 'historico-eventos.html';
+        } catch (e) { alert("Erro ao salvar."); }
+        finally { btn.disabled = false; }
+    }
+
+    function gerarWhatsEspecial() {
+        const data = document.getElementById('data_especial').value.split('-').reverse().join('/');
+        const local = document.getElementById('local_evento').value;
+        const desc = document.getElementById('desc_evento').value;
+        
+        let texto = `*RESUMO DE EVENTO - ICM*\n`;
+        texto += `📅 Data: ${data}\n📍 Local: ${local}\n📝 ${desc}\n\n`;
+        
+        texto += `*MEMBROS:*\n`;
+        categorias.forEach(cat => {
+            const val = document.getElementById(`val_membro_${cat}`).innerText;
+            if(val > 0) texto += `• ${cat}: ${val}\n`;
+        });
+
+        texto += `\n*VISITANTES:*\n`;
+        categorias.forEach(cat => {
+            const val = document.getElementById(`val_vis_${cat}`).innerText;
+            if(val > 0) texto += `• ${cat}: ${val}\n`;
+        });
+
+        window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(texto)}`);
     }
     </script>
 </body>

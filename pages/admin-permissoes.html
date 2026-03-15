@@ -7,22 +7,24 @@
     <link rel="stylesheet" href="../css/style.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        .table-container { width: 100%; overflow-x: auto; margin-top: 20px; }
-        table { width: 100%; border-collapse: collapse; background: white; font-size: 0.85rem; }
-        th, td { padding: 10px; border: 1px solid #ddd; text-align: center; }
-        th { background: #2c3e50; color: white; }
-        .func-col { text-align: left; font-weight: bold; background: #f9f9f9; width: 40%; }
-        .sticky-col { position: sticky; left: 0; z-index: 1; }
-        input[type="checkbox"] { width: 18px; height: 18px; cursor: pointer; }
-        .btn-acao { width: 100%; padding: 15px; margin-top: 15px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; }
-        .btn-save { background: #27ae60; color: white; }
+        .table-container { width: 100%; overflow-x: auto; margin-top: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        table { width: 100%; border-collapse: collapse; background: white; font-size: 0.9rem; }
+        th, td { padding: 12px; border-bottom: 1px solid #eee; text-align: center; }
+        th { background: #2c3e50; color: white; font-weight: 500; }
+        .func-col { text-align: left; font-weight: bold; background: #f9f9f9; width: 70%; padding-left: 15px; }
+        input[type="checkbox"] { width: 20px; height: 20px; cursor: pointer; accent-color: #27ae60; }
+        .btn-acao { width: 100%; padding: 15px; margin-top: 10px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; font-size: 1rem; }
+        .btn-save { background: #27ae60; color: white; transition: background 0.3s; }
+        .btn-save:hover { background: #219150; }
+        .btn-voltar-estilo { background: #636e72; color: white; }
     </style>
 </head>
 <body>
     <div class="container">
-        <header style="text-align: center;">
-            <h2>🛡️ Gestão de Acessos</h2>
-            <select id="select-nivel" onchange="carregarPermissoesDoNivel()" style="padding: 10px; width: 100%; border-radius: 8px; margin-bottom: 10px;">
+        <header style="text-align: center; margin-bottom: 20px;">
+            <h2 style="margin-bottom: 15px;">🛡️ Gestão de Acessos</h2>
+            <p style="font-size: 0.9rem; color: #666; margin-bottom: 15px;">Selecione o nível de usuário para editar permissões</p>
+            <select id="select-nivel" style="padding: 12px; width: 100%; border-radius: 8px; border: 1px solid #ccc; font-size: 1rem; background: #fff;">
                 <option value="coord">Coordenadora</option>
                 <option value="apoio">Apoio</option>
                 <option value="user">Responsável (User)</option>
@@ -39,15 +41,60 @@
                     </tr>
                 </thead>
                 <tbody id="lista-permissoes">
-                    </tbody>
+                    <tr>
+                        <td colspan="2" style="padding: 30px;">Carregando definições...</td>
+                    </tr>
+                </tbody>
             </table>
         </div>
 
-        <button class="btn-save btn-acao" onclick="salvarPermissoes()">Gravar Configurações</button>
-        <button class="btn-voltar-estilo btn-acao" onclick="window.location.href='dashboard.html'">Voltar</button>
+        <div style="margin-top: 20px;">
+            <button class="btn-save btn-acao" id="btnSalvarPermissoes">💾 Gravar Configurações</button>
+            <button class="btn-voltar-estilo btn-acao" onclick="window.location.href='dashboard.html'">⬅ Voltar ao Painel</button>
+        </div>
     </div>
 
+    <script src="../js/supabase-config.js"></script>
+    <script src="../js/auth.js"></script>
     <script src="../js/script.js"></script>
     <script src="../js/permissoes.js"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            // 1. Verifica acesso (bloqueia se não for admin/master)
+            if (typeof verificarAcesso === 'function') {
+                const user = verificarAcesso();
+                if (user) {
+                    const nivel = (user.permissao || user.nivel || "").toLowerCase();
+                    if (nivel !== 'admin' && nivel !== 'master') {
+                        alert('Acesso restrito!');
+                        window.location.href = 'dashboard.html';
+                        return;
+                    }
+                }
+            }
+
+            // 2. Vincula o evento de mudança no select
+            const seletor = document.getElementById('select-nivel');
+            seletor.addEventListener('change', () => {
+                if (typeof carregarPermissoesDoNivel === 'function') {
+                    carregarPermissoesDoNivel();
+                }
+            });
+
+            // 3. Vincula o botão salvar à função do permissoes.js
+            const btnSalvar = document.getElementById('btnSalvarPermissoes');
+            btnSalvar.addEventListener('click', () => {
+                if (typeof salvarPermissoes === 'function') {
+                    salvarPermissoes();
+                }
+            });
+
+            // 4. Carga inicial
+            if (typeof carregarPermissoesDoNivel === 'function') {
+                carregarPermissoesDoNivel();
+            }
+        });
+    </script>
 </body>
 </html>

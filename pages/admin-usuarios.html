@@ -19,13 +19,14 @@
         .btn-senha { background-color: #f1c40f; }
         .btn-excluir { background-color: #e74c3c; }
         .btn-tabela:hover { opacity: 0.8; }
+        td { padding: 10px; border-bottom: 1px solid #eee; }
     </style>
 </head>
 <body>
     <div class="container">
         <header style="text-align: center; margin-bottom: 20px;">
             <h1>🔑 Gestão de Acessos (Usuários)</h1>
-            <p>Olá, <strong id="nomeAdmin"></strong>! Aqui você cria novos acessos.</p>
+            <p>Olá, <strong id="nomeAdmin">...</strong>! Aqui você cria novos acessos.</p>
         </header>
 
         <section class="admin-section" style="background: #f8f9fa; padding: 20px; border-radius: 10px; border: 1px solid #ddd;">
@@ -53,12 +54,12 @@
                     </div>
                     <div class="campo">
                         <label>Vincular ao Grupo:</label>
-                        <select id="grupo_vinculado">
+                        <select id="grupo_vinculado_user">
                             <option value="">Todos (Admin)</option>
                         </select>
                     </div>
                 </div>
-                <button type="submit" class="btn-salvar" style="margin-top: 10px;">💾 Salvar Novo Usuário</button>
+                <button type="submit" id="btnSalvarUser" class="btn-salvar" style="margin-top: 10px;">💾 Salvar Novo Usuário</button>
             </form>
         </section>
 
@@ -77,7 +78,7 @@
                         </tr>
                     </thead>
                     <tbody id="corpoTabelaUsuarios">
-                        <tr><td colspan="4" style="text-align: center;">Carregando...</td></tr>
+                        <tr><td colspan="4" style="text-align: center;">Carregando usuários...</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -89,60 +90,69 @@
         </div>
     </div>
 
+    <script src="../js/supabase-config.js"></script>
+    <script src="../js/auth.js"></script>
     <script src="../js/script.js"></script>
+
     <script>
         let usuarioLogadoGlobal = null;
 
+        // FUNÇÃO PARA CARREGAR GRUPOS NO SELECT DE USUÁRIO
+        async function carregarGruposUsuarios() {
+            const select = document.getElementById('grupo_vinculado_user');
+            try {
+                const { data, error } = await _supabase.from('grupos').select('nome').order('nome', { ascending: true });
+                if (error) throw error;
+                let html = '<option value="">Todos (Admin)</option>';
+                data.forEach(g => { html += `<option value="${g.nome}">${g.nome}</option>`; });
+                select.innerHTML = html;
+            } catch (e) { console.error("Erro grupos:", e); }
+        }
+
+        async function atualizarTabelaUsuarios() {
+            const corpo = document.getElementById('corpoTabelaUsuarios');
+            try {
+                const { data: usuarios, error } = await _supabase
+                    .from('usuarios')
+                    .select('*')
+                    .order('login', { ascending: true });
+
+                if (error) throw error;
+
+                corpo.innerHTML = usuarios.map(u => `
+                    <tr>
+                        <td>${u.login}</td>
+                        <td>${u.permissao || u.nivel}</td>
+                        <td>${u.grupo_vinculado || '---'}</td>
+                        <td style="text-align: center;">
+                            <button onclick="solicitarNovaSenha('${u.id}', '${u.login}')" class="btn-tabela btn-senha" title="Alterar Senha">🔑</button>
+                            <button onclick="executarExclusao('${u.id}')" class="btn-tabela btn-excluir" title="Excluir">🗑️</button>
+                        </td>
+                    </tr>
+                `).join('');
+            } catch (err) {
+                corpo.innerHTML = '<tr><td colspan="4">Erro ao carregar usuários.</td></tr>';
+            }
+        }
+
         document.addEventListener('DOMContentLoaded', async () => {
+            // Agora com auth.js carregado, verificarAcesso funciona
             usuarioLogadoGlobal = verificarAcesso();
+            
             if (usuarioLogadoGlobal) {
                 document.getElementById('nomeAdmin').innerText = usuarioLogadoGlobal.nome || usuarioLogadoGlobal.login;
-                
                 const nivelLogado = (usuarioLogadoGlobal.permissao || usuarioLogadoGlobal.nivel || "").toLowerCase();
 
                 if (nivelLogado !== 'admin' && nivelLogado !== 'master') {
-                    alert('Acesso negado! Esta área é restrita a administradores.');
+                    alert('Acesso negado!');
                     window.location.href = 'dashboard.html';
                     return;
                 }
 
-                if (typeof carregarGruposNoSelect === 'function') {
-                    await carregarGruposNoSelect();
-                }
-
+                await carregarGruposUsuarios();
                 atualizarTabelaUsuarios();
             }
         });
-
-        async function atualizarTabelaUsuarios() {
-            const corpo = document.getElementById('corpoTabelaUsuarios');
-            
-            // Busca usuários diretamente do banco
-            const { data: usuarios, error } = await _supabase
-                .from('usuarios')
-                .select('*')
-                .order('login', { ascending: true });
-
-            if (error) {
-                corpo.innerHTML = '<tr><td colspan="4">Erro ao carregar usuários.</td></tr>';
-                return;
-            }
-
-            corpo.innerHTML = '';
-            usuarios.forEach(u => {
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td style="padding: 10px; border-bottom: 1px solid #eee;">${u.login}</td>
-                    <td style="border-bottom: 1px solid #eee;">${u.permissao || u.nivel}</td>
-                    <td style="border-bottom: 1px solid #eee;">${u.grupo_vinculado || '---'}</td>
-                    <td style="text-align: center; border-bottom: 1px solid #eee;">
-                        <button onclick="solicitarNovaSenha('${u.id}', '${u.login}')" class="btn-tabela btn-senha" title="Alterar Senha">🔑</button>
-                        <button onclick="executarExclusao('${u.id}')" class="btn-tabela btn-excluir" title="Excluir">🗑️</button>
-                    </td>
-                `;
-                corpo.appendChild(tr);
-            });
-        }
 
         async function solicitarNovaSenha(id, login) {
             const nova = prompt(`Digite a nova senha para [ ${login} ] :`);
@@ -150,8 +160,6 @@
                 const { error } = await _supabase.from('usuarios').update({ senha: nova }).eq('id', id);
                 if (!error) alert('✅ Senha alterada!');
                 else alert('❌ Erro ao alterar.');
-            } else if (nova !== null) {
-                alert('⚠️ Senha muito curta (mínimo 4 caracteres).');
             }
         }
 
@@ -167,17 +175,26 @@
 
         document.getElementById('formUsuario').addEventListener('submit', async (e) => {
             e.preventDefault();
+            const btn = document.getElementById('btnSalvarUser');
+            btn.disabled = true;
+            
             const dados = {
                 login: document.getElementById('novoLogin').value.trim(),
                 senha: document.getElementById('novaSenha').value.trim(),
                 permissao: document.getElementById('nivelAcesso').value,
-                grupo_vinculado: document.getElementById('grupo_vinculado').value
+                grupo_vinculado: document.getElementById('grupo_vinculado_user').value
             };
 
-            const ok = await criarUsuario(dados);
-            if (ok) {
+            try {
+                const { error } = await _supabase.from('usuarios').insert([dados]);
+                if (error) throw error;
+                alert("Usuário criado com sucesso!");
                 document.getElementById('formUsuario').reset();
                 atualizarTabelaUsuarios();
+            } catch (err) {
+                alert("Erro ao criar usuário.");
+            } finally {
+                btn.disabled = false;
             }
         });
     </script>

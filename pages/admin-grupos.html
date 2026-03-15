@@ -3,41 +3,46 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestão de Grupos</title>
+    <title>Gestão de Grupos - ICM</title>
     <link rel="stylesheet" href="../css/style.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        .btn-excluir { background: none; border: none; cursor: pointer; font-size: 1.2rem; color: #e74c3c; }
+        .btn-excluir:hover { transform: scale(1.1); }
+        td, th { padding: 12px; border-bottom: 1px solid #eee; }
+    </style>
 </head>
 <body>
     <div class="container">
-        <header style="text-align: center; margin-bottom: 20px;">
-            <h1>📂 Gestão de Grupos</h1>
+        <header style="text-align: center; margin-bottom: 20px; border-bottom: 2px solid #eee; padding-bottom: 10px;">
+            <h1 style="margin:0;">📂 Gestão de Grupos</h1>
         </header>
 
-        <section class="admin-section" style="background: #f9f9f9; padding: 20px; border-radius: 8px; border: 1px solid #eee;">
-            <form id="formGrupo" class="linha-dupla" style="display: flex; gap: 10px; align-items: flex-end;">
+        <section class="admin-section" style="background: #f9f9f9; padding: 20px; border-radius: 12px; border: 1px solid #eee; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
+            <form id="formGrupo" style="display: flex; gap: 10px; align-items: flex-end;">
                 <div class="campo" style="flex: 1;">
-                    <label for="nomeGrupo" style="display: block; margin-bottom: 5px; font-weight: bold;">Grupo:</label>
-                    <input type="text" id="nomeGrupo" placeholder="Ex: Grupo 01" required style="width: 100%; padding: 10px; border-radius: 5px; border: 1px solid #ccc;">
+                    <label for="nomeGrupo" style="display: block; margin-bottom: 5px; font-weight: bold;">Novo Grupo:</label>
+                    <input type="text" id="nomeGrupo" placeholder="Ex: Grupo 01" required style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #ccc;">
                 </div>
-                <button type="submit" class="btn-salvar" style="padding: 10px 20px;">Adicionar</button>
+                <button type="submit" id="btnSalvar" class="btn-salvar" style="padding: 12px 25px; border-radius: 8px; font-weight: bold;">➕ Adicionar</button>
             </form>
         </section>
 
         <hr style="margin: 30px 0; border: 0; border-top: 1px solid #ddd;">
 
         <section>
-            <h3>Grupos Atuais</h3>
+            <h3 style="margin-bottom: 15px; display: flex; align-items: center; gap: 10px;">📋 Grupos Atuais</h3>
             <div class="tabela-responsiva">
-                <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
+                <table style="width: 100%; border-collapse: collapse;">
                     <thead>
-                        <tr style="background: #f0f2f5;">
-                            <th style="padding: 12px; text-align: left; border-bottom: 2px solid #ddd;">Nome do Grupo</th>
-                            <th style="padding: 12px; text-align: center; border-bottom: 2px solid #ddd;">Ações</th>
+                        <tr style="background: #f8f9fa;">
+                            <th style="text-align: left;">Nome do Grupo</th>
+                            <th style="text-align: center; width: 100px;">Ações</th>
                         </tr>
                     </thead>
                     <tbody id="corpoTabelaGrupos">
                         <tr>
-                            <td colspan="2" style="text-align: center; padding: 20px;">Carregando grupos...</td>
+                            <td colspan="2" style="text-align: center; padding: 20px;">Buscando grupos no servidor...</td>
                         </tr>
                     </tbody>
                 </table>
@@ -45,50 +50,100 @@
         </section>
 
         <div style="margin-top: 30px;">
-            <a href="dashboard.html" class="btn-voltar" style="display: block; text-align: center; text-decoration: none; padding: 10px; background: #eee; color: #333; border-radius: 5px;">⬅ Voltar ao Painel</a>
+            <a href="dashboard.html" class="btn-voltar" style="display: block; text-align: center; text-decoration: none; padding: 12px; background: #636e72; color: white; border-radius: 8px; font-weight: bold;">⬅ Voltar ao Painel</a>
         </div>
     </div>
 
+    <script src="../js/supabase-config.js"></script>
+    <script src="../js/auth.js"></script>
     <script src="../js/script.js"></script>
+
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            // 1. Verifica acesso usando a função central
-            const user = verificarAcesso();
-            
-            // 2. Trava de segurança AJUSTADA (Aceita minúsculas do novo padrão)
-            if (user) {
-                const nivelLogado = (user.permissao || user.nivel || "").toLowerCase();
-                
-                if (nivelLogado !== 'admin' && nivelLogado !== 'master') {
-                    alert('Acesso negado! Esta área é restrita a administradores.');
-                    window.location.href = 'dashboard.html';
+        // FUNÇÃO PARA LISTAR GRUPOS
+        async function listarGrupos() {
+            const corpo = document.getElementById('corpoTabelaGrupos');
+            try {
+                const { data: grupos, error } = await _supabase
+                    .from('grupos')
+                    .select('*')
+                    .order('nome', { ascending: true });
+
+                if (error) throw error;
+
+                if (!grupos || grupos.length === 0) {
+                    corpo.innerHTML = "<tr><td colspan='2' style='text-align:center; padding:20px;'>Nenhum grupo cadastrado.</td></tr>";
                     return;
                 }
-            }
 
-            // 3. Carrega a lista de grupos cadastrados
-            if (typeof renderizarGrupos === 'function') {
-                renderizarGrupos(); 
-            }
-        });
+                corpo.innerHTML = grupos.map(g => `
+                    <tr>
+                        <td style="font-weight: 500;">${g.nome}</td>
+                        <td style="text-align: center;">
+                            <button onclick="deletarGrupo('${g.id}', '${g.nome}')" class="btn-excluir" title="Excluir Grupo">🗑️</button>
+                        </td>
+                    </tr>
+                `).join('');
 
-        // Evento de criação de grupo
-        const form = document.getElementById('formGrupo');
-        if (form) {
-            form.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                const campoNome = document.getElementById('nomeGrupo');
-                const nome = campoNome.value.trim();
-                
-                if (typeof criarGrupo === 'function') {
-                    const ok = await criarGrupo(nome);
-                    if (ok) {
-                        form.reset();
-                        renderizarGrupos(); // Atualiza a tabela imediatamente
+            } catch (err) {
+                console.error("Erro:", err);
+                corpo.innerHTML = "<tr><td colspan='2' style='text-align:center; color:red;'>Falha ao carregar grupos.</td></tr>";
+            }
+        }
+
+        // FUNÇÃO PARA DELETAR GRUPO
+        async function deletarGrupo(id, nome) {
+            if (!confirm(`Tem certeza que deseja excluir o "${nome}"?\nIsso pode afetar membros vinculados.`)) return;
+            
+            try {
+                const { error } = await _supabase.from('grupos').delete().eq('id', id);
+                if (error) throw error;
+                listarGrupos();
+            } catch (err) {
+                alert("Erro ao excluir grupo. Verifique se existem membros vinculados.");
+            }
+        }
+
+        // INICIALIZAÇÃO
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Agora o auth.js está carregado, verificarAcesso vai funcionar
+            if (typeof verificarAcesso === 'function') {
+                const user = verificarAcesso();
+                if (user) {
+                    const nivel = (user.permissao || user.nivel || "").toLowerCase();
+                    if (nivel !== 'admin' && nivel !== 'master') {
+                        alert('Acesso negado!');
+                        window.location.href = 'dashboard.html';
+                        return;
                     }
                 }
-            });
-        }
+            }
+            listarGrupos();
+        });
+
+        // EVENTO DE SALVAR
+        document.getElementById('formGrupo').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('btnSalvar');
+            const campoNome = document.getElementById('nomeGrupo');
+            const nome = campoNome.value.trim();
+
+            btn.disabled = true;
+            btn.innerText = "⌛ Salvando...";
+
+            try {
+                const { error } = await _supabase.from('grupos').insert([{ nome: nome }]);
+                if (error) throw error;
+                
+                campoNome.value = "";
+                listarGrupos();
+            } catch (err) {
+                console.error(err);
+                alert("Erro ao salvar grupo. Pode ser que já exista um com este nome.");
+            } finally {
+                btn.disabled = false;
+                btn.innerText = "➕ Adicionar";
+            }
+        });
     </script>
 </body>
 </html>

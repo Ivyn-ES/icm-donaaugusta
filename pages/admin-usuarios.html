@@ -9,84 +9,95 @@
     <style>
         .btn-tabela {
             border: none;
-            padding: 8px;
-            border-radius: 4px;
+            padding: 8px 12px;
+            border-radius: 6px;
             cursor: pointer;
-            margin: 0 2px;
+            margin: 0 3px;
             color: white;
             font-size: 1rem;
+            transition: transform 0.1s;
         }
-        .btn-senha { background-color: #f1c40f; }
+        .btn-senha { background-color: #f1c40f; color: #000; }
         .btn-excluir { background-color: #e74c3c; }
-        .btn-tabela:hover { opacity: 0.8; }
-        td { padding: 10px; border-bottom: 1px solid #eee; }
+        .btn-tabela:hover { transform: scale(1.05); opacity: 0.9; }
+        
+        td { padding: 12px 10px; border-bottom: 1px solid #eee; }
+        th { padding: 12px 10px; background: #e9ecef; color: #2d3436; }
+
+        .col-acao { width: 110px; text-align: center; }
+        .col-nivel { width: 150px; text-align: left; }
+
+        .tag-nivel {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            font-weight: bold;
+            background: #dfe6e9;
+            color: #2d3436;
+            text-transform: uppercase;
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <header style="text-align: center; margin-bottom: 20px;">
-            <h1>🔑 Gestão de Acessos (Usuários)</h1>
-            <p>Olá, <strong id="nomeAdmin">...</strong>! Aqui você cria novos acessos.</p>
+        <header style="text-align: center; margin-bottom: 25px;">
+            <span style="font-size: 50px;">🔐</span>
+            <h1 style="margin: 0;">Gestão de Acessos</h1>
+            <p>Olá, <strong id="nomeAdmin">...</strong>! Gerencie quem acessa o sistema.</p>
         </header>
 
-        <section class="admin-section" style="background: #f8f9fa; padding: 20px; border-radius: 10px; border: 1px solid #ddd;">
-            <h3>➕ Criar Novo Login</h3>
-            <form id="formUsuario" style="display: flex; flex-direction: column; gap: 10px;">
-                <div class="campo">
-                    <label>Login (Usuário):</label>
-                    <input type="text" id="novoLogin" placeholder="Ex: marcos_gp01" required>
-                </div>
-                <div class="campo">
-                    <label>Senha:</label>
-                    <input type="password" id="novaSenha" required>
-                </div>
-                <div class="linha-dupla">
+        <section class="admin-section" style="background: #fff; padding: 20px; border-radius: 12px; border: 1px solid #ddd; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
+            <h3 style="margin-top: 0;">➕ Novo Acesso</h3>
+            <form id="formUsuario" style="display: flex; flex-direction: column; gap: 15px;">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
                     <div class="campo">
-                        <label>Nível de Permissão:</label>
-                        <select id="nivelAcesso">
-                            <option value="Master">Master</option>
-                            <option value="Admin">Admin</option>
-                            <option value="Coordenadora">Coordenadora (Senhoras)</option>
-                            <option value="User">Resp Grupo</option>
-                            <option value="Apoio">Apoio (Faz Chamada)</option>
-                            <option value="Livre">Membro (apenas leitura)</option>
-                        </select>
+                        <label style="font-weight: bold;">Login:</label>
+                        <input type="text" id="novoLogin" placeholder="Ex: joao_secre" required style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #ccc;">
                     </div>
                     <div class="campo">
-                        <label>Vincular ao Grupo:</label>
-                        <select id="grupo_vinculado_user">
-                            <option value="">Todos (Admin)</option>
-                        </select>
+                        <label style="font-weight: bold;">Senha:</label>
+                        <input type="password" id="novaSenha" required style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #ccc;">
                     </div>
                 </div>
-                <button type="submit" id="btnSalvarUser" class="btn-salvar" style="margin-top: 10px;">💾 Salvar Novo Usuário</button>
+
+                <div class="campo">
+                    <label style="font-weight: bold;">Nível de Permissão:</label>
+                    <select id="nivelAcesso" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #ccc; background: white;">
+                        <option value="admin">Admin</option>
+                        <option value="secre">Secretário(a)</option>
+                        <option value="apoio">Apoio</option>
+                        <option value="coord">Coordenadora</option>
+                        <option value="user">Resp. Grupo</option>
+                    </select>
+                </div>
+
+                <button type="submit" id="btnSalvarUser" class="btn-salvar" style="padding: 12px; font-weight: bold; cursor: pointer;">💾 Criar Usuário</button>
             </form>
         </section>
 
-        <hr style="margin: 30px 0;">
+        <hr style="margin: 30px 0; border: 0; border-top: 1px solid #eee;">
 
         <section>
-            <h3>👥 Usuários Cadastrados</h3>
-            <div class="tabela-responsiva">
+            <h3 style="display: flex; align-items: center; gap: 10px;">👥 Usuários Ativos</h3>
+            <div class="tabela-responsiva" style="background: white; border-radius: 12px; overflow: hidden; border: 1px solid #eee;">
                 <table style="width: 100%; border-collapse: collapse;">
                     <thead>
-                        <tr style="background: #e9ecef;">
-                            <th style="padding: 10px; text-align: left;">Usuário</th>
-                            <th style="text-align: left;">Nível</th>
-                            <th style="text-align: left;">Grupo</th>
-                            <th style="text-align: center;">Ação</th>
+                        <tr>
+                            <th style="text-align: left;">Usuário</th>
+                            <th class="col-nivel">Nível</th>
+                            <th class="col-acao">Ações</th>
                         </tr>
                     </thead>
                     <tbody id="corpoTabelaUsuarios">
-                        <tr><td colspan="4" style="text-align: center;">Carregando usuários...</td></tr>
+                        <tr><td colspan="3" style="text-align: center; padding: 20px;">Buscando dados...</td></tr>
                     </tbody>
                 </table>
             </div>
         </section>
 
         <div style="margin-top:30px; display: flex; gap: 10px;">
-            <a href="dashboard.html" class="btn-voltar" style="flex: 1; text-align: center; text-decoration: none; padding: 12px; background: #6c757d; color: white; border-radius: 8px;">← Dashboard</a>
-            <button onclick="logout()" style="flex: 1; padding: 12px; background: #dc3545; color: white; border: none; border-radius: 8px; cursor: pointer;">🚪 Sair</button>
+            <a href="dashboard.html" class="btn-voltar" style="flex: 1; text-align: center; text-decoration: none; padding: 12px; background: #6c757d; color: white; border-radius: 8px; font-weight: bold;">← Painel</a>
+            <button onclick="logout()" style="flex: 1; padding: 12px; background: #dc3545; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold;">🚪 Sair</button>
         </div>
     </div>
 
@@ -95,20 +106,6 @@
     <script src="../js/script.js"></script>
 
     <script>
-        let usuarioLogadoGlobal = null;
-
-        // FUNÇÃO PARA CARREGAR GRUPOS NO SELECT DE USUÁRIO
-        async function carregarGruposUsuarios() {
-            const select = document.getElementById('grupo_vinculado_user');
-            try {
-                const { data, error } = await _supabase.from('grupos').select('nome').order('nome', { ascending: true });
-                if (error) throw error;
-                let html = '<option value="">Todos (Admin)</option>';
-                data.forEach(g => { html += `<option value="${g.nome}">${g.nome}</option>`; });
-                select.innerHTML = html;
-            } catch (e) { console.error("Erro grupos:", e); }
-        }
-
         async function atualizarTabelaUsuarios() {
             const corpo = document.getElementById('corpoTabelaUsuarios');
             try {
@@ -121,55 +118,44 @@
 
                 corpo.innerHTML = usuarios.map(u => `
                     <tr>
-                        <td>${u.login}</td>
-                        <td>${u.permissao || u.nivel}</td>
-                        <td>${u.grupo_vinculado || '---'}</td>
-                        <td style="text-align: center;">
-                            <button onclick="solicitarNovaSenha('${u.id}', '${u.login}')" class="btn-tabela btn-senha" title="Alterar Senha">🔑</button>
-                            <button onclick="executarExclusao('${u.id}')" class="btn-tabela btn-excluir" title="Excluir">🗑️</button>
+                        <td style="font-weight: 500;">${u.login}</td>
+                        <td><span class="tag-nivel">${u.permissao || u.nivel}</span></td>
+                        <td class="col-acao">
+                            <button onclick="solicitarNovaSenha('${u.id}', '${u.login}')" class="btn-tabela btn-senha" title="Nova Senha">🔑</button>
+                            <button onclick="executarExclusao('${u.id}')" class="btn-tabela btn-excluir" title="Remover">🗑️</button>
                         </td>
                     </tr>
                 `).join('');
             } catch (err) {
-                corpo.innerHTML = '<tr><td colspan="4">Erro ao carregar usuários.</td></tr>';
+                corpo.innerHTML = '<tr><td colspan="3" style="text-align:center;">Falha ao carrergar.</td></tr>';
             }
         }
 
         document.addEventListener('DOMContentLoaded', async () => {
-            // Agora com auth.js carregado, verificarAcesso funciona
-            usuarioLogadoGlobal = verificarAcesso();
-            
-            if (usuarioLogadoGlobal) {
-                document.getElementById('nomeAdmin').innerText = usuarioLogadoGlobal.nome || usuarioLogadoGlobal.login;
-                const nivelLogado = (usuarioLogadoGlobal.permissao || usuarioLogadoGlobal.nivel || "").toLowerCase();
-
-                if (nivelLogado !== 'admin' && nivelLogado !== 'master') {
-                    alert('Acesso negado!');
+            const user = verificarAcesso();
+            if (user) {
+                document.getElementById('nomeAdmin').innerText = user.login;
+                // Só Admin pode entrar aqui
+                if (user.permissao !== 'admin') {
+                    alert('Restrito ao Admin!');
                     window.location.href = 'dashboard.html';
-                    return;
                 }
-
-                await carregarGruposUsuarios();
                 atualizarTabelaUsuarios();
             }
         });
 
         async function solicitarNovaSenha(id, login) {
-            const nova = prompt(`Digite a nova senha para [ ${login} ] :`);
+            const nova = prompt(`Nova senha para: ${login}`);
             if (nova && nova.length >= 4) {
-                const { error } = await _supabase.from('usuarios').update({ senha: nova }).eq('id', id);
-                if (!error) alert('✅ Senha alterada!');
-                else alert('❌ Erro ao alterar.');
+                await _supabase.from('usuarios').update({ senha: nova }).eq('id', id);
+                alert('Senha atualizada!');
             }
         }
 
         async function executarExclusao(id) {
-            if (confirm('Tem certeza que deseja excluir este usuário?')) {
-                const { error } = await _supabase.from('usuarios').delete().eq('id', id);
-                if (!error) {
-                    alert('Usuário removido!');
-                    atualizarTabelaUsuarios();
-                }
+            if (confirm('Excluir este acesso permanentemente?')) {
+                await _supabase.from('usuarios').delete().eq('id', id);
+                atualizarTabelaUsuarios();
             }
         }
 
@@ -181,18 +167,17 @@
             const dados = {
                 login: document.getElementById('novoLogin').value.trim(),
                 senha: document.getElementById('novaSenha').value.trim(),
-                permissao: document.getElementById('nivelAcesso').value,
-                grupo_vinculado: document.getElementById('grupo_vinculado_user').value
+                permissao: document.getElementById('nivelAcesso').value
             };
 
             try {
                 const { error } = await _supabase.from('usuarios').insert([dados]);
                 if (error) throw error;
-                alert("Usuário criado com sucesso!");
+                alert("Usuário criado!");
                 document.getElementById('formUsuario').reset();
                 atualizarTabelaUsuarios();
             } catch (err) {
-                alert("Erro ao criar usuário.");
+                alert("Erro ao criar. Login pode já existir.");
             } finally {
                 btn.disabled = false;
             }

@@ -138,10 +138,8 @@
                     <div class="legenda-externa">Cadastrar Membro</div>
                 </button>
                 <button class="btn-interno" onclick="window.location.href='admin-locais.html'">
-                    <div class="quadrado-cor" style="background-color: #d1ecf1; border: 1px solid #bee5eb;">
-                        <span style="color: #28a745;">📍</span>
-                    </div>
-                    <div class="legenda-externa">Cadastrar Igrejas</div>
+                    <div class="quadrado-cor" style="background-color: #17a2b8;">📍</div>
+                    <div class="legenda-externa">Igrejas</div>
                 </button>
                 <button class="btn-interno" onclick="window.location.href='admin-grupos.html'">
                     <div class="quadrado-cor" style="background-color: #5765f2;">📂</div>
@@ -167,9 +165,13 @@
 
         <div id="view-relatorios" class="sub-dashboard">
             <div class="grid-padrao">
-                <button class="btn-interno" id="btnRelatorios" onclick="window.location.href='relatorio-presenca.html'">
+                <button class="btn-interno" id="btnRelPresenca" onclick="window.location.href='relatorio-presenca.html'">
                     <div class="quadrado-cor" style="background-color: #ffa502;">📈</div>
                     <div class="legenda-externa">Frequências</div>
+                </button>
+                <button class="btn-interno" id="btnRelHistorico" onclick="window.location.href='historico-eventos.html'">
+                    <div class="quadrado-cor" style="background-color: #747d8c;">📂</div>
+                    <div class="legenda-externa">Histórico CIAs</div>
                 </button>
             </div>
             <button class="btn-faixa btn-voltar" onclick="voltarAoPrincipal()">Voltar ao Início</button>
@@ -197,7 +199,6 @@
     <script src="../js/script.js"></script>
 
     <script>
-        // Funções de UI exclusivas do Dashboard
         function abrirSubMenu(idSub, nomeTitulo) {
             document.getElementById('menu-principal').style.display = 'none';
             document.querySelectorAll('.sub-dashboard').forEach(v => v.style.display = 'none');
@@ -211,14 +212,11 @@
             document.getElementById('titulo-painel').innerText = 'Painel Administrativo';
         }
 
-        // Inicialização específica da página
         document.addEventListener('DOMContentLoaded', () => {
             const user = verificarAcesso();
             if (user) {
-                // Se no banco o campo for 'nome', use user.nome. Se for 'login', use user.login.
                 document.getElementById('boasVindas').innerText = `Logado como: ${user.nome || user.login}`;
                 
-                // Se o soldado das permissões estiver carregado, ele faz o trabalho dele
                 if (typeof ajustarInterfacePorPerfil === 'function') {
                     ajustarInterfacePorPerfil();
                 }
